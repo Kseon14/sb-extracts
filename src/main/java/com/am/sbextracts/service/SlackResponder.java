@@ -16,6 +16,8 @@ import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
 import com.hubspot.slack.client.methods.params.conversations.ConversationOpenParams;
 import com.hubspot.slack.client.methods.params.im.ImOpenParams;
 import com.hubspot.slack.client.methods.params.users.UserEmailParams;
+import com.hubspot.slack.client.models.Attachment;
+import com.hubspot.slack.client.models.Field;
 import com.hubspot.slack.client.models.blocks.Divider;
 import com.hubspot.slack.client.models.blocks.Section;
 import com.hubspot.slack.client.models.blocks.objects.Text;
@@ -39,26 +41,61 @@ public class SlackResponder implements Responder {
             UsersInfoResponse usersInfoResponse = slackClient.lookupUserByEmail(UserEmailParams.builder()
                             .setEmail(person.getUserName())
                             .build()).join().unwrapOrElseThrow();
-            Result<ConversationsOpenResponse, SlackError> message = slackClient.openConversation(ConversationOpenParams.builder()
+            Result<ConversationsOpenResponse, SlackError> conversation = slackClient.openConversation(ConversationOpenParams.builder()
                     .addUsers(usersInfoResponse.getUser().getId()).setReturnIm(true).build()).join();
 
-            message.ifOk(e ->  slackClient.postMessage(
+            conversation.ifOk(e ->  slackClient.postMessage(
                     ChatPostMessageParams.builder()
-                            .setText("Here is an example message with blocks:")
+                            .setText(String.format("Данные для оплаты %s", person.getTaxType()))
                             .setUsername(usersInfoResponse.getUser().getId())
                             .setChannelId(e.getConversation().getId())
-                            .addBlocks(
-                                    Section.of(Text.of(TextType.MARKDOWN, " :wave: Привет "+ person.getFullName()+"!\n"
-                                            + "данные для оплаты :dollar: *" + person.getTaxType() + "* ниже \n" +
-                                            " :date: | Срок оплаты до *" + person.getDueDate() +"*")),
-                                    Divider.builder().build(),
-                                    Section.of(Text.of(TextType.MARKDOWN, String.format("*Сумма:* %s", person.getAmount()) + "\n" +
-                                    String.format("*Банк получателя:* %s", person.getBankName()) + "\n" +
-                                    String.format("*МФО:* %s", person.getMfo()) + "\n" +
-                                    String.format("*Получатель:* %s", person.getReceiver()) + "\n" +
-                                    String.format("*Расчетный счет:* %s", person.getAccount()) + "\n" +
-                                    String.format("*ЕДРПОУ:* %s", person.getCode()) + "\n" +
-                                    String.format("*Назначение платежа:* %s", person.getPurposeOfPayment())))
+                            .addBlocks(Section.of(
+                                    Text.of(TextType.MARKDOWN, String.format(" :wave: Привет %s!\n"
+                                                    + "данные для оплаты :dollar: *%s* ниже \n"
+                                                    + ":date: Срок оплаты до *%s*",
+                                            person.getFullName(),
+                                            person.getTaxType(),
+                                            person.getDueDate()))),
+                                    Divider.builder().build()
+
+                            )
+                            .addAttachments(
+                                    Attachment.builder().addFields(Field.builder()
+                                            .setTitle("*Сумма:*")
+                                            .setValue(person.getAmount())
+                                            .setIsShort(false)
+                                            .build(),
+                                            Field.builder()
+                                                    .setTitle("*Банк получателя:*")
+                                                    .setValue(person.getBankName())
+                                                    .setIsShort(false)
+                                                    .build(),
+                                            Field.builder()
+                                                    .setTitle("*МФО:*")
+                                                    .setValue(person.getMfo())
+                                                    .setIsShort(false)
+                                                    .build(),
+                                            Field.builder()
+                                                    .setTitle("*Получатель:*")
+                                                    .setValue(person.getReceiver())
+                                                    .setIsShort(false)
+                                                    .build(),
+                                            Field.builder()
+                                                    .setTitle("*Расчетный счет:*")
+                                                    .setValue(person.getAccount())
+                                                    .setIsShort(false)
+                                                    .build(),
+                                            Field.builder()
+                                                    .setTitle("*ЕДРПОУ:*")
+                                                    .setValue(person.getCode())
+                                                    .setIsShort(false)
+                                                    .build(),
+                                            Field.builder()
+                                                    .setTitle("*Назначение платежа:*")
+                                                    .setValue(person.getPurposeOfPayment())
+                                                    .setIsShort(false)
+                                                    .build()
+                                    ).setColor("#ff0000").build()
                             ).build()));
         }
     }

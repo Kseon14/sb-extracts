@@ -80,6 +80,9 @@ public class XslxProcessor implements Processor {
                 case STRING:
                    return cell.getStringCellValue();
                 case NUMERIC:
+                    if (cell.getCellStyle().getDataFormat() > 0) {
+                        return cell.toString();
+                    }
                     DecimalFormat format = new DecimalFormat("0.#");
                     return format.format(cell.getNumericCellValue());
             }
