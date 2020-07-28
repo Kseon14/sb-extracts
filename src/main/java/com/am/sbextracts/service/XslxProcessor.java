@@ -13,13 +13,17 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.am.sbextracts.controller.InputFileController;
 import com.am.sbextracts.vo.Person;
 
 @Service
 public class XslxProcessor implements Processor {
 
+    private final Logger LOGGER = LoggerFactory.getLogger(XslxProcessor.class);
     private final Responder responder;
 
     public XslxProcessor(Responder responder) {
@@ -52,12 +56,12 @@ public class XslxProcessor implements Processor {
                 person.setUserName(getCell(row, "J", evaluator));
                 person.setDueDate(getCell(row, "K", evaluator));
                 person.setTaxType(getCell(row, "L", evaluator));
+                LOGGER.info("Person: {}", person);
                 personList.add(person);
             }
         }
         workbook.close();
         inputStream.close();
-        System.out.println(personList);
         responder.respond(personList);
     }
 

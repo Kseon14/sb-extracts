@@ -37,14 +37,15 @@ public class SlackResponder implements Responder {
     @Override
     public void respond(Collection<Person> persons) {
         SlackClient slackClient = getSlackClient();
-        for(Person person : persons) {
+        for (Person person : persons) {
             UsersInfoResponse usersInfoResponse = slackClient.lookupUserByEmail(UserEmailParams.builder()
-                            .setEmail(person.getUserName())
-                            .build()).join().unwrapOrElseThrow();
-            Result<ConversationsOpenResponse, SlackError> conversation = slackClient.openConversation(ConversationOpenParams.builder()
-                    .addUsers(usersInfoResponse.getUser().getId()).setReturnIm(true).build()).join();
+                    .setEmail(person.getUserName())
+                    .build()).join().unwrapOrElseThrow();
+            Result<ConversationsOpenResponse, SlackError> conversation = slackClient.openConversation(
+                    ConversationOpenParams.builder()
+                            .addUsers(usersInfoResponse.getUser().getId()).setReturnIm(true).build()).join();
 
-            conversation.ifOk(e ->  slackClient.postMessage(
+            conversation.ifOk(e -> slackClient.postMessage(
                     ChatPostMessageParams.builder()
                             .setText(String.format("Данные для оплаты %s", person.getTaxType()))
                             .setUsername(usersInfoResponse.getUser().getId())
@@ -61,10 +62,10 @@ public class SlackResponder implements Responder {
                             )
                             .addAttachments(
                                     Attachment.builder().addFields(Field.builder()
-                                            .setTitle("*Сумма:*")
-                                            .setValue(person.getAmount())
-                                            .setIsShort(false)
-                                            .build(),
+                                                    .setTitle("*Сумма:*")
+                                                    .setValue(person.getAmount())
+                                                    .setIsShort(false)
+                                                    .build(),
                                             Field.builder()
                                                     .setTitle("*Банк получателя:*")
                                                     .setValue(person.getBankName())
@@ -100,7 +101,7 @@ public class SlackResponder implements Responder {
         }
     }
 
-    private SlackClient getSlackClient(){
+    private SlackClient getSlackClient() {
         SlackClientRuntimeConfig runtimeConfig = SlackClientRuntimeConfig.builder()
                 .setTokenSupplier(() -> token)
                 .build();

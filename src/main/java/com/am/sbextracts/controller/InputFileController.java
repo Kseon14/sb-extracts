@@ -1,7 +1,9 @@
 package com.am.sbextracts.controller;
 
 import java.io.IOException;
+import org.slf4j.Logger;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.MultiValueMap;
@@ -17,6 +19,8 @@ import com.am.sbextracts.service.Processor;
 @RequestMapping("/api/files")
 public class InputFileController {
 
+    private final Logger LOGGER = LoggerFactory.getLogger(InputFileController.class);
+
     private final Processor processor;
 
     @Autowired
@@ -29,6 +33,7 @@ public class InputFileController {
         if (file == null) {
             return;
         }
+        LOGGER.info("fileName : {}", file.getName());
         processor.process(file.getInputStream());
     }
 }
