@@ -31,6 +31,8 @@ public class Person {
               .append("code", code)
               .append("purposeOfPayment", purposeOfPayment)
               .append("userName", userName)
+              .append("dueDate", dueDate)
+              .append("taxType", taxType)
               .toString();
    }
 }
