@@ -25,7 +25,7 @@ class InputFileControllerTest {
     @Test
     public void testParsing() throws Exception {
         MockMultipartFile multipartFile = new MockMultipartFile("file", "2020.xlsx",
-                "text/plain", this.getClass().getResourceAsStream("2020.xlsx"));
+                "text/plain", this.getClass().getResourceAsStream("2020(1).xlsx"));
         this.mvc.perform(multipart("/api/files").file(multipartFile))
                 .andExpect(status().isOk());
 
