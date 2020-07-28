@@ -50,7 +50,7 @@ public class SlackResponder implements Responder {
                             .addBlocks(
                                     Section.of(Text.of(TextType.MARKDOWN, " :wave: Привет "+ person.getFullName()+"!\n"
                                             + "данные для оплаты :dollar: *" + person.getTaxType() + "* ниже \n" +
-                                            " :date: | Срок до *" + person.getDueDate() +"*")),
+                                            " :date: | Срок оплаты до *" + person.getDueDate() +"*")),
                                     Divider.builder().build(),
                                     Section.of(Text.of(TextType.MARKDOWN, String.format("*Сумма:* %s", person.getAmount()) + "\n" +
                                     String.format("*Банк получателя:* %s", person.getBankName()) + "\n" +
