@@ -31,6 +31,7 @@ public class InputFileController {
     @PostMapping
     public void handleFile(MultipartFile file) throws IOException {
         if (file == null) {
+            LOGGER.info("file is null");
             return;
         }
         LOGGER.info("fileName : {}", file.getName());
