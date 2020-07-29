@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.am.sbextracts.controller.InputFileController;
 import com.am.sbextracts.vo.Person;
 import com.am.sbextracts.vo.SlackResponse;
 
@@ -33,19 +32,20 @@ public class XslxProcessor implements Processor {
     }
 
     @Override
-    public SlackResponse process(InputStream inputStream) throws IOException {
+    public SlackResponse process(InputStream inputStream, String author) throws IOException {
+        LOGGER.info("File start processing");
         XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
 
         XSSFSheet sheet = workbook.getSheetAt(0);
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
         List<Person> personList = new ArrayList<>();
         for (Row row : sheet) {
-            if (row.getRowNum() == 0){
+            if (row.getRowNum() == 0) {
                 continue;
             }
             Person person = new Person();
             String firstCell = getCell(row, "A", evaluator);
-            if( firstCell !=null) {
+            if (firstCell != null) {
                 person.setTaxCode(firstCell);
                 person.setFullName(getCell(row, "B", evaluator));
                 person.setAmount(getCell(row, "C", evaluator));
@@ -58,6 +58,7 @@ public class XslxProcessor implements Processor {
                 person.setUserName(getCell(row, "J", evaluator));
                 person.setDueDate(getCell(row, "K", evaluator));
                 person.setTaxType(getCell(row, "L", evaluator));
+                person.setAuthor(author);
                 LOGGER.info("Person: {}", person);
                 personList.add(person);
             }
@@ -66,11 +67,11 @@ public class XslxProcessor implements Processor {
         inputStream.close();
         responder.respond(personList);
         SlackResponse slackResponse = new SlackResponse();
-        slackResponse.setText(personList.stream().map(Person::getUserName).collect(Collectors.joining( "," ) ));
+        slackResponse.setText(personList.stream().map(Person::getUserName).collect(Collectors.joining(",")));
         return slackResponse;
     }
 
-    private String getCell(Row row, String reference, FormulaEvaluator evaluator){
+    private String getCell(Row row, String reference, FormulaEvaluator evaluator) {
         Cell cell = row.getCell(CellReference.convertColStringToIndex(reference));
         if (cell == null) {
             return null;
@@ -85,9 +86,9 @@ public class XslxProcessor implements Processor {
                     return String.valueOf(cell.getStringCellValue());
             }
         } else {
-            switch (cell.getCellType()){
+            switch (cell.getCellType()) {
                 case STRING:
-                   return cell.getStringCellValue();
+                    return cell.getStringCellValue();
                 case NUMERIC:
                     if (cell.getCellStyle().getDataFormat() > 0) {
                         return cell.toString();
