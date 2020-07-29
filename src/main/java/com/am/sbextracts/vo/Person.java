@@ -18,6 +18,7 @@ public class Person {
    @Getter @Setter private String userName;
    @Getter @Setter private String dueDate;
    @Getter @Setter private String taxType;
+   @Getter @Setter private String author;
 
    @Override public String toString() {
       return new ToStringBuilder(this)
@@ -33,6 +34,7 @@ public class Person {
               .append("userName", userName)
               .append("dueDate", dueDate)
               .append("taxType", taxType)
+              .append("author", author)
               .toString();
    }
 }

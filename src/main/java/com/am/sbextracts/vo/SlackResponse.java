@@ -10,7 +10,7 @@ import lombok.Setter;
 public class SlackResponse {
 
     public SlackResponse(String text){
-        this.responseType = "in_channel";
+        this.responseType = "im";
         this.text = text;
     }
     public SlackResponse(){}

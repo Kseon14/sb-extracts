@@ -1,9 +1,9 @@
 package com.am.sbextracts.service;
 
-import java.util.Arrays;
 import java.util.Collection;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +14,6 @@ import com.hubspot.slack.client.SlackClientFactory;
 import com.hubspot.slack.client.SlackClientRuntimeConfig;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
 import com.hubspot.slack.client.methods.params.conversations.ConversationOpenParams;
-import com.hubspot.slack.client.methods.params.im.ImOpenParams;
 import com.hubspot.slack.client.methods.params.users.UserEmailParams;
 import com.hubspot.slack.client.models.Attachment;
 import com.hubspot.slack.client.models.Field;
@@ -23,19 +22,20 @@ import com.hubspot.slack.client.models.blocks.Section;
 import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
 import com.hubspot.slack.client.models.response.SlackError;
-import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
 import com.hubspot.slack.client.models.response.conversations.ConversationsOpenResponse;
-import com.hubspot.slack.client.models.response.im.ImOpenResponse;
 import com.hubspot.slack.client.models.response.users.UsersInfoResponse;
 
 @Service
 public class SlackResponder implements Responder {
+
+    private final Logger LOGGER = LoggerFactory.getLogger(SlackResponder.class);
 
     @Value("${slack.token}")
     private String token;
 
     @Override
     public void respond(Collection<Person> persons) {
+        LOGGER.info("Date start broadcasting");
         SlackClient slackClient = getSlackClient();
         for (Person person : persons) {
             UsersInfoResponse usersInfoResponse = slackClient.lookupUserByEmail(UserEmailParams.builder()
@@ -53,51 +53,53 @@ public class SlackResponder implements Responder {
                             .addBlocks(Section.of(
                                     Text.of(TextType.MARKDOWN, String.format(" :wave: Привет %s!\n"
                                                     + "данные для оплаты :dollar: *%s* ниже \n"
-                                                    + ":date: Срок оплаты до *%s*",
+                                                    + ":date: Срок оплаты до *%s* \n"
+                                                    + "в случаи возникновения вопросов обратитесь к <@%s> :paw_prints:",
                                             person.getFullName(),
                                             person.getTaxType(),
-                                            person.getDueDate()))),
+                                            person.getDueDate(),
+                                            person.getAuthor()))),
                                     Divider.builder().build()
 
-                            )
-                            .addAttachments(
-                                    Attachment.builder().addFields(Field.builder()
-                                                    .setTitle("*Сумма:*")
-                                                    .setValue(person.getAmount())
-                                                    .setIsShort(false)
-                                                    .build(),
-                                            Field.builder()
-                                                    .setTitle("*Банк получателя:*")
-                                                    .setValue(person.getBankName())
-                                                    .setIsShort(false)
-                                                    .build(),
-                                            Field.builder()
-                                                    .setTitle("*МФО:*")
-                                                    .setValue(person.getMfo())
-                                                    .setIsShort(false)
-                                                    .build(),
-                                            Field.builder()
-                                                    .setTitle("*Получатель:*")
-                                                    .setValue(person.getReceiver())
-                                                    .setIsShort(false)
-                                                    .build(),
-                                            Field.builder()
-                                                    .setTitle("*Расчетный счет:*")
-                                                    .setValue(person.getAccount())
-                                                    .setIsShort(false)
-                                                    .build(),
-                                            Field.builder()
-                                                    .setTitle("*ЕДРПОУ:*")
-                                                    .setValue(person.getCode())
-                                                    .setIsShort(false)
-                                                    .build(),
-                                            Field.builder()
-                                                    .setTitle("*Назначение платежа:*")
-                                                    .setValue(person.getPurposeOfPayment())
-                                                    .setIsShort(false)
-                                                    .build()
-                                    ).setColor("#36a64f").build()
-                            ).build()));
+                            ).addAttachments(
+                            Attachment.builder().addFields(Field.builder()
+                                            .setTitle("*Сумма:*")
+                                            .setValue(person.getAmount())
+                                            .setIsShort(false)
+                                            .build(),
+                                    Field.builder()
+                                            .setTitle("*Банк получателя:*")
+                                            .setValue(person.getBankName())
+                                            .setIsShort(false)
+                                            .build(),
+                                    Field.builder()
+                                            .setTitle("*МФО:*")
+                                            .setValue(person.getMfo())
+                                            .setIsShort(false)
+                                            .build(),
+                                    Field.builder()
+                                            .setTitle("*Получатель:*")
+                                            .setValue(person.getReceiver())
+                                            .setIsShort(false)
+                                            .build(),
+                                    Field.builder()
+                                            .setTitle("*Расчетный счет:*")
+                                            .setValue(person.getAccount())
+                                            .setIsShort(false)
+                                            .build(),
+                                    Field.builder()
+                                            .setTitle("*ЕДРПОУ:*")
+                                            .setValue(person.getCode())
+                                            .setIsShort(false)
+                                            .build(),
+                                    Field.builder()
+                                            .setTitle("*Назначение платежа:*")
+                                            .setValue(person.getPurposeOfPayment())
+                                            .setIsShort(false)
+                                            .build()
+                            ).setColor("#36a64f")
+                                    .build()
+                    ).build()));
         }
     }
 
