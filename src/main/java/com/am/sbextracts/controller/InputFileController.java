@@ -41,9 +41,4 @@ public class InputFileController {
         LOGGER.info("fileName : {}", file.getName());
         return processor.process(file.getInputStream());
     }
-
-    @PostMapping("challenge")
-    public String urlVerification(@RequestBody Map<String, String> param) {
-       return param.get("challenge");
-    }
 }
