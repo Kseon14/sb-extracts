@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.am.sbextracts.controller.InputFileController;
 import com.am.sbextracts.vo.Person;
+import com.am.sbextracts.vo.SlackResponse;
 
 @Service
 public class XslxProcessor implements Processor {
@@ -31,7 +33,7 @@ public class XslxProcessor implements Processor {
     }
 
     @Override
-    public void process(InputStream inputStream) throws IOException {
+    public SlackResponse process(InputStream inputStream) throws IOException {
         XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
 
         XSSFSheet sheet = workbook.getSheetAt(0);
@@ -63,6 +65,9 @@ public class XslxProcessor implements Processor {
         workbook.close();
         inputStream.close();
         responder.respond(personList);
+        SlackResponse slackResponse = new SlackResponse();
+        slackResponse.setText(personList.stream().map(Person::getUserName).collect(Collectors.joining( "," ) ));
+        return slackResponse;
     }
 
     private String getCell(Row row, String reference, FormulaEvaluator evaluator){

@@ -5,7 +5,9 @@ import java.io.InputStream;
 
 import org.springframework.stereotype.Service;
 
+import com.am.sbextracts.vo.SlackResponse;
+
 public interface Processor {
 
-    void process(InputStream inputStream) throws IOException;
+    SlackResponse process(InputStream inputStream) throws IOException;
 }

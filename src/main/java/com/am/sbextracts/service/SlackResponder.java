@@ -96,7 +96,7 @@ public class SlackResponder implements Responder {
                                                     .setValue(person.getPurposeOfPayment())
                                                     .setIsShort(false)
                                                     .build()
-                                    ).setColor("#ff0000").build()
+                                    ).setColor("#36a64f").build()
                             ).build()));
         }
     }
