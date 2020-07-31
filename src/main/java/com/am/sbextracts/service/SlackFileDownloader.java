@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.am.sbextracts.DeleteOnCloseFileInputStream;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackFileInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -77,11 +80,11 @@ public class SlackFileDownloader implements FileDownloader {
                 }
 
                 Request request = getGETBuilder().setUrl(slackFile.getFileInfo().getUrlPrivate())
-                        .addHeader("Authorization", "Bearer " + token)
                         .build();
                 FileOutputStream stream;
+                String fileName = UUID.randomUUID().toString();
                 try {
-                    stream = new FileOutputStream("fileOut.tmp");
+                    stream = new FileOutputStream(fileName);
                 } catch (FileNotFoundException e) {
                     LOGGER.error("Error during fileSaving", e);
                     return;
@@ -98,10 +101,9 @@ public class SlackFileDownloader implements FileDownloader {
                             }
 
                             @Override
-                            public FileOutputStream onCompleted(Response response) throws FileNotFoundException {
+                            public FileOutputStream onCompleted(Response response) {
                                 return stream;
                             }
-
                         });
 
                 try {
@@ -118,7 +120,7 @@ public class SlackFileDownloader implements FileDownloader {
                     return;
                 }
                 try {
-                    processor.process(new FileInputStream("fileOut.tmp"), fileInfo.getAuthor());
+                    processor.process(new DeleteOnCloseFileInputStream(fileName), fileInfo.getAuthor());
                 } catch (IOException e) {
                     LOGGER.error("Error during processing", e);
                     return;

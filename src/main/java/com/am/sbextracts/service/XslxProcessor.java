@@ -34,37 +34,39 @@ public class XslxProcessor implements Processor {
     @Override
     public SlackResponse process(InputStream inputStream, String author) throws IOException {
         LOGGER.info("File start processing");
-        XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
-
-        XSSFSheet sheet = workbook.getSheetAt(0);
-        FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
         List<Person> personList = new ArrayList<>();
-        for (Row row : sheet) {
-            if (row.getRowNum() == 0) {
-                continue;
+        try (XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
+
+            XSSFSheet sheet = workbook.getSheetAt(0);
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) {
+                    continue;
+                }
+                Person person = new Person();
+                String firstCell = getCell(row, "A", evaluator);
+                if (firstCell != null) {
+                    person.setTaxCode(firstCell);
+                    person.setFullName(getCell(row, "B", evaluator));
+                    person.setAmount(getCell(row, "C", evaluator));
+                    person.setBankName(getCell(row, "D", evaluator));
+                    person.setMfo(getCell(row, "E", evaluator));
+                    person.setReceiver(getCell(row, "F", evaluator));
+                    person.setAccount(getCell(row, "G", evaluator));
+                    person.setCode(getCell(row, "H", evaluator));
+                    person.setPurposeOfPayment(getCell(row, "I", evaluator));
+                    person.setUserName(getCell(row, "J", evaluator));
+                    person.setDueDate(getCell(row, "K", evaluator));
+                    person.setTaxType(getCell(row, "L", evaluator));
+                    person.setAuthor(author);
+                    LOGGER.info("Person: {}", person);
+                    personList.add(person);
+                }
             }
-            Person person = new Person();
-            String firstCell = getCell(row, "A", evaluator);
-            if (firstCell != null) {
-                person.setTaxCode(firstCell);
-                person.setFullName(getCell(row, "B", evaluator));
-                person.setAmount(getCell(row, "C", evaluator));
-                person.setBankName(getCell(row, "D", evaluator));
-                person.setMfo(getCell(row, "E", evaluator));
-                person.setReceiver(getCell(row, "F", evaluator));
-                person.setAccount(getCell(row, "G", evaluator));
-                person.setCode(getCell(row, "H", evaluator));
-                person.setPurposeOfPayment(getCell(row, "I", evaluator));
-                person.setUserName(getCell(row, "J", evaluator));
-                person.setDueDate(getCell(row, "K", evaluator));
-                person.setTaxType(getCell(row, "L", evaluator));
-                person.setAuthor(author);
-                LOGGER.info("Person: {}", person);
-                personList.add(person);
-            }
+        } finally {
+            inputStream.close();
         }
-        workbook.close();
-        inputStream.close();
+
         responder.respond(personList);
         SlackResponse slackResponse = new SlackResponse();
         slackResponse.setText(personList.stream().map(Person::getUserName).collect(Collectors.joining(",")));

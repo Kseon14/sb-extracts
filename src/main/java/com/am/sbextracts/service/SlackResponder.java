@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.am.sbextracts.vo.Person;
-import com.hubspot.algebra.Result;
 import com.hubspot.slack.client.SlackClient;
 import com.hubspot.slack.client.SlackClientFactory;
 import com.hubspot.slack.client.SlackClientRuntimeConfig;
@@ -21,7 +20,6 @@ import com.hubspot.slack.client.models.blocks.Divider;
 import com.hubspot.slack.client.models.blocks.Section;
 import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
-import com.hubspot.slack.client.models.response.SlackError;
 import com.hubspot.slack.client.models.response.conversations.ConversationsOpenResponse;
 import com.hubspot.slack.client.models.response.users.UsersInfoResponse;
 
@@ -41,20 +39,19 @@ public class SlackResponder implements Responder {
             UsersInfoResponse usersInfoResponse = slackClient.lookupUserByEmail(UserEmailParams.builder()
                     .setEmail(person.getUserName())
                     .build()).join().unwrapOrElseThrow();
-            Result<ConversationsOpenResponse, SlackError> conversation = slackClient.openConversation(
-                    ConversationOpenParams.builder()
-                            .addUsers(usersInfoResponse.getUser().getId()).setReturnIm(true).build()).join();
+            String userId = usersInfoResponse.getUser().getId();
+            String conversationIdWithUser = getOpenedConversationId(slackClient, userId);
 
-            conversation.ifOk(e -> slackClient.postMessage(
+            sendMessage(slackClient,
                     ChatPostMessageParams.builder()
                             .setText(String.format("Дані для оплати %s", person.getTaxType()))
                             .setUsername(usersInfoResponse.getUser().getId())
-                            .setChannelId(e.getConversation().getId())
+                            .setChannelId(conversationIdWithUser)
                             .addBlocks(Section.of(
-                                    Text.of(TextType.MARKDOWN, String.format(" :wave: Привіт %s!\n"
-                                                    + "дані для оплати :dollar: *%s* нижче \n"
+                                    Text.of(TextType.MARKDOWN, String.format(":wave: Привіт, %s!\n"
+                                                    + "Дані для оплати :dollar: *%s* нижче \n"
                                                     + ":date: Термін сплати до *%s* \n"
-                                                    + "у випадку виникнення питань зверніться до <@%s> :paw_prints:",
+                                                    + "У випадку виникнення питань, зверніться до <@%s> :paw_prints:",
                                             person.getFullName(),
                                             person.getTaxType(),
                                             person.getDueDate(),
@@ -99,7 +96,20 @@ public class SlackResponder implements Responder {
                                             .build()
                             ).setColor("#36a64f")
                                     .build()
-                    ).build()));
+                    ).build());
+
+            String conversationIdwWithAuthor = getOpenedConversationId(slackClient, person.getAuthor());
+
+            sendMessage(slackClient,
+                    ChatPostMessageParams.builder()
+                            .setText("Обработал")
+                            .setUsername(person.getAuthor())
+                            .setChannelId(conversationIdwWithAuthor)
+                            .addBlocks(Section.of(
+                                    Text.of(TextType.MARKDOWN, String.format("*Отправил*: %s <%s>",
+                                            person.getFullName(),
+                                            person.getUserName())))
+                            ).build());
         }
     }
 
@@ -109,6 +119,17 @@ public class SlackResponder implements Responder {
                 .build();
 
         return SlackClientFactory.defaultFactory().build(runtimeConfig);
+    }
+
+    private void sendMessage(SlackClient slackClient, ChatPostMessageParams params) {
+        slackClient.postMessage(params);
+    }
+
+    private String getOpenedConversationId(SlackClient slackClient, String userId) {
+        ConversationsOpenResponse conversation = slackClient.openConversation(
+                ConversationOpenParams.builder()
+                        .addUsers(userId).setReturnIm(true).build()).join().unwrapOrElseThrow();
+        return conversation.getConversation().getId();
     }
 
 }

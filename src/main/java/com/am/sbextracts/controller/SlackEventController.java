@@ -5,6 +5,8 @@ import static com.am.sbextracts.vo.SlackEvent.Event.Type.MESSAGE;
 import static com.am.sbextracts.vo.SlackEvent.Type.EVENT_CALLBACK;
 import static com.am.sbextracts.vo.SlackEvent.Type.URL_VERIFICATION;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,12 +15,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.am.sbextracts.service.FileDownloader;
+import com.am.sbextracts.service.SlackResponder;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackResponse;
 
 @RestController
 @RequestMapping("/api/events")
 public class SlackEventController {
+
+    private final Logger LOGGER = LoggerFactory.getLogger(SlackEventController.class);
 
     private final FileDownloader downloader;
     @Value("${slack.verification.token}")
@@ -29,11 +34,10 @@ public class SlackEventController {
         this.downloader = downloader;
     }
 
-    @PostMapping()
+    @PostMapping
     public String eventHandler(@RequestBody SlackEvent slackEvent) {
 
-        System.out.println(slackEvent);
-        System.out.println("----");
+        LOGGER.info("Request content {}", slackEvent);
         if (!slackEvent.getToken().equals(verificationToken)) {
             throw new IllegalArgumentException();
         }
