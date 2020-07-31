@@ -93,7 +93,7 @@ public class XslxProcessor implements Processor {
                     if (cell.getCellStyle().getDataFormat() > 0) {
                         return cell.toString();
                     }
-                    DecimalFormat format = new DecimalFormat("0.#");
+                    DecimalFormat format = new DecimalFormat("0.##");
                     return format.format(cell.getNumericCellValue());
             }
         }

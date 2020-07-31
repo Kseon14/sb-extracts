@@ -47,14 +47,14 @@ public class SlackResponder implements Responder {
 
             conversation.ifOk(e -> slackClient.postMessage(
                     ChatPostMessageParams.builder()
-                            .setText(String.format("Данные для оплаты %s", person.getTaxType()))
+                            .setText(String.format("Дані для оплати %s", person.getTaxType()))
                             .setUsername(usersInfoResponse.getUser().getId())
                             .setChannelId(e.getConversation().getId())
                             .addBlocks(Section.of(
-                                    Text.of(TextType.MARKDOWN, String.format(" :wave: Привет %s!\n"
-                                                    + "данные для оплаты :dollar: *%s* ниже \n"
-                                                    + ":date: Срок оплаты до *%s* \n"
-                                                    + "в случаи возникновения вопросов обратитесь к <@%s> :paw_prints:",
+                                    Text.of(TextType.MARKDOWN, String.format(" :wave: Привіт %s!\n"
+                                                    + "дані для оплати :dollar: *%s* нижче \n"
+                                                    + ":date: Термін сплати до *%s* \n"
+                                                    + "у випадку виникнення питань зверніться до <@%s> :paw_prints:",
                                             person.getFullName(),
                                             person.getTaxType(),
                                             person.getDueDate(),
@@ -63,12 +63,12 @@ public class SlackResponder implements Responder {
 
                             ).addAttachments(
                             Attachment.builder().addFields(Field.builder()
-                                            .setTitle("*Сумма:*")
+                                            .setTitle("*Сума:*")
                                             .setValue(person.getAmount())
                                             .setIsShort(false)
                                             .build(),
                                     Field.builder()
-                                            .setTitle("*Банк получателя:*")
+                                            .setTitle("*Банк отримувач:*")
                                             .setValue(person.getBankName())
                                             .setIsShort(false)
                                             .build(),
@@ -78,22 +78,22 @@ public class SlackResponder implements Responder {
                                             .setIsShort(false)
                                             .build(),
                                     Field.builder()
-                                            .setTitle("*Получатель:*")
+                                            .setTitle("*Отримувач:*")
                                             .setValue(person.getReceiver())
                                             .setIsShort(false)
                                             .build(),
                                     Field.builder()
-                                            .setTitle("*Расчетный счет:*")
+                                            .setTitle("*Розрахунковий рахунок:*")
                                             .setValue(person.getAccount())
                                             .setIsShort(false)
                                             .build(),
                                     Field.builder()
-                                            .setTitle("*ЕДРПОУ:*")
+                                            .setTitle("*ЄДРПОУ:*")
                                             .setValue(person.getCode())
                                             .setIsShort(false)
                                             .build(),
                                     Field.builder()
-                                            .setTitle("*Назначение платежа:*")
+                                            .setTitle("*Призначення платежу:*")
                                             .setValue(person.getPurposeOfPayment())
                                             .setIsShort(false)
                                             .build()
