@@ -1,5 +1,6 @@
 package com.am.sbextracts.producer;
 
+import com.am.sbextracts.service.SlackResponderService;
 import com.am.sbextracts.service.XslxProcessorService;
 import com.am.sbextracts.vo.Invoice;
 import com.am.sbextracts.vo.SlackEvent;
@@ -19,10 +20,12 @@ public class InvoicePublisher implements Publisher {
     private final Logger LOGGER = LoggerFactory.getLogger(InvoicePublisher.class);
 
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final SlackResponderService slackResponderService;
 
     @Autowired
-    public InvoicePublisher(ApplicationEventPublisher applicationEventPublisher) {
+    public InvoicePublisher(ApplicationEventPublisher applicationEventPublisher, SlackResponderService slackResponderService) {
         this.applicationEventPublisher = applicationEventPublisher;
+        this.slackResponderService = slackResponderService;
     }
 
     @Override
@@ -33,27 +36,32 @@ public class InvoicePublisher implements Publisher {
             if (row.getRowNum() == 0) {
                 continue;
             }
-            String firstCell = XslxProcessorService.getCell(row, "B", evaluator);
-            if (firstCell != null) {
-                Invoice invoice = new Invoice(this);
-                invoice.setAgreementNumber(firstCell);
-                invoice.setAgreementIssueDate(XslxProcessorService.getCell(row, "C", evaluator));
-                invoice.setFullNameEng(XslxProcessorService.getCell(row, "D", evaluator));
-                invoice.setFullNameUkr(XslxProcessorService.getCell(row, "E", evaluator));
-                invoice.setAddressEng(XslxProcessorService.getCell(row, "F", evaluator));
-                invoice.setAddressUrk(XslxProcessorService.getCell(row, "G", evaluator));
-                invoice.setIpn(XslxProcessorService.getCell(row, "H", evaluator));
-                invoice.setServiceEng(XslxProcessorService.getCell(row, "I", evaluator));
-                invoice.setServiceUkr(XslxProcessorService.getCell(row, "J", evaluator));
-                invoice.setPrice(XslxProcessorService.getCell(row, "K", evaluator));
-                invoice.setAccountNumberUsd(XslxProcessorService.getCell(row, "L", evaluator));
-                invoice.setBankNameEng(XslxProcessorService.getCell(row, "M", evaluator));
-                invoice.setBankAddress(XslxProcessorService.getCell(row, "N", evaluator));
-                invoice.setSwiftNumber(XslxProcessorService.getCell(row, "O", evaluator));
-                invoice.setUserEmail(XslxProcessorService.getCell(row, "P", evaluator));
-                invoice.setAuthorSlackId(fileMetaInfo.getAuthor());
-                LOGGER.info("Payslip: {}", invoice);
-                applicationEventPublisher.publishEvent(invoice);
+            try {
+                String firstCell = XslxProcessorService.getCell(row, "B", evaluator);
+                if (firstCell != null) {
+                    Invoice invoice = new Invoice(this);
+                    invoice.setAgreementNumber(firstCell);
+                    invoice.setAgreementIssueDate(XslxProcessorService.getCell(row, "C", evaluator));
+                    invoice.setFullNameEng(XslxProcessorService.getCell(row, "D", evaluator));
+                    invoice.setFullNameUkr(XslxProcessorService.getCell(row, "E", evaluator));
+                    invoice.setAddressEng(XslxProcessorService.getCell(row, "F", evaluator));
+                    invoice.setAddressUrk(XslxProcessorService.getCell(row, "G", evaluator));
+                    invoice.setIpn(XslxProcessorService.getCell(row, "H", evaluator));
+                    invoice.setServiceEng(XslxProcessorService.getCell(row, "I", evaluator));
+                    invoice.setServiceUkr(XslxProcessorService.getCell(row, "J", evaluator));
+                    invoice.setPrice(XslxProcessorService.getCell(row, "K", evaluator));
+                    invoice.setAccountNumberUsd(XslxProcessorService.getCell(row, "L", evaluator));
+                    invoice.setBankNameEng(XslxProcessorService.getCell(row, "M", evaluator));
+                    invoice.setBankAddress(XslxProcessorService.getCell(row, "N", evaluator));
+                    invoice.setSwiftNumber(XslxProcessorService.getCell(row, "O", evaluator));
+                    invoice.setUserEmail(XslxProcessorService.getCell(row, "P", evaluator));
+                    invoice.setAuthorSlackId(fileMetaInfo.getAuthor());
+                    LOGGER.info("Payslip: {}", invoice);
+                    applicationEventPublisher.publishEvent(invoice);
+                }
+            } catch (UnsupportedOperationException e) {
+                slackResponderService.sendErrorMessageToInitiator(fileMetaInfo.getAuthor(),
+                        "Error during processing", e.getMessage());
             }
         }
     }

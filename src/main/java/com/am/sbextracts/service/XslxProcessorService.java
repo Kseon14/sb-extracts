@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.DuplicateFormatFlagsException;
 import java.util.Locale;
 
 @Service
@@ -64,31 +65,39 @@ public class XslxProcessorService implements ProcessorService {
                     return getFormattedNumericCell(cell);
             }
         }
-        throw new UnsupportedOperationException("cell type not supported " + cell.getCellStyle().getDataFormatString());
+        throw new UnsupportedOperationException(String.format("WHERE: R[%s]C[%s] cell type not supported %s",
+                cell.getRowIndex(), cell.getColumnIndex(),
+                cell.getCellStyle().getDataFormatString()));
     }
 
-    private static String getFormattedNumericCell(Cell cell){
+    private static String getFormattedNumericCell(Cell cell) {
         short dateFormatNumber = cell.getCellStyle().getDataFormat();
-        if (dateFormatNumber >= BuiltinFormats.FIRST_USER_DEFINED_FORMAT_INDEX) {
-            CellNumberFormatter cellNumberFormatter =
-                    new CellNumberFormatter(cell.getCellStyle().getDataFormatString());
-            String simpleValue = cellNumberFormatter.simpleFormat(cell.getNumericCellValue());
+        try {
+            if (dateFormatNumber >= BuiltinFormats.FIRST_USER_DEFINED_FORMAT_INDEX) {
+                CellNumberFormatter cellNumberFormatter =
+                        new CellNumberFormatter(cell.getCellStyle().getDataFormatString());
+                String simpleValue = cellNumberFormatter.simpleFormat(cell.getNumericCellValue());
 
-            if (Double.parseDouble(simpleValue) == 0.0) {
-                return null;
+                if (Double.parseDouble(simpleValue) == 0.0) {
+                    return null;
+                }
+                return cellNumberFormatter.format(cell.getNumericCellValue());
             }
-            return cellNumberFormatter.format(cell.getNumericCellValue());
+            if (dateFormatNumber == 0) {
+                CellGeneralFormatter cellGeneralFormatter =
+                        new CellGeneralFormatter(Locale.US);
+                return cellGeneralFormatter.format(cell.getNumericCellValue());
+            }
+            if (dateFormatNumber >= 14 && dateFormatNumber <= 16) {
+                CellDateFormatter cellDateFormatter =
+                        new CellDateFormatter(cell.getCellStyle().getDataFormatString());
+                return cellDateFormatter.format(cell.getDateCellValue());
+            }
+        } catch (DuplicateFormatFlagsException e) {
+            //do nothing
         }
-        if (dateFormatNumber == 0) {
-            CellGeneralFormatter cellGeneralFormatter =
-                    new CellGeneralFormatter(Locale.US);
-            return cellGeneralFormatter.format(cell.getNumericCellValue());
-        }
-        if (dateFormatNumber >= 14 && dateFormatNumber <= 16) {
-            CellDateFormatter cellDateFormatter =
-                    new CellDateFormatter(cell.getCellStyle().getDataFormatString());
-            return cellDateFormatter.format(cell.getDateCellValue());
-        }
-        throw new UnsupportedOperationException("cell type not supported " + cell.getCellStyle().getDataFormatString());
+        throw new UnsupportedOperationException(String.format("WHERE: R[%s]C[%s] cell type not supported %s",
+                cell.getRowIndex(), cell.getColumnIndex(),
+                cell.getCellStyle().getDataFormatString()));
     }
 }

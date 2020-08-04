@@ -90,6 +90,15 @@ public class SlackResponderService implements ResponderService {
     }
 
     @Override
+    public void sendErrorMessageToInitiator(String userSlackId, String shortText, String text) {
+        sendMessage(ChatPostMessageParams.builder()
+                .setText(shortText)
+                .setChannelId(getConversationIdBySlackId(userSlackId))
+                .addBlocks(Section.of(Text.of(TextType.MARKDOWN, String.format("*Error*: %s \n ", text)))
+                ).build());
+    }
+
+    @Override
     public void sendFile(String fileName, String userEmail) {
         LOGGER.info("File sending {} .....", fileName);
         try {

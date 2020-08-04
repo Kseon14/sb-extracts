@@ -27,4 +27,6 @@ public interface ResponderService {
             JsonProcessingException;
 
     void downloadFile(String fileName, SlackFileInfo slackFile) throws ExecutionException, InterruptedException;
+
+    void sendErrorMessageToInitiator(String userSlackId, String shortText, String text);
 }
