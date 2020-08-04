@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.am.sbextracts.service.FileDownloader;
-import com.am.sbextracts.service.SlackResponder;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackResponse;
 
@@ -35,7 +34,7 @@ public class SlackEventController {
     }
 
     @PostMapping
-    public String eventHandler(@RequestBody SlackEvent slackEvent) {
+    public Object eventHandler(@RequestBody SlackEvent slackEvent) {
 
         LOGGER.info("Request content {}", slackEvent);
         if (!slackEvent.getToken().equals(verificationToken)) {
@@ -47,7 +46,7 @@ public class SlackEventController {
         if (EVENT_CALLBACK == slackEvent.getType()) {
             SlackEvent.Event event = slackEvent.getEvent();
             if (MESSAGE == event.getType() && FILE_SHARE == event.getSubtype()) {
-                downloader.downloadFile(event.getFileInfos());
+                downloader.downloadFile(event.getFileMetaInfos());
             }
         }
         return null;

@@ -6,5 +6,5 @@ import com.am.sbextracts.vo.SlackEvent;
 
 public interface FileDownloader {
 
-    void downloadFile(List<SlackEvent.FileInfo> fileInfo);
+    void downloadFile(List<SlackEvent.FileMetaInfo> fileMetaInfo);
 }

@@ -32,7 +32,7 @@ public class SlackEvent {
         @Getter @Setter private Type subtype;
         @Getter @Setter @JsonProperty("channel") private String channelId;
         @Getter @Setter private String user;
-        @Getter @Setter @JsonProperty("files") private List<FileInfo> fileInfos;
+        @Getter @Setter @JsonProperty("files") private List<FileMetaInfo> fileMetaInfos;
 
         public enum Type {
             FILE_SHARE("file_share"),
@@ -52,17 +52,18 @@ public class SlackEvent {
                     .append("subtype", subtype)
                     .append("channelId", channelId)
                     .append("user", user)
-                    .append("fileInfos", fileInfos)
+                    .append("fileInfos", fileMetaInfos)
                     .toString();
         }
     }
 
-    public static class FileInfo {
+    public static class FileMetaInfo {
         @Getter @Setter private String id;
         @Getter @Setter private long timestamp;
         @Getter @Setter private @JsonProperty("user") String author;
         @Getter @Setter @JsonProperty("filetype") private String fileType;
         @Getter @Setter @JsonProperty("url_private") private String urlPrivate;
+        @Getter @Setter private String name;
 
         @Override public String toString() {
             return new ToStringBuilder(this)

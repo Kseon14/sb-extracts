@@ -2,6 +2,7 @@ package com.am.sbextracts.controller;
 
 import java.io.IOException;
 
+import com.am.sbextracts.vo.SlackEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.am.sbextracts.service.Processor;
+import com.am.sbextracts.service.ProcessorService;
 import com.am.sbextracts.vo.SlackResponse;
 
 @RestController
@@ -24,11 +25,11 @@ public class InputFileController {
     @Value("${slack.verification.token}")
     private String verificationToken;
 
-    private final Processor processor;
+    private final ProcessorService processorService;
 
     @Autowired
-    public InputFileController(final Processor processor) {
-        this.processor = processor;
+    public InputFileController(final ProcessorService processorService) {
+        this.processorService = processorService;
     }
 
     @PostMapping
@@ -42,6 +43,7 @@ public class InputFileController {
             return new SlackResponse("file is null");
         }
         LOGGER.info("fileName : {}", file.getName());
-        return processor.process(file.getInputStream(), "name");
+        processorService.process(file.getInputStream(), new SlackEvent.FileMetaInfo());
+        return new SlackResponse("done");
     }
 }
