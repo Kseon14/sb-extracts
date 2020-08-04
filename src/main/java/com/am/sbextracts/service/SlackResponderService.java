@@ -43,7 +43,7 @@ import java.util.concurrent.Future;
 @Service
 public class SlackResponderService implements ResponderService {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(SlackResponderService.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(SlackResponderService.class);
 
     @Value("${slack.token}")
     private String token;
@@ -58,6 +58,7 @@ public class SlackResponderService implements ResponderService {
 
     @Override
     public void sendMessage(ChatPostMessageParams params) {
+        LOGGER.info("Message sending {} .....", params.getChannelId());
         getSlackClient().postMessage(params);
     }
 
@@ -90,6 +91,7 @@ public class SlackResponderService implements ResponderService {
 
     @Override
     public void sendFile(String fileName, String userEmail) {
+        LOGGER.info("File sending {} .....", fileName);
         try {
             postFile(fileName, getConversationIdByEmail(userEmail));
         } catch (ExecutionException | InterruptedException e) {
@@ -98,6 +100,7 @@ public class SlackResponderService implements ResponderService {
     }
 
     private static String getOpenedConversationId(SlackClient slackClient, String userId) {
+        LOGGER.info("Getting conversation ID for {}", userId);
         ConversationsOpenResponse conversation = slackClient.openConversation(
                 ConversationOpenParams.builder()
                         .addUsers(userId).setReturnIm(true).build()).join().unwrapOrElseThrow();
@@ -124,7 +127,8 @@ public class SlackResponderService implements ResponderService {
                 .addBodyPart(new FilePart("file", file))
                 .build();
         Future<Response> responseFuture = getHttpClient().executeRequest(request);
-        responseFuture.get();
+        Response response = responseFuture.get();
+        LOGGER.info("file upload response: {}", response.getResponseBody());
         LOGGER.info("file {} deleted {}", file.getName(), file.delete());
     }
 
