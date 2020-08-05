@@ -1,5 +1,6 @@
 package com.am.sbextracts.producer;
 
+import com.am.sbextracts.service.SlackResponderService;
 import com.am.sbextracts.service.XslxProcessorService;
 import com.am.sbextracts.vo.Payslip;
 import com.am.sbextracts.vo.SlackEvent;
@@ -19,10 +20,12 @@ public class PayslipPublisher implements Publisher {
     private final Logger LOGGER = LoggerFactory.getLogger(PayslipPublisher.class);
 
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final SlackResponderService slackResponderService;
 
     @Autowired
-    public PayslipPublisher(ApplicationEventPublisher applicationEventPublisher) {
+    public PayslipPublisher(ApplicationEventPublisher applicationEventPublisher, SlackResponderService slackResponderService) {
         this.applicationEventPublisher = applicationEventPublisher;
+        this.slackResponderService = slackResponderService;
     }
 
     @Override
@@ -33,23 +36,28 @@ public class PayslipPublisher implements Publisher {
             if (row.getRowNum() == 0) {
                 continue;
             }
-            String firstCell = XslxProcessorService.getCell(row, "A", evaluator);
-            if (firstCell != null) {
-                Payslip payslip = new Payslip(this);
-                payslip.setFullName(firstCell);
-                payslip.setContractRate(XslxProcessorService.getCell(row, "B", evaluator));
-                payslip.setOtherIncome(XslxProcessorService.getCell(row, "C", evaluator));
-                payslip.setSocialTax(XslxProcessorService.getCell(row, "D", evaluator));
-                payslip.setInsurance(XslxProcessorService.getCell(row, "E", evaluator));
-                payslip.setRent(XslxProcessorService.getCell(row, "F", evaluator));
-                payslip.setCurrencyRate(XslxProcessorService.getCell(row, "G", evaluator));
-                payslip.setTotalNet(XslxProcessorService.getCell(row, "H", evaluator));
-                payslip.setCurrentPaymentTax(XslxProcessorService.getCell(row, "I", evaluator));
-                payslip.setTotalGross(XslxProcessorService.getCell(row, "J", evaluator));
-                payslip.setUserEmail(XslxProcessorService.getCell(row, "K", evaluator));
-                payslip.setAuthorSlackId(fileMetaInfo.getAuthor());
-                LOGGER.info("Payslip: {}", payslip);
-                applicationEventPublisher.publishEvent(payslip);
+            try {
+                String firstCell = XslxProcessorService.getCell(row, "A", evaluator);
+                if (firstCell != null) {
+                    Payslip payslip = new Payslip(this);
+                    payslip.setFullName(firstCell);
+                    payslip.setContractRate(XslxProcessorService.getCell(row, "B", evaluator));
+                    payslip.setOtherIncome(XslxProcessorService.getCell(row, "C", evaluator));
+                    payslip.setSocialTax(XslxProcessorService.getCell(row, "D", evaluator));
+                    payslip.setInsurance(XslxProcessorService.getCell(row, "E", evaluator));
+                    payslip.setRent(XslxProcessorService.getCell(row, "F", evaluator));
+                    payslip.setCurrencyRate(XslxProcessorService.getCell(row, "G", evaluator));
+                    payslip.setTotalNet(XslxProcessorService.getCell(row, "H", evaluator));
+                    payslip.setCurrentPaymentTax(XslxProcessorService.getCell(row, "I", evaluator));
+                    payslip.setTotalGross(XslxProcessorService.getCell(row, "J", evaluator));
+                    payslip.setUserEmail(XslxProcessorService.getCell(row, "K", evaluator));
+                    payslip.setAuthorSlackId(fileMetaInfo.getAuthor());
+                    LOGGER.info("Payslip: {}", payslip);
+                    applicationEventPublisher.publishEvent(payslip);
+                }
+            } catch (UnsupportedOperationException e) {
+                slackResponderService.sendErrorMessageToInitiator(fileMetaInfo.getAuthor(),
+                        "Error during processing", e.getMessage());
             }
         }
     }

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
 import org.asynchttpclient.RequestBuilder;
 
-import java.io.FileNotFoundException;
 import java.util.concurrent.ExecutionException;
 
 public interface ResponderService {

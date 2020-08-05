@@ -1,5 +1,6 @@
 package com.am.sbextracts.producer;
 
+import com.am.sbextracts.service.SlackResponderService;
 import com.am.sbextracts.service.XslxProcessorService;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.TaxPayment;
@@ -18,10 +19,13 @@ public class TaxPaymentPublisher implements Publisher {
     private final Logger LOGGER = LoggerFactory.getLogger(TaxPaymentPublisher.class);
 
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final SlackResponderService slackResponderService;
 
     @Autowired
-    public TaxPaymentPublisher(ApplicationEventPublisher applicationEventPublisher) {
+    public TaxPaymentPublisher(ApplicationEventPublisher applicationEventPublisher,
+                               SlackResponderService slackResponderService) {
         this.applicationEventPublisher = applicationEventPublisher;
+        this.slackResponderService = slackResponderService;
     }
 
     @Override
@@ -32,6 +36,7 @@ public class TaxPaymentPublisher implements Publisher {
             if (row.getRowNum() == 0) {
                 continue;
             }
+            try {
             String firstCell = XslxProcessorService.getCell(row, "A", evaluator);
             if (firstCell != null) {
                 TaxPayment taxPayment = new TaxPayment(this);
@@ -50,6 +55,10 @@ public class TaxPaymentPublisher implements Publisher {
                 taxPayment.setAuthorSlackId(fileMetaInfo.getAuthor());
                 LOGGER.info("Tax payment: {}", taxPayment);
                 applicationEventPublisher.publishEvent(taxPayment);
+            }
+            } catch (UnsupportedOperationException e) {
+                slackResponderService.sendErrorMessageToInitiator(fileMetaInfo.getAuthor(),
+                        "Error during processing", e.getMessage());
             }
         }
     }

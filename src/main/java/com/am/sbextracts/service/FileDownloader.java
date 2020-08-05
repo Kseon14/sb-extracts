@@ -1,8 +1,8 @@
 package com.am.sbextracts.service;
 
-import java.util.List;
-
 import com.am.sbextracts.vo.SlackEvent;
+
+import java.util.List;
 
 public interface FileDownloader {
 

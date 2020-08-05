@@ -94,7 +94,7 @@ public class SlackResponderService implements ResponderService {
         sendMessage(ChatPostMessageParams.builder()
                 .setText(shortText)
                 .setChannelId(getConversationIdBySlackId(userSlackId))
-                .addBlocks(Section.of(Text.of(TextType.MARKDOWN, String.format("*Error*: %s \n ", text)))
+                .addBlocks(Section.of(Text.of(TextType.MARKDOWN, String.format("I see *Error*: %s \n ", text)))
                 ).build());
     }
 

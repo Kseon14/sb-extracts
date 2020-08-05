@@ -65,7 +65,7 @@ public class XslxProcessorService implements ProcessorService {
                     return getFormattedNumericCell(cell);
             }
         }
-        throw new UnsupportedOperationException(String.format("WHERE: R[%s]C[%s] cell type not supported %s",
+        throw new UnsupportedOperationException(String.format("in R[%s]C[%s], cell type not supported %s",
                 cell.getRowIndex(), cell.getColumnIndex(),
                 cell.getCellStyle().getDataFormatString()));
     }
@@ -96,7 +96,7 @@ public class XslxProcessorService implements ProcessorService {
         } catch (DuplicateFormatFlagsException e) {
             //do nothing
         }
-        throw new UnsupportedOperationException(String.format("WHERE: R[%s]C[%s] cell type not supported %s",
+        throw new UnsupportedOperationException(String.format("in R[%s]C[%s], cell type not supported %s",
                 cell.getRowIndex(), cell.getColumnIndex(),
                 cell.getCellStyle().getDataFormatString()));
     }

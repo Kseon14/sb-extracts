@@ -1,14 +1,12 @@
 package com.am.sbextracts.vo;
 
-import java.util.List;
-
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import java.util.List;
 
 public class SlackEvent {
     @Getter @Setter private Type type;

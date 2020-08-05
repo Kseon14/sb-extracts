@@ -1,10 +1,8 @@
 package com.am.sbextracts.controller;
 
-import static com.am.sbextracts.vo.SlackEvent.Event.Type.FILE_SHARE;
-import static com.am.sbextracts.vo.SlackEvent.Event.Type.MESSAGE;
-import static com.am.sbextracts.vo.SlackEvent.Type.EVENT_CALLBACK;
-import static com.am.sbextracts.vo.SlackEvent.Type.URL_VERIFICATION;
-
+import com.am.sbextracts.service.FileDownloader;
+import com.am.sbextracts.vo.SlackEvent;
+import com.am.sbextracts.vo.SlackResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +12,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.am.sbextracts.service.FileDownloader;
-import com.am.sbextracts.vo.SlackEvent;
-import com.am.sbextracts.vo.SlackResponse;
+import static com.am.sbextracts.vo.SlackEvent.Event.Type.FILE_SHARE;
+import static com.am.sbextracts.vo.SlackEvent.Event.Type.MESSAGE;
+import static com.am.sbextracts.vo.SlackEvent.Type.EVENT_CALLBACK;
+import static com.am.sbextracts.vo.SlackEvent.Type.URL_VERIFICATION;
 
 @RestController
 @RequestMapping("/api/events")
