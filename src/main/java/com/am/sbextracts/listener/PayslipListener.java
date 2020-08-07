@@ -50,6 +50,9 @@ public class PayslipListener implements ApplicationListener<Payslip> {
         SlackResponderService.addIfNotNull(fieldList, "Total Gross", payslip.getTotalGross());
 
         String conversationIdWithUser = slackResponderService.getConversationIdByEmail(payslip.getUserEmail());
+        if (conversationIdWithUser == null) {
+            throw new IllegalArgumentException("conversationIdWithUser could not be null");
+        }
         slackResponderService.sendMessage(
                 ChatPostMessageParams.builder()
                         .setText(String.format("Payslip for %s", payslip.getFullName()))
