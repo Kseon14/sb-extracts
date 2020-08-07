@@ -2,11 +2,8 @@ package com.am.sbextracts.service;
 
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackFileInfo;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
 import org.asynchttpclient.RequestBuilder;
-
-import java.util.concurrent.ExecutionException;
 
 public interface ResponderService {
 
@@ -22,10 +19,9 @@ public interface ResponderService {
 
     RequestBuilder getBuilder(String httpMethod);
 
-    SlackFileInfo getFileInfo(SlackEvent.FileMetaInfo fileMetaInfo) throws ExecutionException, InterruptedException,
-            JsonProcessingException;
+    SlackFileInfo getFileInfo(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception;
 
-    void downloadFile(String fileName, SlackFileInfo slackFile) throws ExecutionException, InterruptedException;
+    void downloadFile(String fileName, SlackFileInfo slackFile);
 
     void sendErrorMessageToInitiator(String userSlackId, String shortText, String text);
 }

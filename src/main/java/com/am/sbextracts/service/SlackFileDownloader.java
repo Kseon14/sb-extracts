@@ -3,7 +3,6 @@ package com.am.sbextracts.service;
 import com.am.sbextracts.DeleteOnCloseFileInputStream;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackFileInfo;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -50,7 +48,7 @@ public class SlackFileDownloader implements FileDownloader {
                 SlackFileInfo slackFile;
                 try {
                     slackFile = slackResponderService.getFileInfo(fileMetaInfo);
-                } catch (ExecutionException | InterruptedException | JsonProcessingException e) {
+                } catch (Exception e) {
                     LOGGER.error("fileInfo.getUrlPrivate() is empty", e);
                     continue;
                 }
@@ -60,13 +58,7 @@ public class SlackFileDownloader implements FileDownloader {
                     continue;
                 }
                 String fileName = UUID.randomUUID().toString();
-                try {
-                    slackResponderService.downloadFile(fileName, slackFile);
-                } catch (ExecutionException | InterruptedException e) {
-                    LOGGER.error("Error during file download", e);
-                    continue;
-                }
-
+                slackResponderService.downloadFile(fileName, slackFile);
                 try {
                     processorService.process(new DeleteOnCloseFileInputStream(fileName), fileMetaInfo);
                 } catch (IOException e) {
