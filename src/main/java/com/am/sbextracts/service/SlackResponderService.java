@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hubspot.slack.client.SlackClient;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
 import com.hubspot.slack.client.methods.params.conversations.ConversationOpenParams;
+import com.hubspot.slack.client.methods.params.files.FilesUploadParams;
 import com.hubspot.slack.client.methods.params.users.UserEmailParams;
 import com.hubspot.slack.client.models.Field;
 import com.hubspot.slack.client.models.blocks.Section;
@@ -59,12 +60,13 @@ public class SlackResponderService implements ResponderService {
     }
 
     private void returnSlackClient(SlackClient client) {
+        client.uploadFile(FilesUploadParams.builder().addChannels("").setFile(new File("df")).build());
         slackClientPool.returnObject(client);
     }
 
     private AsyncHttpClient getHttpClient() throws Exception {
         AsyncHttpClient client = httpClientPool.borrowObject();
-        LOGGER.info("http Client {}", client.toString());
+        LOGGER.info("Client {}", client.toString());
         return client;
     }
 
