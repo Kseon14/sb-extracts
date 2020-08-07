@@ -41,7 +41,7 @@ public class InvoicePublisher implements Publisher {
                 if (firstCell != null) {
                     Invoice invoice = new Invoice(this);
                     invoice.setAgreementNumber(firstCell);
-                    invoice.setAgreementIssueDate(XslxProcessorService.getCell(row, "C", evaluator));
+                    invoice.setAgreementIssueDate(XslxProcessorService.getDateFromCell(row, "C"));
                     invoice.setFullNameEng(XslxProcessorService.getCell(row, "D", evaluator));
                     invoice.setFullNameUkr(XslxProcessorService.getCell(row, "E", evaluator));
                     invoice.setAddressEng(XslxProcessorService.getCell(row, "F", evaluator));
@@ -56,7 +56,7 @@ public class InvoicePublisher implements Publisher {
                     invoice.setSwiftNumber(XslxProcessorService.getCell(row, "O", evaluator));
                     invoice.setUserEmail(XslxProcessorService.getCell(row, "P", evaluator));
                     invoice.setAuthorSlackId(fileMetaInfo.getAuthor());
-                    LOGGER.info("Payslip: {}", invoice);
+                    LOGGER.info("Invoice: {}", invoice);
                     applicationEventPublisher.publishEvent(invoice);
                 }
             } catch (UnsupportedOperationException e) {

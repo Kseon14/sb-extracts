@@ -5,6 +5,8 @@ import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.springframework.context.ApplicationEvent;
 
+import java.util.Date;
+
 public class TaxPayment extends ApplicationEvent {
 
     @Getter @Setter private String taxCode;
@@ -17,7 +19,7 @@ public class TaxPayment extends ApplicationEvent {
     @Getter @Setter private String code;
     @Getter @Setter private String purposeOfPayment;
     @Getter @Setter private String userEmail;
-    @Getter @Setter private String dueDate;
+    @Getter @Setter private Date dueDate;
     @Getter @Setter private String taxType;
     @Getter @Setter private String authorSlackId;
 

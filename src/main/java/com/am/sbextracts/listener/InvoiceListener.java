@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -40,7 +41,6 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
 
     @Override
     public void onApplicationEvent(Invoice invoice) {
-        DateTimeFormatter formatterInput = DateTimeFormatter.ofPattern("M/d/yy");
         DateTimeFormatter formatterOutputEng = DateTimeFormatter.ofPattern("MM/dd/yyyy");
         DateTimeFormatter formatterOutputUkr = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         DateTimeFormatter formatterMonthYear = DateTimeFormatter.ofPattern("M-yyyy");
@@ -54,8 +54,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
                 LocalDate.now().format(DateTimeFormatter.ofPattern("MM-yyyy")));
         try {
             document = new Document();
-            fileOutputStream =
-                    new FileOutputStream(fileName);
+            fileOutputStream = new FileOutputStream(fileName);
             try {
                 PdfWriter.getInstance(document, fileOutputStream);
             } catch (DocumentException e) {
@@ -67,11 +66,11 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
             Paragraph preface = new Paragraph();
             Paragraph head1 = getParagraphBold(String.format("Invoice/ offer # %s  for Services Agreement No. %s of %s",
                     LocalDate.now().format(formatterMonthYear), invoice.getAgreementNumber(),
-                    getFormattedDate(invoice.getAgreementIssueDate(), formatterInput, formatterOutputEng)));
+                    new SimpleDateFormat("MM/dd/yyyy").format(invoice.getAgreementIssueDate())));
             head1.setAlignment(Element.ALIGN_CENTER);
             Paragraph head2 = getParagraphBold(String.format("Рахунок - оферта № %s згідно договору № %s від %s",
                     LocalDate.now().format(formatterMonthYear), invoice.getAgreementNumber(),
-                    getFormattedDate(invoice.getAgreementIssueDate(), formatterInput, formatterOutputUkr)));
+                    new SimpleDateFormat("dd.MM.yyyy").format(invoice.getAgreementIssueDate())));
             head2.setAlignment(Element.ALIGN_CENTER);
             preface.add(head1);
             preface.add(head2);

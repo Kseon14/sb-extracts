@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +32,9 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
     public void onApplicationEvent(TaxPayment taxPayment) {
 
         String conversationIdWithUser = slackResponderService.getConversationIdByEmail(taxPayment.getUserEmail());
+        if (conversationIdWithUser == null) {
+            throw new IllegalArgumentException("conversationIdWithUser could not be null");
+        }
 
         List<Field> fieldList = new ArrayList<>();
         SlackResponderService.addIfNotNull(fieldList, "Сума", taxPayment.getAmount());
@@ -52,7 +56,7 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
                                                 + "У випадку виникнення питань, зверніться до <@%s> :paw_prints:",
                                         taxPayment.getFullName(),
                                         taxPayment.getTaxType(),
-                                        taxPayment.getDueDate(),
+                                        new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate()),
                                         taxPayment.getAuthorSlackId()))),
                                 Divider.builder().build()
                         ).addAttachments(Attachment.builder().setFields(fieldList).setColor("#36a64f").build())

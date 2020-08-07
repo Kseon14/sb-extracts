@@ -5,10 +5,12 @@ import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.springframework.context.ApplicationEvent;
 
+import java.util.Date;
+
 public class Invoice extends ApplicationEvent {
 
     @Getter @Setter private String agreementNumber;
-    @Getter @Setter private String agreementIssueDate;
+    @Getter @Setter private Date agreementIssueDate;
     @Getter @Setter private String fullNameEng;
     @Getter @Setter private String fullNameUkr;
     @Getter @Setter private String addressEng;

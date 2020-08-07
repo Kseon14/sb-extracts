@@ -50,7 +50,7 @@ public class TaxPaymentPublisher implements Publisher {
                 taxPayment.setCode(XslxProcessorService.getCell(row, "H", evaluator));
                 taxPayment.setPurposeOfPayment(XslxProcessorService.getCell(row, "I", evaluator));
                 taxPayment.setUserEmail(XslxProcessorService.getCell(row, "J", evaluator));
-                taxPayment.setDueDate(XslxProcessorService.getCell(row, "K", evaluator));
+                taxPayment.setDueDate(XslxProcessorService.getDateFromCell(row, "K"));
                 taxPayment.setTaxType(XslxProcessorService.getCell(row, "L", evaluator));
                 taxPayment.setAuthorSlackId(fileMetaInfo.getAuthor());
                 LOGGER.info("Tax payment: {}", taxPayment);
