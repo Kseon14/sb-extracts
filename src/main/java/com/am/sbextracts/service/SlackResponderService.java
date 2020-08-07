@@ -1,15 +1,15 @@
 package com.am.sbextracts.service;
 
+import com.am.sbextracts.pool.HttpClientPool;
+import com.am.sbextracts.pool.SlackClientPool;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackFileInfo;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hubspot.slack.client.SlackClient;
-import com.hubspot.slack.client.SlackClientFactory;
-import com.hubspot.slack.client.SlackClientRuntimeConfig;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
 import com.hubspot.slack.client.methods.params.conversations.ConversationOpenParams;
+import com.hubspot.slack.client.methods.params.files.FilesUploadParams;
 import com.hubspot.slack.client.methods.params.users.UserEmailParams;
 import com.hubspot.slack.client.models.Field;
 import com.hubspot.slack.client.models.blocks.Section;
@@ -20,7 +20,6 @@ import com.hubspot.slack.client.models.response.users.UsersInfoResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.asynchttpclient.AsyncCompletionHandler;
 import org.asynchttpclient.AsyncHttpClient;
-import org.asynchttpclient.Dsl;
 import org.asynchttpclient.HttpResponseBodyPart;
 import org.asynchttpclient.ListenableFuture;
 import org.asynchttpclient.Request;
@@ -34,10 +33,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 @Service
@@ -45,36 +42,89 @@ public class SlackResponderService implements ResponderService {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(SlackResponderService.class);
 
+    private final HttpClientPool httpClientPool;
+    private final SlackClientPool slackClientPool;
+
     @Value("${slack.token}")
     private String token;
 
-    private SlackClient getSlackClient() {
-        SlackClientRuntimeConfig runtimeConfig = SlackClientRuntimeConfig.builder()
-                .setTokenSupplier(() -> token)
-                .build();
+    public SlackResponderService(HttpClientPool httpClientPool, SlackClientPool slackClientPool) {
+        this.httpClientPool = httpClientPool;
+        this.slackClientPool = slackClientPool;
+    }
 
-        return SlackClientFactory.defaultFactory().build(runtimeConfig);
+    private SlackClient getSlackClient() throws Exception {
+        SlackClient slackClient = slackClientPool.borrowObject();
+        LOGGER.info("Slack Client {}", slackClient.toString());
+        return slackClient;
+    }
+
+    private void returnSlackClient(SlackClient client) {
+        client.uploadFile(FilesUploadParams.builder().addChannels("").setFile(new File("df")).build());
+        slackClientPool.returnObject(client);
+    }
+
+    private AsyncHttpClient getHttpClient() throws Exception {
+        AsyncHttpClient client = httpClientPool.borrowObject();
+        LOGGER.info("Client {}", client.toString());
+        return client;
+    }
+
+    private void returnHttpClientToPool(AsyncHttpClient client){
+        httpClientPool.returnObject(client);
     }
 
     @Override
     public void sendMessage(ChatPostMessageParams params) {
         LOGGER.info("Message sending {} .....", params.getChannelId());
-        getSlackClient().postMessage(params);
+        SlackClient slackClient = null;
+        try {
+            slackClient = getSlackClient();
+            slackClient.postMessage(params);
+        } catch (Exception e) {
+            LOGGER.error("Message not sent", e);
+        } finally {
+            if(slackClient != null) {
+                returnSlackClient(slackClient);
+            }
+        }
     }
 
     @Override
     public String getConversationIdByEmail(String userEmail) {
         Objects.requireNonNull(userEmail, "userId could not be null");
-        SlackClient slackClient = getSlackClient();
-        UsersInfoResponse usersInfoResponse = slackClient.lookupUserByEmail(UserEmailParams.builder()
-                .setEmail(userEmail)
-                .build()).join().unwrapOrElseThrow();
-        return getOpenedConversationId(slackClient, usersInfoResponse.getUser().getId());
+        SlackClient slackClient = null;
+        UsersInfoResponse usersInfoResponse;
+        try {
+            slackClient = getSlackClient();
+            usersInfoResponse = slackClient.lookupUserByEmail(UserEmailParams.builder()
+                    .setEmail(userEmail)
+                    .build()).join().unwrapOrElseThrow();
+           return getOpenedConversationId(slackClient, usersInfoResponse.getUser().getId());
+        } catch (Exception e) {
+            LOGGER.error("Message not sent", e);
+            return null;
+        } finally {
+            if(slackClient != null) {
+                returnSlackClient(slackClient);
+            }
+        }
     }
 
     @Override
     public String getConversationIdBySlackId(String userSlackId){
-        return getOpenedConversationId(getSlackClient(), userSlackId);
+        SlackClient slackClient = null;
+        try {
+            slackClient = getSlackClient();
+            return getOpenedConversationId(slackClient, userSlackId);
+        } catch (Exception e) {
+            LOGGER.error("Message not sent", e);
+            return null;
+        } finally {
+            if(slackClient != null) {
+                returnSlackClient(slackClient);
+            }
+        }
     }
 
     @Override
@@ -102,8 +152,12 @@ public class SlackResponderService implements ResponderService {
     public void sendFile(String fileName, String userEmail) {
         LOGGER.info("File sending {} .....", fileName);
         try {
+            String conversationId = getConversationIdByEmail(userEmail);
+            if (conversationId == null) {
+                throw new IllegalArgumentException("conversationIdWithUser could not be null");
+            }
             postFile(fileName, getConversationIdByEmail(userEmail));
-        } catch (ExecutionException | InterruptedException e) {
+        } catch (Exception e) {
             LOGGER.error("Error during file sending", e);
         }
     }
@@ -126,8 +180,7 @@ public class SlackResponderService implements ResponderService {
         }
     }
 
-    private void postFile(String fileName, String conversationId) throws ExecutionException,
-            InterruptedException {
+    private void postFile(String fileName, String conversationId) throws Exception {
         File file = new File(fileName);
         Request request = getBuilder("POST").setUrl("https://slack.com/api/files.upload")
                 .addQueryParam("channels", conversationId)
@@ -135,25 +188,33 @@ public class SlackResponderService implements ResponderService {
                         "Please *keep* this invoice for the next *three years*")
                 .addBodyPart(new FilePart("file", file))
                 .build();
-        Future<Response> responseFuture = getHttpClient().executeRequest(request);
-        Response response = responseFuture.get();
+
+        Response response = makeRequest(request);
         LOGGER.info("file upload response: {}", response.getResponseBody());
         LOGGER.info("file {} deleted {}", file.getName(), file.delete());
     }
 
-    private AsyncHttpClient getHttpClient(){
-        return Dsl.asyncHttpClient();
+    private Response makeRequest(Request request) throws Exception{
+        Future<Response> responseFuture;
+        AsyncHttpClient client = null;
+        try {
+            client = getHttpClient();
+            responseFuture = client.executeRequest(request);
+            return responseFuture.get();
+        } finally {
+            if (client != null) {
+                returnHttpClientToPool(client);
+            }
+        }
     }
 
     @Override
-    public SlackFileInfo getFileInfo(SlackEvent.FileMetaInfo fileMetaInfo)
-            throws ExecutionException, InterruptedException, JsonProcessingException {
-
+    public SlackFileInfo getFileInfo(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception {
         Request request = getBuilder("GET").setUrl("https://slack.com/api/files.info")
                 .addQueryParam("file", fileMetaInfo.getId())
                 .build();
-        Future<Response> responseFuture = getHttpClient().executeRequest(request);
-        Response response = responseFuture.get();
+
+        Response response = makeRequest(request);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return mapper.readValue(response.getResponseBody(), SlackFileInfo.class);
@@ -165,11 +226,13 @@ public class SlackResponderService implements ResponderService {
     }
 
     @Override
-    public void downloadFile(String fileName, SlackFileInfo slackFile) throws ExecutionException, InterruptedException {
+    public void downloadFile(String fileName, SlackFileInfo slackFile) {
         Request request = getBuilder("GET").setUrl(slackFile.getFileMetaInfo().getUrlPrivate())
                 .build();
+        AsyncHttpClient client = null;
         try (FileOutputStream stream = new FileOutputStream(fileName)) {
-            ListenableFuture<FileOutputStream> responseListenableFuture = getHttpClient().executeRequest(request,
+            client = getHttpClient();
+            ListenableFuture<FileOutputStream> responseListenableFuture = client.executeRequest(request,
                     new AsyncCompletionHandler<FileOutputStream>() {
 
                         @Override
@@ -187,9 +250,12 @@ public class SlackResponderService implements ResponderService {
 
             responseListenableFuture.get();
             LOGGER.info("File downloaded");
-
-        } catch (IOException e) {
-            LOGGER.error("error during file close", e);
+        } catch (Exception e) {
+            LOGGER.error("error during file close or download", e);
+        } finally {
+            if (client != null) {
+                returnHttpClientToPool(client);
+            }
         }
     }
 }
