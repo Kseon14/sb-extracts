@@ -21,6 +21,7 @@ public class HttpClientPool extends GenericObjectPool<AsyncHttpClient> {
         poolConfig.setJmxEnabled(true);
         poolConfig.setJmxNamePrefix("http-client-pool");
         poolConfig.setMaxTotal(maxTotal);
+        poolConfig.setTestOnBorrow(true);
         this.setConfig(poolConfig);
     }
 
