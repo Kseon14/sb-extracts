@@ -2,11 +2,9 @@ package com.am.sbextracts.pool;
 
 import com.hubspot.slack.client.SlackClient;
 import com.hubspot.slack.client.SlackClientRuntimeConfig;
-import com.hubspot.slack.client.SlackWebClient;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
-import org.asynchttpclient.AsyncHttpClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
