@@ -251,8 +251,8 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
         if (this.fontBold != null) {
             return fontBold;
         }
-        BaseFont bf = BaseFont.createFont("/font/clear-sans.regular.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-        this.fontBold = new Font(bf, 11, Font.BOLD);
+        BaseFont bf = BaseFont.createFont("/font/clear-sans.bold.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+        this.fontBold = new Font(bf, 11, Font.NORMAL);
         return fontBold;
     }
 
@@ -260,11 +260,5 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
         for (int i = 0; i < number; i++) {
             paragraph.add(new Paragraph(" "));
         }
-    }
-
-    private String getFormattedDate(String inputDate, DateTimeFormatter formatterInput,
-                                    DateTimeFormatter formatterOutput) {
-        LocalDate parsedDate = LocalDate.parse(inputDate, formatterInput);
-        return parsedDate.format(formatterOutput);
     }
 }
