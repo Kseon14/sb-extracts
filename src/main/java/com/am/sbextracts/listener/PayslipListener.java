@@ -47,12 +47,9 @@ public class PayslipListener implements ApplicationListener<Payslip> {
         if (payslip.getTotalGross() != null) {
             SlackResponderService.addIfNotNull(fieldList, "Current Payment Tax", payslip.getCurrentPaymentTax());
         }
-        SlackResponderService.addIfNotNull(fieldList, "Total Gross", payslip.getTotalGross());
+        SlackResponderService.addIfNotNull(fieldList, "Total Gross(with Bank fee)", payslip.getTotalGross());
 
-        String conversationIdWithUser = slackResponderService.getConversationIdByEmail(payslip.getUserEmail());
-        if (conversationIdWithUser == null) {
-            throw new IllegalArgumentException("conversationIdWithUser could not be null");
-        }
+        String conversationIdWithUser = slackResponderService.getConversationIdByEmail(payslip.getUserEmail(), payslip.getAuthorSlackId());
         slackResponderService.sendMessage(
                 ChatPostMessageParams.builder()
                         .setText(String.format("Payslip for %s", payslip.getFullName()))
@@ -66,7 +63,7 @@ public class PayslipListener implements ApplicationListener<Payslip> {
                                         payslip.getAuthorSlackId()))),
                                 Divider.builder().build()
                         ).addAttachments(Attachment.builder().setFields(fieldList).setColor("#3655c7").build())
-                        .build());
+                        .build(), payslip.getUserEmail(), payslip.getAuthorSlackId());
 
         slackResponderService.sendCompletionMessage(payslip.getAuthorSlackId(), payslip.getFullName(), payslip.getUserEmail());
     }

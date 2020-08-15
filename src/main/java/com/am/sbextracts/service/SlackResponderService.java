@@ -1,5 +1,7 @@
 package com.am.sbextracts.service;
 
+import com.am.sbextracts.exception.SbExceptionHandler;
+import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.pool.HttpClientPool;
 import com.am.sbextracts.pool.SlackClientPool;
 import com.am.sbextracts.vo.SlackEvent;
@@ -33,7 +35,6 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Future;
 
 @Service
@@ -54,12 +55,14 @@ public class SlackResponderService implements ResponderService {
 
     private SlackClient getSlackClient() throws Exception {
         SlackClient slackClient = slackClientPool.borrowObject();
-        LOGGER.info("Slack Client {}", slackClient.toString());
+        LOGGER.info("slack Client {}", slackClient.toString());
         return slackClient;
     }
 
     private void returnSlackClient(SlackClient client) {
-        slackClientPool.returnObject(client);
+        if (client != null) {
+            slackClientPool.returnObject(client);
+        }
     }
 
     private AsyncHttpClient getHttpClient() throws Exception {
@@ -68,29 +71,33 @@ public class SlackResponderService implements ResponderService {
         return client;
     }
 
-    private void returnHttpClientToPool(AsyncHttpClient client){
-        httpClientPool.returnObject(client);
+    private void returnHttpClientToPool(AsyncHttpClient client) {
+        if (client != null) {
+            httpClientPool.returnObject(client);
+        }
     }
 
     @Override
-    public void sendMessage(ChatPostMessageParams params) {
-        LOGGER.info("Message sending {} .....", params.getChannelId());
+    @SbExceptionHandler
+    public void sendMessage(ChatPostMessageParams params, String userEmail, String initiatorSlackId) {
+        LOGGER.info("Message sending {}...", params.getChannelId());
         SlackClient slackClient = null;
         try {
             slackClient = getSlackClient();
             slackClient.postMessage(params);
         } catch (Exception e) {
-            LOGGER.error("Message not sent", e);
+            throw new SbExtractsException("Message not sent to:", e, userEmail, initiatorSlackId);
         } finally {
-            if(slackClient != null) {
-                returnSlackClient(slackClient);
-            }
+            returnSlackClient(slackClient);
         }
     }
 
     @Override
-    public String getConversationIdByEmail(String userEmail) {
-        Objects.requireNonNull(userEmail, "userId could not be null");
+    @SbExceptionHandler
+    public String getConversationIdByEmail(String userEmail, String initiatorSlackId) {
+        if (userEmail == null) {
+            throw new SbExtractsException("userEmail could not be null", userEmail, initiatorSlackId);
+        }
         SlackClient slackClient = null;
         UsersInfoResponse usersInfoResponse;
         try {
@@ -98,74 +105,72 @@ public class SlackResponderService implements ResponderService {
             usersInfoResponse = slackClient.lookupUserByEmail(UserEmailParams.builder()
                     .setEmail(userEmail)
                     .build()).join().unwrapOrElseThrow();
-           return getOpenedConversationId(slackClient, usersInfoResponse.getUser().getId());
         } catch (Exception e) {
-            LOGGER.error("Message not sent", e);
-            return null;
+            throw new SbExtractsException("Couldn't get userInfo from slack", e, userEmail, initiatorSlackId);
         } finally {
-            if(slackClient != null) {
-                returnSlackClient(slackClient);
-            }
+            returnSlackClient(slackClient);
         }
+        return getOpenedConversationId(usersInfoResponse.getUser().getId(), initiatorSlackId, userEmail);
+    }
+
+    @SbExceptionHandler
+    private String getConversationIdBySlackId(String userSlackId, String initiatorSlackId) {
+        if (userSlackId == null) {
+            throw new SbExtractsException("userSlackId could not be null", "Initiator", "Initiator");
+        }
+        return getOpenedConversationId(userSlackId, initiatorSlackId, "Initiator");
     }
 
     @Override
-    public String getConversationIdBySlackId(String userSlackId){
-        SlackClient slackClient = null;
-        try {
-            slackClient = getSlackClient();
-            return getOpenedConversationId(slackClient, userSlackId);
-        } catch (Exception e) {
-            LOGGER.error("Message not sent", e);
-            return null;
-        } finally {
-            if(slackClient != null) {
-                returnSlackClient(slackClient);
-            }
-        }
-    }
-
-    @Override
-    public void sendCompletionMessage(String userSlackId, String userFullName, String userEmail) {
+    public void sendCompletionMessage(String initiatorSlackId, String userFullName, String userEmail) {
         sendMessage(ChatPostMessageParams.builder()
-                .setText("Processed....")
-                .setChannelId(getConversationIdBySlackId(userSlackId))
+                .setText("Processed...")
+                .setChannelId(getConversationIdBySlackId(initiatorSlackId, initiatorSlackId))
                 .addBlocks(Section.of(
                         Text.of(TextType.MARKDOWN, String.format("*Processed*: %s <%s>",
                                 userFullName,
                                 userEmail)))
-                ).build());
+                ).build(), userEmail, initiatorSlackId);
     }
 
     @Override
     public void sendErrorMessageToInitiator(String userSlackId, String shortText, String text) {
         sendMessage(ChatPostMessageParams.builder()
                 .setText(shortText)
-                .setChannelId(getConversationIdBySlackId(userSlackId))
-                .addBlocks(Section.of(Text.of(TextType.MARKDOWN, String.format("I see *Error*: %s \n ", text)))
-                ).build());
+                .setChannelId(getConversationIdBySlackId(userSlackId, userSlackId))
+                .addBlocks(Section.of(Text.of(TextType.MARKDOWN, String.format("`Error %s`", text)))
+                ).build(), "Initiator", userSlackId);
     }
 
     @Override
-    public void sendFile(String fileName, String userEmail) {
-        LOGGER.info("File sending {} .....", fileName);
-        try {
-            String conversationId = getConversationIdByEmail(userEmail);
-            if (conversationId == null) {
-                throw new IllegalArgumentException("conversationIdWithUser could not be null");
-            }
-            postFile(fileName, getConversationIdByEmail(userEmail));
-        } catch (Exception e) {
-            LOGGER.error("Error during file sending", e);
+    @SbExceptionHandler
+    public void sendFile(String fileName, String userEmail, String initiatorSlackId) {
+        LOGGER.info("File sending {}...", fileName);
+        String conversationId = getConversationIdByEmail(userEmail, initiatorSlackId);
+        if (conversationId == null) {
+            throw new SbExtractsException("conversationIdWithUser could not be null", userEmail, initiatorSlackId);
         }
+        postFile(fileName, conversationId, userEmail, initiatorSlackId);
     }
 
-    private static String getOpenedConversationId(SlackClient slackClient, String userId) {
+    @SbExceptionHandler
+    private String getOpenedConversationId(String userId, String initiatorSlackId, String userEmail) {
+        if (userId == null) {
+            throw new SbExtractsException("userId could not be null", userEmail, initiatorSlackId);
+        }
         LOGGER.info("Getting conversation ID for {}", userId);
-        ConversationsOpenResponse conversation = slackClient.openConversation(
-                ConversationOpenParams.builder()
-                        .addUsers(userId).setReturnIm(true).build()).join().unwrapOrElseThrow();
-        return conversation.getConversation().getId();
+        SlackClient slackClient = null;
+        try {
+            slackClient = getSlackClient();
+            ConversationsOpenResponse conversation = slackClient.openConversation(
+                    ConversationOpenParams.builder()
+                            .addUsers(userId).setReturnIm(true).build()).join().unwrapOrElseThrow();
+            return conversation.getConversation().getId();
+        } catch (Exception e) {
+            throw new SbExtractsException("Could not get opened conversation id", e, userEmail, initiatorSlackId);
+        } finally {
+            returnSlackClient(slackClient);
+        }
     }
 
     public static void addIfNotNull(List<Field> fields, String label, String value) {
@@ -178,7 +183,7 @@ public class SlackResponderService implements ResponderService {
         }
     }
 
-    private void postFile(String fileName, String conversationId) throws Exception {
+    private void postFile(String fileName, String conversationId, String userEmail, String initiatorSlackId) {
         File file = new File(fileName);
         Request request = getBuilder("POST").setUrl("https://slack.com/api/files.upload")
                 .addQueryParam("channels", conversationId)
@@ -187,12 +192,17 @@ public class SlackResponderService implements ResponderService {
                 .addBodyPart(new FilePart("file", file))
                 .build();
 
-        Response response = makeRequest(request);
+        Response response;
+        try {
+            response = makeRequest(request);
+        } catch (Exception e) {
+            throw new SbExtractsException("Could not send file", e, userEmail, initiatorSlackId);
+        }
         LOGGER.info("file upload response: {}", response.getResponseBody());
         LOGGER.info("file {} deleted {}", file.getName(), file.delete());
     }
 
-    private Response makeRequest(Request request) throws Exception{
+    private Response makeRequest(Request request) throws Exception {
         Future<Response> responseFuture;
         AsyncHttpClient client = null;
         try {
@@ -200,9 +210,7 @@ public class SlackResponderService implements ResponderService {
             responseFuture = client.executeRequest(request);
             return responseFuture.get();
         } finally {
-            if (client != null) {
-                returnHttpClientToPool(client);
-            }
+            returnHttpClientToPool(client);
         }
     }
 
@@ -218,12 +226,12 @@ public class SlackResponderService implements ResponderService {
         return mapper.readValue(response.getResponseBody(), SlackFileInfo.class);
     }
 
-    @Override
-    public RequestBuilder getBuilder(String httpMethod) {
+    private RequestBuilder getBuilder(String httpMethod) {
         return new RequestBuilder(httpMethod).addHeader("Authorization", "Bearer " + token);
     }
 
     @Override
+    @SbExceptionHandler
     public void downloadFile(String fileName, SlackFileInfo slackFile) {
         Request request = getBuilder("GET").setUrl(slackFile.getFileMetaInfo().getUrlPrivate())
                 .build();
@@ -249,11 +257,10 @@ public class SlackResponderService implements ResponderService {
             responseListenableFuture.get();
             LOGGER.info("File downloaded");
         } catch (Exception e) {
-            LOGGER.error("error during file close or download", e);
+            throw new SbExtractsException("error during file close or download", e, "Initiator",
+                    slackFile.getFileMetaInfo().getAuthor());
         } finally {
-            if (client != null) {
-                returnHttpClientToPool(client);
-            }
+            returnHttpClientToPool(client);
         }
     }
 }
