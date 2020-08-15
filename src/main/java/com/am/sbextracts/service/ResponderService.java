@@ -19,4 +19,7 @@ public interface ResponderService {
     void downloadFile(String fileName, SlackFileInfo slackFile);
 
     void sendErrorMessageToInitiator(String userSlackId, String shortText, String text);
-}
+
+    String getConversationIdBySlackId(String userSlackId, String initiatorSlackId);
+
+    }

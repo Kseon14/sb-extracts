@@ -30,20 +30,25 @@ import org.asynchttpclient.request.body.multipart.FilePart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
 import java.util.concurrent.Future;
 
-@Service
+@Service(value="slackService")
 public class SlackResponderService implements ResponderService {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(SlackResponderService.class);
 
     private final HttpClientPool httpClientPool;
     private final SlackClientPool slackClientPool;
+
+    @Resource(name="slackService")
+    SlackResponderService slackService;
 
     @Value("${slack.token}")
     private String token;
@@ -113,8 +118,12 @@ public class SlackResponderService implements ResponderService {
         return getOpenedConversationId(usersInfoResponse.getUser().getId(), initiatorSlackId, userEmail);
     }
 
+    @Override
     @SbExceptionHandler
-    private String getConversationIdBySlackId(String userSlackId, String initiatorSlackId) {
+    @Cacheable(value = "conversationIds", key = "#userSlackId",
+            condition="#userSlackId!=null", unless = "#result== null")
+    public String getConversationIdBySlackId(String userSlackId, String initiatorSlackId) {
+        LOGGER.info("getting conversationId by slackId...");
         if (userSlackId == null) {
             throw new SbExtractsException("userSlackId could not be null", "Initiator", "Initiator");
         }
@@ -125,7 +134,7 @@ public class SlackResponderService implements ResponderService {
     public void sendCompletionMessage(String initiatorSlackId, String userFullName, String userEmail) {
         sendMessage(ChatPostMessageParams.builder()
                 .setText("Processed...")
-                .setChannelId(getConversationIdBySlackId(initiatorSlackId, initiatorSlackId))
+                .setChannelId(slackService.getConversationIdBySlackId(initiatorSlackId, initiatorSlackId))
                 .addBlocks(Section.of(
                         Text.of(TextType.MARKDOWN, String.format("*Processed*: %s <%s>",
                                 userFullName,
@@ -137,7 +146,7 @@ public class SlackResponderService implements ResponderService {
     public void sendErrorMessageToInitiator(String userSlackId, String shortText, String text) {
         sendMessage(ChatPostMessageParams.builder()
                 .setText(shortText)
-                .setChannelId(getConversationIdBySlackId(userSlackId, userSlackId))
+                .setChannelId(slackService.getConversationIdBySlackId(userSlackId, userSlackId))
                 .addBlocks(Section.of(Text.of(TextType.MARKDOWN, String.format("`Error %s`", text)))
                 ).build(), "Initiator", userSlackId);
     }
