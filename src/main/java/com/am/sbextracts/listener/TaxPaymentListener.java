@@ -31,10 +31,8 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
     @Override
     public void onApplicationEvent(TaxPayment taxPayment) {
 
-        String conversationIdWithUser = slackResponderService.getConversationIdByEmail(taxPayment.getUserEmail());
-        if (conversationIdWithUser == null) {
-            throw new IllegalArgumentException("conversationIdWithUser could not be null");
-        }
+        String conversationIdWithUser = slackResponderService.getConversationIdByEmail(taxPayment.getUserEmail(),
+                taxPayment.getAuthorSlackId());
 
         List<Field> fieldList = new ArrayList<>();
         SlackResponderService.addIfNotNull(fieldList, "Сума", taxPayment.getAmount());
@@ -60,7 +58,7 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
                                         taxPayment.getAuthorSlackId()))),
                                 Divider.builder().build()
                         ).addAttachments(Attachment.builder().setFields(fieldList).setColor("#36a64f").build())
-                        .build());
+                        .build(), taxPayment.getUserEmail(), taxPayment.getAuthorSlackId());
 
         slackResponderService.sendCompletionMessage(taxPayment.getAuthorSlackId(), taxPayment.getFullName(), taxPayment.getUserEmail());
 

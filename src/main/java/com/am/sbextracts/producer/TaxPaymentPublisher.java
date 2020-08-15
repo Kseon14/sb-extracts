@@ -1,6 +1,7 @@
 package com.am.sbextracts.producer;
 
-import com.am.sbextracts.service.SlackResponderService;
+import com.am.sbextracts.exception.SbExceptionHandler;
+import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.service.XslxProcessorService;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.TaxPayment;
@@ -19,16 +20,14 @@ public class TaxPaymentPublisher implements Publisher {
     private final Logger LOGGER = LoggerFactory.getLogger(TaxPaymentPublisher.class);
 
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final SlackResponderService slackResponderService;
 
     @Autowired
-    public TaxPaymentPublisher(ApplicationEventPublisher applicationEventPublisher,
-                               SlackResponderService slackResponderService) {
+    public TaxPaymentPublisher(ApplicationEventPublisher applicationEventPublisher) {
         this.applicationEventPublisher = applicationEventPublisher;
-        this.slackResponderService = slackResponderService;
     }
 
     @Override
+    @SbExceptionHandler
     public void produce(XSSFWorkbook workbook, SlackEvent.FileMetaInfo fileMetaInfo) {
         XSSFSheet sheet = workbook.getSheetAt(0);
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
@@ -57,8 +56,7 @@ public class TaxPaymentPublisher implements Publisher {
                 applicationEventPublisher.publishEvent(taxPayment);
             }
             } catch (UnsupportedOperationException e) {
-                slackResponderService.sendErrorMessageToInitiator(fileMetaInfo.getAuthor(),
-                        "Error during processing", e.getMessage());
+                throw new SbExtractsException("Error during processing", e, "not known yet", fileMetaInfo.getAuthor());
             }
         }
     }
