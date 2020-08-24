@@ -2,7 +2,6 @@ package com.am.sbextracts.producer;
 
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
-import com.am.sbextracts.service.XslxProcessorService;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.TaxPayment;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
@@ -36,21 +35,21 @@ public class TaxPaymentPublisher implements Publisher {
                 continue;
             }
             try {
-            String firstCell = XslxProcessorService.getCell(row, "A", evaluator);
+            String firstCell = XlsxUtil.getCell(row, "A", evaluator);
             if (firstCell != null) {
                 TaxPayment taxPayment = new TaxPayment(this);
                 taxPayment.setTaxCode(firstCell);
-                taxPayment.setFullName(XslxProcessorService.getCell(row, "B", evaluator));
-                taxPayment.setAmount(XslxProcessorService.getCell(row, "C", evaluator));
-                taxPayment.setBankName(XslxProcessorService.getCell(row, "D", evaluator));
-                taxPayment.setMfo(XslxProcessorService.getCell(row, "E", evaluator));
-                taxPayment.setReceiver(XslxProcessorService.getCell(row, "F", evaluator));
-                taxPayment.setAccount(XslxProcessorService.getCell(row, "G", evaluator));
-                taxPayment.setCode(XslxProcessorService.getCell(row, "H", evaluator));
-                taxPayment.setPurposeOfPayment(XslxProcessorService.getCell(row, "I", evaluator));
-                taxPayment.setUserEmail(XslxProcessorService.getCell(row, "J", evaluator));
-                taxPayment.setDueDate(XslxProcessorService.getDateFromCell(row, "K"));
-                taxPayment.setTaxType(XslxProcessorService.getCell(row, "L", evaluator));
+                taxPayment.setFullName(XlsxUtil.getCell(row, "B", evaluator));
+                taxPayment.setAmount(XlsxUtil.getCell(row, "C", evaluator));
+                taxPayment.setBankName(XlsxUtil.getCell(row, "D", evaluator));
+                taxPayment.setMfo(XlsxUtil.getCell(row, "E", evaluator));
+                taxPayment.setReceiver(XlsxUtil.getCell(row, "F", evaluator));
+                taxPayment.setAccount(XlsxUtil.getCell(row, "G", evaluator));
+                taxPayment.setCode(XlsxUtil.getCell(row, "H", evaluator));
+                taxPayment.setPurposeOfPayment(XlsxUtil.getCell(row, "I", evaluator));
+                taxPayment.setUserEmail(XlsxUtil.getCell(row, "J", evaluator));
+                taxPayment.setDueDate(XlsxUtil.getDateFromCell(row, "K"));
+                taxPayment.setTaxType(XlsxUtil.getCell(row, "L", evaluator));
                 taxPayment.setAuthorSlackId(fileMetaInfo.getAuthor());
                 LOGGER.info("Tax payment: {}", taxPayment);
                 applicationEventPublisher.publishEvent(taxPayment);

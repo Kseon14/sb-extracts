@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
 import static com.am.sbextracts.vo.SlackEvent.Event.Type.FILE_SHARE;
 import static com.am.sbextracts.vo.SlackEvent.Event.Type.MESSAGE;
 import static com.am.sbextracts.vo.SlackEvent.Type.EVENT_CALLBACK;
@@ -28,7 +31,7 @@ public class SlackEventController {
     private String verificationToken;
 
     @Autowired
-    public SlackEventController(FileDownloader downloader) {
+    public SlackEventController(final FileDownloader downloader) {
         this.downloader = downloader;
     }
 
@@ -36,17 +39,17 @@ public class SlackEventController {
     public Object eventHandler(@RequestBody SlackEvent slackEvent) {
 
         LOGGER.info("Request content {}", slackEvent);
-        if (!slackEvent.getToken().equals(verificationToken)) {
+        if (isTokenValid.test(slackEvent.getToken())) {
             throw new IllegalArgumentException();
         }
         if (URL_VERIFICATION == slackEvent.getType()) {
             return slackEvent.getChallenge();
         }
-        if (EVENT_CALLBACK == slackEvent.getType()) {
-            SlackEvent.Event event = slackEvent.getEvent();
-            if (MESSAGE == event.getType() && FILE_SHARE == event.getSubtype()) {
-                downloader.downloadFile(event.getFileMetaInfos());
-            }
+
+        Consumer<SlackEvent> slackEventConsumer = event -> downloader.downloadFile(event.getEvent().getFileMetaInfos());
+
+        if (isEventCallback.and(isFileShare).test(slackEvent)) {
+            slackEventConsumer.accept(slackEvent);
         }
         return null;
     }
@@ -55,4 +58,9 @@ public class SlackEventController {
     public SlackResponse ping() {
         return new SlackResponse("I'm here");
     }
+
+    private final Predicate<String> isTokenValid = token -> !token.equals(verificationToken);
+    private final Predicate<SlackEvent> isEventCallback = event -> EVENT_CALLBACK == event.getType();
+    private final Predicate<SlackEvent> isFileShare = event -> MESSAGE == event.getEvent().getType() && FILE_SHARE == event.getEvent().getSubtype();
+
 }

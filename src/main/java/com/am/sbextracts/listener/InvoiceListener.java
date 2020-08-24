@@ -45,7 +45,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
         DateTimeFormatter formatterOutputUkr = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         DateTimeFormatter formatterMonthYear = DateTimeFormatter.ofPattern("M-yyyy");
         DateTimeFormatter formatterMonthFullYearEng = DateTimeFormatter.ofPattern("MMMM yyyy");
-        DateTimeFormatter formatterMonthFullYearUkr = DateTimeFormatter.ofPattern("MMMM yyyy", new Locale("uk"));
+        DateTimeFormatter formatterMonthFullYearUkr = DateTimeFormatter.ofPattern("LLLL yyyy", new Locale("uk"));
 
         Document document = null;
         FileOutputStream fileOutputStream = null;
@@ -58,7 +58,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
             try {
                 PdfWriter.getInstance(document, fileOutputStream);
             } catch (DocumentException e) {
-                LOGGER.error("Error during document creation", e);
+                LOGGER.error("Error during document instance obtaining", e);
                 return;
             }
             document.open();

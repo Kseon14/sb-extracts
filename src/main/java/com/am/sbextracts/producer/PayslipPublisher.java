@@ -2,7 +2,6 @@ package com.am.sbextracts.producer;
 
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
-import com.am.sbextracts.service.XslxProcessorService;
 import com.am.sbextracts.vo.Payslip;
 import com.am.sbextracts.vo.SlackEvent;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
@@ -37,20 +36,20 @@ public class PayslipPublisher implements Publisher {
                 continue;
             }
             try {
-                String firstCell = XslxProcessorService.getCell(row, "A", evaluator);
+                String firstCell = XlsxUtil.getCell(row, "A", evaluator);
                 if (firstCell != null) {
                     Payslip payslip = new Payslip(this);
                     payslip.setFullName(firstCell);
-                    payslip.setContractRate(XslxProcessorService.getCell(row, "B", evaluator));
-                    payslip.setOtherIncome(XslxProcessorService.getCell(row, "C", evaluator));
-                    payslip.setSocialTax(XslxProcessorService.getCell(row, "D", evaluator));
-                    payslip.setInsurance(XslxProcessorService.getCell(row, "E", evaluator));
-                    payslip.setRent(XslxProcessorService.getCell(row, "F", evaluator));
-                    payslip.setCurrencyRate(XslxProcessorService.getCell(row, "G", evaluator));
-                    payslip.setTotalNet(XslxProcessorService.getCell(row, "H", evaluator));
-                    payslip.setCurrentPaymentTax(XslxProcessorService.getCell(row, "I", evaluator));
-                    payslip.setTotalGross(XslxProcessorService.getCell(row, "J", evaluator));
-                    payslip.setUserEmail(XslxProcessorService.getCell(row, "K", evaluator));
+                    payslip.setContractRate(XlsxUtil.getCell(row, "B", evaluator));
+                    payslip.setOtherIncome(XlsxUtil.getCell(row, "C", evaluator));
+                    payslip.setSocialTax(XlsxUtil.getCell(row, "D", evaluator));
+                    payslip.setInsurance(XlsxUtil.getCell(row, "E", evaluator));
+                    payslip.setRent(XlsxUtil.getCell(row, "F", evaluator));
+                    payslip.setCurrencyRate(XlsxUtil.getCell(row, "G", evaluator));
+                    payslip.setTotalNet(XlsxUtil.getCell(row, "H", evaluator));
+                    payslip.setCurrentPaymentTax(XlsxUtil.getCell(row, "I", evaluator));
+                    payslip.setTotalGross(XlsxUtil.getCell(row, "J", evaluator));
+                    payslip.setUserEmail(XlsxUtil.getCell(row, "K", evaluator));
                     payslip.setAuthorSlackId(fileMetaInfo.getAuthor());
                     LOGGER.info("Payslip: {}", payslip);
                     applicationEventPublisher.publishEvent(payslip);
