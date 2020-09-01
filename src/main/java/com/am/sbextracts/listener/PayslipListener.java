@@ -67,6 +67,4 @@ public class PayslipListener implements ApplicationListener<Payslip> {
 
         slackResponderService.sendCompletionMessage(payslip.getAuthorSlackId(), payslip.getFullName(), payslip.getUserEmail());
     }
-
-
 }

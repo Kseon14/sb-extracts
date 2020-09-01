@@ -24,7 +24,7 @@ import static com.am.sbextracts.vo.SlackEvent.Type.URL_VERIFICATION;
 @RequestMapping("/api/events")
 public class SlackEventController {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(SlackEventController.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(SlackEventController.class);
 
     private final FileDownloader downloader;
     @Value("${slack.verification.token}")

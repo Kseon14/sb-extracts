@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PayslipPublisher implements Publisher {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(PayslipPublisher.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(PayslipPublisher.class);
 
     private final ApplicationEventPublisher applicationEventPublisher;
 

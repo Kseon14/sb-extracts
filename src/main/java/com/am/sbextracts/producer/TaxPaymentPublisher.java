@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TaxPaymentPublisher implements Publisher {
-    private final Logger LOGGER = LoggerFactory.getLogger(TaxPaymentPublisher.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(TaxPaymentPublisher.class);
 
     private final ApplicationEventPublisher applicationEventPublisher;
 
