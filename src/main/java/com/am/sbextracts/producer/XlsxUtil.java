@@ -1,49 +1,22 @@
-package com.am.sbextracts.service;
+package com.am.sbextracts.producer;
 
-import com.am.sbextracts.producer.ProducerFactory;
-import com.am.sbextracts.vo.SlackEvent;
 import org.apache.poi.ss.format.CellGeneralFormatter;
 import org.apache.poi.ss.format.CellNumberFormatter;
-import org.apache.poi.ss.usermodel.BuiltinFormats;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.FormulaEvaluator;
-import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Date;
 import java.util.DuplicateFormatFlagsException;
 import java.util.Locale;
 
-@Service
-public class XslxProcessorService implements ProcessorService {
+public final class XlsxUtil {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(XslxProcessorService.class);
-    private final ProducerFactory producerFactory;
-
-    public XslxProcessorService(ProducerFactory producerFactory) {
-        this.producerFactory = producerFactory;
-    }
-
-    @Override
-    public void process(InputStream inputStream, SlackEvent.FileMetaInfo fileMetaInfo) throws IOException {
-        LOGGER.info("File start processing");
-        try (XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
-            producerFactory.getProducer(fileMetaInfo).produce(workbook, fileMetaInfo);
-        } finally {
-            inputStream.close();
-        }
+    private XlsxUtil(){
     }
 
     public static String getCell(Row row, String reference, FormulaEvaluator evaluator) {
         Cell cell = row.getCell(CellReference.convertColStringToIndex(reference));
-        if (cell == null) {
+        if (cell == null || cell.getCellType() == CellType.BLANK) {
             return null;
         }
         if (cell.getCellType() == CellType.FORMULA) {
@@ -55,8 +28,6 @@ public class XslxProcessorService implements ProcessorService {
                 case STRING:
                     return String.valueOf(cell.getStringCellValue());
             }
-        } else if (cell.getCellType() == CellType.BLANK) {
-            return null;
         } else {
             switch (cell.getCellType()) {
                 case STRING:
@@ -65,8 +36,8 @@ public class XslxProcessorService implements ProcessorService {
                     return getFormattedNumericCell(cell);
             }
         }
-        throw new UnsupportedOperationException(String.format("in R[%s]C[%s], cell type not supported %s",
-                cell.getRowIndex(), cell.getColumnIndex(),
+        throw new UnsupportedOperationException(String.format("in [%s], cell type not supported %s",
+                cell.getAddress(),
                 cell.getCellStyle().getDataFormatString()));
     }
 

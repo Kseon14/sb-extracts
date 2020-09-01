@@ -19,7 +19,7 @@ import java.util.concurrent.Executors;
 @Service
 public class SlackFileDownloader implements FileDownloader {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(SlackFileDownloader.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(SlackFileDownloader.class);
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
     private final ProcessorService processorService;

@@ -17,7 +17,9 @@ public class ProducerFactory {
     private final TaxPaymentPublisher taxPaymentPublisher;
 
     @Autowired
-    public ProducerFactory(InvoicePublisher invoicePublisher, PayslipPublisher payslipPublisher, TaxPaymentPublisher taxPaymentPublisher) {
+    public ProducerFactory(InvoicePublisher invoicePublisher,
+                           PayslipPublisher payslipPublisher,
+                           TaxPaymentPublisher taxPaymentPublisher) {
         this.invoicePublisher = invoicePublisher;
         this.payslipPublisher = payslipPublisher;
         this.taxPaymentPublisher = taxPaymentPublisher;
@@ -33,13 +35,10 @@ public class ProducerFactory {
 
     public Publisher getProducer(SlackEvent.FileMetaInfo fileMetaInfo) {
         Type type = Type.getByFileName(fileMetaInfo.getName());
-        if (type == null) {
-            throw new IllegalArgumentException("Unknown purpose:" + fileMetaInfo.getName());
-        }
         return getPublishersMap().get(type);
     }
 
-    public enum Type {
+    private enum Type {
         TAX_PAYMENT("tp"),
         INVOICE("in") ,
         PAYSLIP("ps");
@@ -47,7 +46,9 @@ public class ProducerFactory {
         public static Type getByFileName(String fileName){
             String suffix = fileName.split("-")[0];
             return Arrays.stream(Type.values())
-                    .filter(t -> StringUtils.equalsIgnoreCase(suffix, t.suffix)).findFirst().orElse(null);
+                    .filter(t -> StringUtils.equalsIgnoreCase(suffix, t.suffix))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown purpose:" + suffix));
         }
 
         private final String suffix;

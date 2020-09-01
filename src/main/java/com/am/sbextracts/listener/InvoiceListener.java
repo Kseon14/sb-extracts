@@ -29,7 +29,14 @@ import java.util.Locale;
 @Component
 public class InvoiceListener implements ApplicationListener<Invoice> {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(InvoiceListener.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(InvoiceListener.class);
+
+    private final DateTimeFormatter formatterOutputEng = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+    private final DateTimeFormatter formatterOutputUkr = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private final DateTimeFormatter formatterMonthYear = DateTimeFormatter.ofPattern("M-yyyy");
+    private final DateTimeFormatter formatterMonthFullYearEng = DateTimeFormatter.ofPattern("MMMM yyyy");
+    private final DateTimeFormatter formatterMonthFullYearUkr = DateTimeFormatter.ofPattern("LLLL yyyy", new Locale("uk"));
+
     private final ResponderService slackResponderService;
     private Font font;
     private Font fontBold;
@@ -41,12 +48,6 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
 
     @Override
     public void onApplicationEvent(Invoice invoice) {
-        DateTimeFormatter formatterOutputEng = DateTimeFormatter.ofPattern("MM/dd/yyyy");
-        DateTimeFormatter formatterOutputUkr = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-        DateTimeFormatter formatterMonthYear = DateTimeFormatter.ofPattern("M-yyyy");
-        DateTimeFormatter formatterMonthFullYearEng = DateTimeFormatter.ofPattern("MMMM yyyy");
-        DateTimeFormatter formatterMonthFullYearUkr = DateTimeFormatter.ofPattern("MMMM yyyy", new Locale("uk"));
-
         Document document = null;
         FileOutputStream fileOutputStream = null;
         String fileName = String.format("ML-%s_%s.pdf",
@@ -58,7 +59,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
             try {
                 PdfWriter.getInstance(document, fileOutputStream);
             } catch (DocumentException e) {
-                LOGGER.error("Error during document creation", e);
+                LOGGER.error("Error during document instance obtaining", e);
                 return;
             }
             document.open();

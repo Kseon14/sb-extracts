@@ -19,7 +19,7 @@ import java.io.IOException;
 @RequestMapping("/api/files")
 public class InputFileController {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(InputFileController.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(InputFileController.class);
 
     @Value("${slack.verification.token}")
     private String verificationToken;
