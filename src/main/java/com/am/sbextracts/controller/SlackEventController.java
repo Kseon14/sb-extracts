@@ -1,5 +1,6 @@
 package com.am.sbextracts.controller;
 
+import com.am.sbextracts.publisher.PublisherFactory;
 import com.am.sbextracts.service.FileDownloader;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackResponse;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -57,6 +59,11 @@ public class SlackEventController {
     @PostMapping("ping")
     public SlackResponse ping() {
         return new SlackResponse("I'm here");
+    }
+
+    @PostMapping("file_types")
+    public SlackResponse getFileTypeInfo() {
+        return new SlackResponse(Arrays.toString(PublisherFactory.Type.values()));
     }
 
     private final Predicate<String> isTokenValid = token -> !token.equals(verificationToken);

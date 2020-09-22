@@ -1,4 +1,4 @@
-package com.am.sbextracts.producer;
+package com.am.sbextracts.publisher;
 
 import org.apache.poi.ss.format.CellGeneralFormatter;
 import org.apache.poi.ss.format.CellNumberFormatter;
