@@ -1,7 +1,9 @@
-package com.am.sbextracts.producer;
+package com.am.sbextracts.publisher;
 
 import com.am.sbextracts.vo.SlackEvent;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -10,26 +12,30 @@ import java.util.EnumMap;
 import java.util.Map;
 
 @Component
-public class ProducerFactory {
+public class PublisherFactory {
 
     private final InvoicePublisher invoicePublisher;
     private final PayslipPublisher payslipPublisher;
     private final TaxPaymentPublisher taxPaymentPublisher;
+    private final BMessagePublisher bMessagePublisher;
 
     @Autowired
-    public ProducerFactory(InvoicePublisher invoicePublisher,
-                           PayslipPublisher payslipPublisher,
-                           TaxPaymentPublisher taxPaymentPublisher) {
+    public PublisherFactory(InvoicePublisher invoicePublisher,
+                            PayslipPublisher payslipPublisher,
+                            TaxPaymentPublisher taxPaymentPublisher,
+                            BMessagePublisher bMessagePublisher) {
         this.invoicePublisher = invoicePublisher;
         this.payslipPublisher = payslipPublisher;
         this.taxPaymentPublisher = taxPaymentPublisher;
+        this.bMessagePublisher = bMessagePublisher;
     }
 
     public Map<Type, Publisher> getPublishersMap(){
         Map<Type, Publisher> publisherMap = new EnumMap<>(Type.class);
-        publisherMap.put(ProducerFactory.Type.INVOICE, invoicePublisher);
-        publisherMap.put(ProducerFactory.Type.TAX_PAYMENT, taxPaymentPublisher);
-        publisherMap.put(ProducerFactory.Type.PAYSLIP, payslipPublisher);
+        publisherMap.put(Type.INVOICE, invoicePublisher);
+        publisherMap.put(Type.TAX_PAYMENT, taxPaymentPublisher);
+        publisherMap.put(Type.PAYSLIP, payslipPublisher);
+        publisherMap.put(Type.BROADCAST_MESSAGE, bMessagePublisher);
         return publisherMap;
     }
 
@@ -38,10 +44,11 @@ public class ProducerFactory {
         return getPublishersMap().get(type);
     }
 
-    private enum Type {
+    public enum Type {
         TAX_PAYMENT("tp"),
         INVOICE("in") ,
-        PAYSLIP("ps");
+        PAYSLIP("ps"),
+        BROADCAST_MESSAGE("bm");
 
         public static Type getByFileName(String fileName){
             String suffix = fileName.split("-")[0];
@@ -55,6 +62,14 @@ public class ProducerFactory {
 
         Type(String suffix) {
             this.suffix = suffix;
+        }
+
+        @Override
+        public String toString(){
+            return new ToStringBuilder(this, ToStringStyle.NO_CLASS_NAME_STYLE)
+                    .append("name", this.name())
+                    .append("suffix", this.suffix)
+                    .toString();
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.am.sbextracts.service;
 
-import com.am.sbextracts.producer.ProducerFactory;
+import com.am.sbextracts.publisher.PublisherFactory;
 import com.am.sbextracts.vo.SlackEvent;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
@@ -14,17 +14,17 @@ import java.io.InputStream;
 public class XlsxProcessorService implements ProcessorService {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(XlsxProcessorService.class);
-    private final ProducerFactory producerFactory;
+    private final PublisherFactory publisherFactory;
 
-    public XlsxProcessorService(ProducerFactory producerFactory) {
-        this.producerFactory = producerFactory;
+    public XlsxProcessorService(PublisherFactory publisherFactory) {
+        this.publisherFactory = publisherFactory;
     }
 
     @Override
     public void process(InputStream inputStream, SlackEvent.FileMetaInfo fileMetaInfo) throws IOException {
         LOGGER.info("File start processing");
         try (XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
-            producerFactory.getProducer(fileMetaInfo).produce(workbook, fileMetaInfo);
+            publisherFactory.getProducer(fileMetaInfo).produce(workbook, fileMetaInfo);
         } finally {
             inputStream.close();
         }

@@ -1,4 +1,4 @@
-package com.am.sbextracts.producer;
+package com.am.sbextracts.publisher;
 
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
