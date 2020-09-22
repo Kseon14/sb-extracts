@@ -1,4 +1,4 @@
-package com.am.sbextracts.producer;
+package com.am.sbextracts.publisher;
 
 import com.am.sbextracts.vo.SlackEvent;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
