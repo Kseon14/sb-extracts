@@ -42,16 +42,16 @@ public class BMessagePublisher implements Publisher {
             if (row.getRowNum() == 0) {
                 continue;
             }
-            if (row.getRowNum() == 1) {
-                text = XlsxUtil.getCell(row, "C", evaluator);
-                date = XlsxUtil.getDateFromCell(row, "D");
-                if (StringUtils.isBlank(text) || Objects.isNull(date)){
-                    throw new SbExtractsException("message or date are empty", "not known yet", fileMetaInfo.getAuthor());
-                }
-            }
             try {
                 String firstCell = XlsxUtil.getCell(row, "A", evaluator);
                 if (firstCell != null) {
+                    if (row.getRowNum() == 1) {
+                        text = XlsxUtil.getCell(row, "C", evaluator);
+                        date = XlsxUtil.getDateFromCell(row, "D");
+                        if (StringUtils.isBlank(text) || Objects.isNull(date)){
+                            throw new SbExtractsException("message or date are empty", "not known yet", fileMetaInfo.getAuthor());
+                        }
+                    }
                     BMessage message = new BMessage(this);
                     message.setFullName(firstCell);
                     message.setUserEmail(XlsxUtil.getCell(row, "B", evaluator));
@@ -59,7 +59,7 @@ public class BMessagePublisher implements Publisher {
                     message.setText(text);
 
                     message.setAuthorSlackId(fileMetaInfo.getAuthor());
-                    LOGGER.info("Invoice: {}", message);
+                    LOGGER.info("Broadcast message: {}", message);
                     applicationEventPublisher.publishEvent(message);
                 }
             } catch (UnsupportedOperationException e) {
