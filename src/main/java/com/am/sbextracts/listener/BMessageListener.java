@@ -34,15 +34,14 @@ public class BMessageListener implements ApplicationListener<BMessage> {
                         .setText("Потрiбна инфа з твого боку...")
                         .setChannelId(conversationIdWithUser)
                         .addBlocks(Section.of(
-                                Text.of(TextType.MARKDOWN, String.format(":wave: Привіт, %s!\n"
+                                Text.of(TextType.MARKDOWN, String.format("Привіт, %s!\n"
                                                 + "%s \n"
-                                                + ":date: Будь ласка, зроби це раніше *%s* \n"
-                                                + "У випадку виникнення питань, зверніться до <@%s> :paw_prints:",
+                                                + "Це все потрібно надіслати :point_right: <@%s> :paw_prints:\n"
+                                                + ":date: Будь ласка, зроби це раніше *%s*",
                                         message.getFullName(),
                                         message.getText(),
-                                        new SimpleDateFormat("dd MMM").format(message.getDueDate()),
-                                        message.getAuthorSlackId()))),
-                                Divider.builder().build()
+                                        message.getAuthorSlackId(),
+                                        new SimpleDateFormat("dd MMM").format(message.getDueDate()))))
                         ).build(), message.getUserEmail(), message.getAuthorSlackId());
 
         slackResponderService.sendCompletionMessage(message.getAuthorSlackId(), message.getFullName(), message.getUserEmail());
