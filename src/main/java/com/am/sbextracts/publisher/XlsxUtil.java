@@ -108,7 +108,7 @@ public final class XlsxUtil {
                 if (getCell(row, configCell.get(0), evaluator) != null) {
                     for(String column : configCell) {
                         if (StringUtils.isBlank(getCell(row, column, evaluator))){
-                            throw new UnsupportedOperationException(String.format("in [%s][%s] cell is Empty",
+                            throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
                                     column, row.getRowNum() + 1));
                         }
                     }
@@ -118,7 +118,7 @@ public final class XlsxUtil {
                 if (getDateFromCell(row, dateCell.get(0)) != null) {
                     for (String column : configCell) {
                         if (getDateFromCell(row, column) == null) {
-                            throw new UnsupportedOperationException(String.format("in [%s][%s] cell is Empty",
+                            throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
                                     column, row.getRowNum() + 1));
                         }
                     }
