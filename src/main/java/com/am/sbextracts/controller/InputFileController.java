@@ -3,9 +3,9 @@ package com.am.sbextracts.controller;
 import com.am.sbextracts.service.ProcessorService;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackResponse;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -17,6 +17,7 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/files")
+@RequiredArgsConstructor
 public class InputFileController {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(InputFileController.class);
@@ -25,11 +26,6 @@ public class InputFileController {
     private String verificationToken;
 
     private final ProcessorService processorService;
-
-    @Autowired
-    public InputFileController(final ProcessorService processorService) {
-        this.processorService = processorService;
-    }
 
     @PostMapping
     public SlackResponse handleFile(@RequestHeader("slack-token") String token,
