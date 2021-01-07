@@ -4,7 +4,6 @@ import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.vo.BMessage;
 import com.am.sbextracts.vo.SlackEvent;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
@@ -38,6 +37,7 @@ public class BMessagePublisher implements Publisher {
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
         Date date = null;
         String text = null;
+        XlsxUtil.validateFile(PublisherFactory.Type.BROADCAST_MESSAGE, workbook);
         for (Row row : sheet) {
             if (row.getRowNum() == 0) {
                 continue;

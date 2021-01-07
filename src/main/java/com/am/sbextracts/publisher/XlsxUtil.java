@@ -1,17 +1,26 @@
 package com.am.sbextracts.publisher;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.poi.ss.format.CellGeneralFormatter;
 import org.apache.poi.ss.format.CellNumberFormatter;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.BuiltinFormats;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.yaml.snakeyaml.Yaml;
 
+import java.io.InputStream;
 import java.util.Date;
 import java.util.DuplicateFormatFlagsException;
+import java.util.List;
 import java.util.Locale;
 
 public final class XlsxUtil {
 
-    private XlsxUtil(){
+    private XlsxUtil() {
     }
 
     public static String getCell(Row row, String reference, FormulaEvaluator evaluator) {
@@ -72,6 +81,42 @@ public final class XlsxUtil {
         if (cell == null) {
             return null;
         }
-        return cell.getDateCellValue();
+        try {
+            return cell.getDateCellValue();
+        } catch (IllegalStateException e) {
+            throw new UnsupportedOperationException(String.format("in [%s], cell type not supported %s",
+                    cell.getAddress(),
+                    cell.getCellStyle().getDataFormatString()));
+        }
+    }
+
+    public static void validateFile(PublisherFactory.Type type, XSSFWorkbook workbook) {
+        InputStream inputStream = XlsxUtil.class.getClassLoader().getResourceAsStream("./column-config/"
+                + getFileName(type) + ".yaml");
+        FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+        ColumnConfig columnConfig = new Yaml().loadAs(inputStream, ColumnConfig.class);
+
+        List<String> configCell = columnConfig.getCell();
+        List<String> dateCell = columnConfig.getDateCell();
+
+        for (Row row : workbook.getSheetAt(0)) {
+            if (row.getRowNum() == 0) {
+                continue;
+            }
+            if (CollectionUtils.isNotEmpty(configCell)) {
+                if (getCell(row, configCell.get(0), evaluator) != null) {
+                    configCell.forEach(c -> getCell(row, c, evaluator));
+                }
+            }
+            if (CollectionUtils.isNotEmpty(dateCell)) {
+                if (getDateFromCell(row, dateCell.get(0)) != null) {
+                    dateCell.forEach(c -> getDateFromCell(row, c));
+                }
+            }
+        }
+    }
+
+    private static String getFileName(PublisherFactory.Type type) {
+        return type.name().toLowerCase(Locale.ENGLISH).replace("_", "-");
     }
 }

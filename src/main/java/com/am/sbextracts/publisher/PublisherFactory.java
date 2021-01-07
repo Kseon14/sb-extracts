@@ -1,10 +1,10 @@
 package com.am.sbextracts.publisher;
 
 import com.am.sbextracts.vo.SlackEvent;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -12,6 +12,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class PublisherFactory {
 
     private final InvoicePublisher invoicePublisher;
@@ -19,18 +20,7 @@ public class PublisherFactory {
     private final TaxPaymentPublisher taxPaymentPublisher;
     private final BMessagePublisher bMessagePublisher;
 
-    @Autowired
-    public PublisherFactory(InvoicePublisher invoicePublisher,
-                            PayslipPublisher payslipPublisher,
-                            TaxPaymentPublisher taxPaymentPublisher,
-                            BMessagePublisher bMessagePublisher) {
-        this.invoicePublisher = invoicePublisher;
-        this.payslipPublisher = payslipPublisher;
-        this.taxPaymentPublisher = taxPaymentPublisher;
-        this.bMessagePublisher = bMessagePublisher;
-    }
-
-    public Map<Type, Publisher> getPublishersMap(){
+    private Map<Type, Publisher> getPublishersMap(){
         Map<Type, Publisher> publisherMap = new EnumMap<>(Type.class);
         publisherMap.put(Type.INVOICE, invoicePublisher);
         publisherMap.put(Type.TAX_PAYMENT, taxPaymentPublisher);

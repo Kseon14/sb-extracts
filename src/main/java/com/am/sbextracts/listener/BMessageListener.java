@@ -3,25 +3,20 @@ package com.am.sbextracts.listener;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.vo.BMessage;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
-import com.hubspot.slack.client.models.blocks.Divider;
 import com.hubspot.slack.client.models.blocks.Section;
 import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
 
 @Component
+@RequiredArgsConstructor
 public class BMessageListener implements ApplicationListener<BMessage> {
 
     private final ResponderService slackResponderService;
-
-    @Autowired
-    public BMessageListener(ResponderService slackResponderService) {
-        this.slackResponderService = slackResponderService;
-    }
 
     @Override
     public void onApplicationEvent(BMessage message) {
