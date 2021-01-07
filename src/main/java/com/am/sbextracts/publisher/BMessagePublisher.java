@@ -4,7 +4,6 @@ import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.vo.BMessage;
 import com.am.sbextracts.vo.SlackEvent;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
@@ -38,17 +37,19 @@ public class BMessagePublisher implements Publisher {
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
         Date date = null;
         String text = null;
-        for (Row row : sheet) {
-            if (row.getRowNum() == 0) {
-                continue;
-            }
-            try {
+        try {
+            XlsxUtil.validateFile(PublisherFactory.Type.BROADCAST_MESSAGE, workbook);
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) {
+                    continue;
+                }
+
                 String firstCell = XlsxUtil.getCell(row, "A", evaluator);
                 if (firstCell != null) {
                     if (row.getRowNum() == 1) {
                         text = XlsxUtil.getCell(row, "C", evaluator);
                         date = XlsxUtil.getDateFromCell(row, "D");
-                        if (StringUtils.isBlank(text) || Objects.isNull(date)){
+                        if (StringUtils.isBlank(text) || Objects.isNull(date)) {
                             throw new SbExtractsException("message or date are empty", "not known yet", fileMetaInfo.getAuthor());
                         }
                     }
@@ -62,10 +63,9 @@ public class BMessagePublisher implements Publisher {
                     LOGGER.info("Broadcast message: {}", message);
                     applicationEventPublisher.publishEvent(message);
                 }
-            } catch (UnsupportedOperationException e) {
-                throw new SbExtractsException("Error during processing", e, "not known yet", fileMetaInfo.getAuthor());
-
             }
+        } catch (UnsupportedOperationException e) {
+                throw new SbExtractsException("Error during processing", e, fileMetaInfo.getAuthor());
         }
     }
 }

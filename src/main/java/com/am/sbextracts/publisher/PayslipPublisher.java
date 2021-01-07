@@ -31,11 +31,13 @@ public class PayslipPublisher implements Publisher {
     public void produce(XSSFWorkbook workbook, SlackEvent.FileMetaInfo fileMetaInfo) {
         XSSFSheet sheet = workbook.getSheetAt(0);
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
-        for (Row row : sheet) {
-            if (row.getRowNum() == 0) {
-                continue;
-            }
-            try {
+        try {
+            XlsxUtil.validateFile(PublisherFactory.Type.PAYSLIP, workbook);
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) {
+                    continue;
+                }
+
                 String firstCell = XlsxUtil.getCell(row, "A", evaluator);
                 if (firstCell != null) {
                     Payslip payslip = new Payslip(this);
@@ -54,9 +56,9 @@ public class PayslipPublisher implements Publisher {
                     LOGGER.info("Payslip: {}", payslip);
                     applicationEventPublisher.publishEvent(payslip);
                 }
-            } catch (UnsupportedOperationException e) {
-                throw new SbExtractsException("Error during processing", e, "not known yet",  fileMetaInfo.getAuthor());
             }
+        } catch (UnsupportedOperationException e) {
+            throw new SbExtractsException("Error during processing", e, fileMetaInfo.getAuthor());
         }
     }
 }

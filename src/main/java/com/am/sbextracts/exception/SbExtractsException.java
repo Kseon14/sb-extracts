@@ -5,7 +5,7 @@ import lombok.Getter;
 public class SbExtractsException extends RuntimeException{
 
     @Getter private final String sendTo;
-    @Getter private final String affectedUserEmail;
+    @Getter private String affectedUserEmail;
 
     public SbExtractsException(String message, String affectedUserEmail, String sendTo) {
         super(message);
@@ -17,5 +17,10 @@ public class SbExtractsException extends RuntimeException{
         super(message, cause);
         this.sendTo = sendTo;
         this.affectedUserEmail = affectedUserEmail;
+    }
+
+    public SbExtractsException(String message, Throwable cause, String sendTo) {
+        super(message, cause);
+        this.sendTo = sendTo;
     }
 }
