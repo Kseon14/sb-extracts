@@ -4,9 +4,9 @@ import com.am.sbextracts.publisher.PublisherFactory;
 import com.am.sbextracts.service.FileDownloader;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackResponse;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,6 +24,7 @@ import static com.am.sbextracts.vo.SlackEvent.Type.URL_VERIFICATION;
 
 @RestController
 @RequestMapping("/api/events")
+@RequiredArgsConstructor
 public class SlackEventController {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(SlackEventController.class);
@@ -31,11 +32,6 @@ public class SlackEventController {
     private final FileDownloader downloader;
     @Value("${slack.verification.token}")
     private String verificationToken;
-
-    @Autowired
-    public SlackEventController(final FileDownloader downloader) {
-        this.downloader = downloader;
-    }
 
     @PostMapping
     public Object eventHandler(@RequestBody SlackEvent slackEvent) {
