@@ -4,6 +4,7 @@ import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.vo.BMessage;
 import com.am.sbextracts.vo.SlackEvent;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
@@ -11,7 +12,6 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
@@ -19,16 +19,12 @@ import java.util.Date;
 import java.util.Objects;
 
 @Component
+@RequiredArgsConstructor
 public class BMessagePublisher implements Publisher {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(BMessagePublisher.class);
 
     private final ApplicationEventPublisher applicationEventPublisher;
-
-    @Autowired
-    public BMessagePublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this.applicationEventPublisher = applicationEventPublisher;
-    }
 
     @Override
     @SbExceptionHandler
