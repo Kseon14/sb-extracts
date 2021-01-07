@@ -1,6 +1,7 @@
 package com.am.sbextracts.publisher;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.format.CellGeneralFormatter;
 import org.apache.poi.ss.format.CellNumberFormatter;
 import org.apache.poi.ss.usermodel.BuiltinFormats;
@@ -105,12 +106,22 @@ public final class XlsxUtil {
             }
             if (CollectionUtils.isNotEmpty(configCell)) {
                 if (getCell(row, configCell.get(0), evaluator) != null) {
-                    configCell.forEach(c -> getCell(row, c, evaluator));
+                    for(String column : configCell) {
+                        if (StringUtils.isBlank(getCell(row, column, evaluator))){
+                            throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
+                                    column, row.getRowNum() + 1));
+                        }
+                    }
                 }
             }
             if (CollectionUtils.isNotEmpty(dateCell)) {
                 if (getDateFromCell(row, dateCell.get(0)) != null) {
-                    dateCell.forEach(c -> getDateFromCell(row, c));
+                    for (String column : configCell) {
+                        if (getDateFromCell(row, column) == null) {
+                            throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
+                                    column, row.getRowNum() + 1));
+                        }
+                    }
                 }
             }
         }

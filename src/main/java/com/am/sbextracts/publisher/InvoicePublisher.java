@@ -27,12 +27,13 @@ public class InvoicePublisher implements Publisher {
     public void produce(XSSFWorkbook workbook, SlackEvent.FileMetaInfo fileMetaInfo) {
         XSSFSheet sheet = workbook.getSheetAt(0);
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
-        XlsxUtil.validateFile(PublisherFactory.Type.INVOICE, workbook);
-        for (Row row : sheet) {
-            if (row.getRowNum() == 0) {
-                continue;
-            }
-            try {
+        try {
+            XlsxUtil.validateFile(PublisherFactory.Type.INVOICE, workbook);
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) {
+                    continue;
+                }
+
                 String firstCell = XlsxUtil.getCell(row, "B", evaluator);
                 if (firstCell != null) {
                     Invoice invoice = new Invoice(this);
@@ -55,10 +56,9 @@ public class InvoicePublisher implements Publisher {
                     LOGGER.info("Invoice: {}", invoice);
                     applicationEventPublisher.publishEvent(invoice);
                 }
-            } catch (UnsupportedOperationException e) {
-                throw new SbExtractsException("Error during processing", e, "not known yet", fileMetaInfo.getAuthor());
-
             }
+        } catch (UnsupportedOperationException e) {
+            throw new SbExtractsException("Error during processing", e, fileMetaInfo.getAuthor());
         }
     }
 }
