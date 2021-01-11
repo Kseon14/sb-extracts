@@ -1,5 +1,7 @@
-package com.am.sbextracts.publisher
+package sbextracts.publisher
 
+import com.am.sbextracts.publisher.PublisherFactory
+import com.am.sbextracts.publisher.XlsxUtil
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import spock.lang.Specification
 
@@ -49,13 +51,4 @@ class XlsxUtilTest extends Specification {
         then:
         final UnsupportedOperationException exception = thrown()
     }
-
-//    def "test correct validation BROADCAST_MESSAGE"(){
-//        when:
-//        InputStream inputStream =
-//                getClass().getResourceAsStream("/correct-xlsx/bm-extracts.xlsx")
-//        XlsxUtil.validateFile(PublisherFactory.Type.BROADCAST_MESSAGE, new XSSFWorkbook(inputStream))
-//        then:
-//        noExceptionThrown()
-//    }
 }
