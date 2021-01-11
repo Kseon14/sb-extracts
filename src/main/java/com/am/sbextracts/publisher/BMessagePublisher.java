@@ -34,7 +34,6 @@ public class BMessagePublisher implements Publisher {
         Date date = null;
         String text = null;
         try {
-            XlsxUtil.validateFile(PublisherFactory.Type.BROADCAST_MESSAGE, workbook);
             for (Row row : sheet) {
                 if (row.getRowNum() == 0) {
                     continue;
@@ -46,7 +45,7 @@ public class BMessagePublisher implements Publisher {
                         text = XlsxUtil.getCell(row, "C", evaluator);
                         date = XlsxUtil.getDateFromCell(row, "D");
                         if (StringUtils.isBlank(text) || Objects.isNull(date)) {
-                            throw new SbExtractsException("message or date are empty", "not known yet", fileMetaInfo.getAuthor());
+                            throw new SbExtractsException("message or date is empty", fileMetaInfo.getAuthor());
                         }
                     }
                     BMessage message = new BMessage(this);

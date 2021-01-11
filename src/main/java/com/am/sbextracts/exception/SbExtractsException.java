@@ -13,6 +13,11 @@ public class SbExtractsException extends RuntimeException{
         this.affectedUserEmail = affectedUserEmail;
     }
 
+    public SbExtractsException(String message, String sendTo) {
+        super(message);
+        this.sendTo = sendTo;
+    }
+
     public SbExtractsException(String message, Throwable cause, String affectedUserEmail, String sendTo) {
         super(message, cause);
         this.sendTo = sendTo;
