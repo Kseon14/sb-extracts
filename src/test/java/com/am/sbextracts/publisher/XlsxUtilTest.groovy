@@ -50,12 +50,12 @@ class XlsxUtilTest extends Specification {
         final UnsupportedOperationException exception = thrown()
     }
 
-    def "test correct validation BROADCAST_MESSAGE"(){
-        when:
-        InputStream inputStream =
-                getClass().getResourceAsStream("/correct-xlsx/bm-extracts.xlsx")
-        XlsxUtil.validateFile(PublisherFactory.Type.BROADCAST_MESSAGE, new XSSFWorkbook(inputStream))
-        then:
-        noExceptionThrown()
-    }
+//    def "test correct validation BROADCAST_MESSAGE"(){
+//        when:
+//        InputStream inputStream =
+//                getClass().getResourceAsStream("/correct-xlsx/bm-extracts.xlsx")
+//        XlsxUtil.validateFile(PublisherFactory.Type.BROADCAST_MESSAGE, new XSSFWorkbook(inputStream))
+//        then:
+//        noExceptionThrown()
+//    }
 }

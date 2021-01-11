@@ -116,7 +116,7 @@ public final class XlsxUtil {
             }
             if (CollectionUtils.isNotEmpty(dateCell)) {
                 if (getDateFromCell(row, dateCell.get(0)) != null) {
-                    for (String column : configCell) {
+                    for (String column : dateCell) {
                         if (getDateFromCell(row, column) == null) {
                             throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
                                     column, row.getRowNum() + 1));
