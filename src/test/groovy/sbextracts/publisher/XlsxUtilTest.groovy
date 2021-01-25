@@ -51,4 +51,14 @@ class XlsxUtilTest extends Specification {
         then:
         final UnsupportedOperationException exception = thrown()
     }
+
+    def "test correct validation PAYSLIP"(){
+        when:
+        InputStream inputStream =
+                getClass().getResourceAsStream("/correct-xlsx/ps-Jan.xlsx")
+        XlsxUtil.validateFile(PublisherFactory.Type.PAYSLIP, new XSSFWorkbook(inputStream))
+        then:
+        noExceptionThrown()
+    }
+
 }

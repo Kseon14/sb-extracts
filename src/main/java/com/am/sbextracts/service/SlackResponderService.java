@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.function.Predicate;
 
 @Service(value="slackService")
 public class SlackResponderService implements ResponderService {
@@ -183,7 +184,7 @@ public class SlackResponderService implements ResponderService {
     }
 
     public static void addIfNotNull(List<Field> fields, String label, String value) {
-        if (StringUtils.isNotBlank(value)) {
+        if (isNotEmptyOrZero.test(value)) {
             fields.add(Field.builder()
                     .setTitle(String.format("*%s*:", label))
                     .setValue(value)
@@ -191,6 +192,12 @@ public class SlackResponderService implements ResponderService {
                     .build());
         }
     }
+
+    private final static Predicate<String> isNotEmptyOrZero = input ->
+            StringUtils.isNotBlank(input)
+            && !StringUtils.equals(input, "0")
+            && !StringUtils.equals(input, "0.0")
+            && !StringUtils.equals(input, "0.00");
 
     private void postFile(String fileName, String conversationId, String userEmail, String initiatorSlackId) {
         File file = new File(fileName);
