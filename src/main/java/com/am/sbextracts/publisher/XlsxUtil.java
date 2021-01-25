@@ -60,7 +60,7 @@ public final class XlsxUtil {
                 String simpleValue = cellNumberFormatter.simpleFormat(cell.getNumericCellValue());
 
                 if (Double.parseDouble(simpleValue) == 0.0) {
-                    return null;
+                    return "0.0";
                 }
                 return cellNumberFormatter.format(cell.getNumericCellValue());
             }
