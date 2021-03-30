@@ -12,8 +12,6 @@ public class TaxPayment extends ApplicationEvent {
     @Getter @Setter private String taxCode;
     @Getter @Setter private String fullName;
     @Getter @Setter private String amount;
-    @Getter @Setter private String bankName;
-    @Getter @Setter private String mfo;
     @Getter @Setter private String receiver;
     @Getter @Setter private String account;
     @Getter @Setter private String code;
@@ -31,8 +29,6 @@ public class TaxPayment extends ApplicationEvent {
     public String toString() {
         return new ToStringBuilder(this)
                 .append("fullName", fullName)
-                .append("bankName", bankName)
-                .append("mfo", mfo)
                 .append("receiver", receiver)
                 .append("account", account)
                 .append("purposeOfPayment", purposeOfPayment)

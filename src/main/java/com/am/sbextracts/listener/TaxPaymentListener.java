@@ -36,8 +36,6 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
 
         List<Field> fieldList = new ArrayList<>();
         SlackResponderService.addIfNotNull(fieldList, "Сума", taxPayment.getAmount());
-        SlackResponderService.addIfNotNull(fieldList, "Банк отримувач", taxPayment.getBankName());
-        SlackResponderService.addIfNotNull(fieldList, "МФО", taxPayment.getMfo());
         SlackResponderService.addIfNotNull(fieldList, "Отримувач", taxPayment.getReceiver());
         SlackResponderService.addIfNotNull(fieldList, "Розрахунковий рахунок", taxPayment.getAccount());
         SlackResponderService.addIfNotNull(fieldList, "ЄДРПОУ", taxPayment.getCode());
