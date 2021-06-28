@@ -23,10 +23,8 @@ public class XlsxProcessorService implements ProcessorService {
     @Override
     public void process(InputStream inputStream, SlackEvent.FileMetaInfo fileMetaInfo) throws IOException {
         LOGGER.info("File start processing");
-        try (XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
+        try (inputStream; XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
             publisherFactory.getProducer(fileMetaInfo).produce(workbook, fileMetaInfo);
-        } finally {
-            inputStream.close();
         }
     }
 
