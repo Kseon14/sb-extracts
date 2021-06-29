@@ -21,6 +21,8 @@
 		<groovy.all.version>2.4.1</groovy.all.version>
 		<poi.version>5.0.0</poi.version>
 		<slack.version>1.12</slack.version>
+		<async-http-client.version>2.12.3</async-http-client.version>
+		<itextpdf.version>5.5.13.2</itextpdf.version>
 	</properties>
 
 	<dependencies>
@@ -71,12 +73,12 @@
 		<dependency>
 			<groupId>org.asynchttpclient</groupId>
 			<artifactId>async-http-client</artifactId>
-			<version>2.12.1</version>
+			<version>${async-http-client.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.itextpdf</groupId>
 			<artifactId>itextpdf</artifactId>
-			<version>5.5.13.1</version>
+			<version>${itextpdf.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
