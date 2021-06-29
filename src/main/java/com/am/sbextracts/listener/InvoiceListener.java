@@ -172,20 +172,18 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
             addEmptyLine(preface, 1);
             preface.add(getParagraphNormal("All charges of correspondent banks are at the Supplier’s expenses. " +
                     "/ Усі комісії банків-кореспондентів сплачує виконавець."));
-            addEmptyLine(preface, 1);
             preface.add(getParagraphNormal("This Invoice/offer indicates, that payment " +
                     "according hereto at the same time is the evidence of the service delivery " +
                     "in full scope, acceptation thereof and the confirmation of final mutual " +
                     "installments between Parties. / Цей Рахунок-оферта вказує, що оплата згідно " +
                     "цього Рахунку-оферти одночасно є засвідченням надання послуг в повному обсязі, " +
                     "їх прийняття, а також підтвердженням кінцевих розрахунків між Сторонами."));
-            addEmptyLine(preface, 1);
             preface.add(getParagraphNormal("Payment according hereto Invoice/offer shall " +
                     "be also the confirmation that Parties have no claims to each other and have no intention " +
                     "to submit any claims and shall not include penalty and fine clauses. / Оплата згідно цього Рахунку-оферти є " +
                     "підтвердженням того, що Сторони не мають взаємних претензій та " +
                     "не мають наміру направляти рекламації (претензії) та не передбачають штрафних санкцій."));
-            addEmptyLine(preface, 2);
+            addEmptyLine(preface, 1);
             preface.add(getParagraphNormal(String.format("Supplier/Виконавець: _______________________ (%s/ %s)",
                     invoice.getFullNameEng(), invoice.getFullNameUkr())));
 
