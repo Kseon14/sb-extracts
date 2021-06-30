@@ -15,10 +15,10 @@
 	<description>extracts-sb</description>
 
 	<properties>
-		<java.version>14.0.2</java.version>
-		<gmavenplus.plugin.version>1.11.1</gmavenplus.plugin.version>
-		<spock.core.version>1.0-groovy-2.4</spock.core.version>
-		<groovy.all.version>2.4.1</groovy.all.version>
+		<java.version>11</java.version>
+		<gmavenplus.plugin.version>1.12.1</gmavenplus.plugin.version>
+		<spock.core.version>2.0-groovy-2.5</spock.core.version>
+		<groovy.all.version>3.0.8</groovy.all.version>
 		<poi.version>5.0.0</poi.version>
 		<slack.version>1.12</slack.version>
 		<async-http-client.version>2.12.3</async-http-client.version>
@@ -103,8 +103,8 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.codehaus.groovy</groupId>
-			<artifactId>groovy-all</artifactId>
+			<groupId>org.codehaus.groovy.groovy-all.3.0.8.repo.org.codehaus.groovy</groupId>
+			<artifactId>groovy</artifactId>
 			<version>${groovy.all.version}</version>
 			<scope>test</scope>
 		</dependency>
