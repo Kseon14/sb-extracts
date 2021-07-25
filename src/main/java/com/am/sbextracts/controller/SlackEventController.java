@@ -6,13 +6,17 @@ import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -27,9 +31,16 @@ import static com.am.sbextracts.vo.SlackEvent.Type.URL_VERIFICATION;
 @RequiredArgsConstructor
 public class SlackEventController {
 
+    private final static Predicate<SlackEvent> isEventCallback = event -> EVENT_CALLBACK == event.getType();
+    private final static Predicate<SlackEvent> isFileShare = event -> MESSAGE == event.getEvent().getType() && FILE_SHARE == event.getEvent().getSubtype();
+    private final static Predicate<SlackEvent> isXlsx = event -> "xlsx".equals(event.getEvent().getFileMetaInfos().get(0).getFileType());
+    private final static Set<String> processedFiles = ConcurrentHashMap.newKeySet();
+
     private final FileDownloader downloader;
     @Value("${slack.verification.token}")
     private String verificationToken;
+
+    private final Predicate<String> isTokenValid = token -> !token.equals(verificationToken);
 
     @PostMapping
     public Object eventHandler(@RequestBody SlackEvent slackEvent) {
@@ -41,13 +52,22 @@ public class SlackEventController {
         if (URL_VERIFICATION == slackEvent.getType()) {
             return slackEvent.getChallenge();
         }
+        if (isEventCallback.and(isFileShare).negate().test(slackEvent) ||
+                CollectionUtils.isEmpty(slackEvent.getEvent().getFileMetaInfos()) ||
+                isXlsx.negate().test(slackEvent)) {
+            log.info("{} skipping....", slackEvent);
+            return ResponseEntity.ok().build();
+        }
 
         Consumer<SlackEvent> slackEventConsumer = event -> downloader.downloadFile(event.getEvent().getFileMetaInfos());
-
-        if (isEventCallback.and(isFileShare).test(slackEvent)) {
-            slackEventConsumer.accept(slackEvent);
+        SlackEvent.FileMetaInfo fileMetaInfo = slackEvent.getEvent().getFileMetaInfos().get(0);
+        if (processedFiles.contains(fileMetaInfo.getId())){
+            log.info("already processed file {}", fileMetaInfo);
+            return  ResponseEntity.ok().build();
         }
-        return null;
+        processedFiles.add(fileMetaInfo.getId());
+        slackEventConsumer.accept(slackEvent);
+        return  ResponseEntity.ok().build();
     }
 
     @PostMapping("ping")
@@ -59,9 +79,5 @@ public class SlackEventController {
     public SlackResponse getFileTypeInfo() {
         return new SlackResponse(Arrays.toString(PublisherFactory.Type.values()));
     }
-
-    private final Predicate<String> isTokenValid = token -> !token.equals(verificationToken);
-    private final Predicate<SlackEvent> isEventCallback = event -> EVENT_CALLBACK == event.getType();
-    private final Predicate<SlackEvent> isFileShare = event -> MESSAGE == event.getEvent().getType() && FILE_SHARE == event.getEvent().getSubtype();
 
 }
