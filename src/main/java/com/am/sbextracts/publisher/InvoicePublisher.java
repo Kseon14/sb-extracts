@@ -5,21 +5,18 @@ import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.vo.Invoice;
 import com.am.sbextracts.vo.SlackEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class InvoicePublisher implements Publisher {
-
-    private final static Logger LOGGER = LoggerFactory.getLogger(InvoicePublisher.class);
-
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
@@ -53,7 +50,7 @@ public class InvoicePublisher implements Publisher {
                     invoice.setSwiftNumber(XlsxUtil.getCell(row, "O", evaluator));
                     invoice.setUserEmail(XlsxUtil.getCell(row, "P", evaluator));
                     invoice.setAuthorSlackId(fileMetaInfo.getAuthor());
-                    LOGGER.info("Invoice: {}", invoice);
+                    log.info("Invoice: {}", invoice);
                     applicationEventPublisher.publishEvent(invoice);
                 }
             }

@@ -1,5 +1,6 @@
 package com.am.sbextracts.publisher;
 
+import lombok.SneakyThrows;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.format.CellGeneralFormatter;
@@ -91,36 +92,38 @@ public final class XlsxUtil {
         }
     }
 
+    @SneakyThrows
     public static void validateFile(PublisherFactory.Type type, XSSFWorkbook workbook) {
-        InputStream inputStream = XlsxUtil.class.getClassLoader().getResourceAsStream("column-config/"
-                + getFileName(type) + ".yaml");
-        FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
-        ColumnConfig columnConfig = new Yaml().loadAs(inputStream,
-                ColumnConfig.class);
+        try (InputStream inputStream = XlsxUtil.class.getClassLoader().getResourceAsStream("column-config/"
+                + getFileName(type) + ".yaml")) {
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            ColumnConfig columnConfig = new Yaml().loadAs(inputStream,
+                    ColumnConfig.class);
 
-        List<String> configCell = columnConfig.getCell();
-        List<String> dateCell = columnConfig.getDateCell();
+            List<String> configCell = columnConfig.getCell();
+            List<String> dateCell = columnConfig.getDateCell();
 
-        for (Row row : workbook.getSheetAt(0)) {
-            if (row.getRowNum() == 0) {
-                continue;
-            }
-            if (CollectionUtils.isNotEmpty(configCell)) {
-                if (getCell(row, configCell.get(0), evaluator) != null) {
-                    for(String column : configCell) {
-                        if (StringUtils.isBlank(getCell(row, column, evaluator))){
-                            throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
-                                    column, row.getRowNum() + 1));
+            for (Row row : workbook.getSheetAt(0)) {
+                if (row.getRowNum() == 0) {
+                    continue;
+                }
+                if (CollectionUtils.isNotEmpty(configCell)) {
+                    if (getCell(row, configCell.get(0), evaluator) != null) {
+                        for (String column : configCell) {
+                            if (StringUtils.isBlank(getCell(row, column, evaluator))) {
+                                throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
+                                        column, row.getRowNum() + 1));
+                            }
                         }
                     }
                 }
-            }
-            if (CollectionUtils.isNotEmpty(dateCell)) {
-                if (getDateFromCell(row, dateCell.get(0)) != null) {
-                    for (String column : dateCell) {
-                        if (getDateFromCell(row, column) == null) {
-                            throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
-                                    column, row.getRowNum() + 1));
+                if (CollectionUtils.isNotEmpty(dateCell)) {
+                    if (getDateFromCell(row, dateCell.get(0)) != null) {
+                        for (String column : dateCell) {
+                            if (getDateFromCell(row, column) == null) {
+                                throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
+                                        column, row.getRowNum() + 1));
+                            }
                         }
                     }
                 }

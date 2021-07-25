@@ -8,4 +8,4 @@ RUN mvn install -DskipTests
 
 EXPOSE 9020
 
-CMD ["java", "-jar", "/usr/src/app/target/sb-extracts-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "/usr/src/app/target/sb-extracts-1.2.jar"]

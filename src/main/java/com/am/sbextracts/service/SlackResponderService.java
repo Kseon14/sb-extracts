@@ -18,6 +18,7 @@ import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
 import com.hubspot.slack.client.models.response.conversations.ConversationsOpenResponse;
 import com.hubspot.slack.client.models.response.users.UsersInfoResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.asynchttpclient.AsyncCompletionHandler;
 import org.asynchttpclient.AsyncHttpClient;
@@ -27,8 +28,6 @@ import org.asynchttpclient.Request;
 import org.asynchttpclient.RequestBuilder;
 import org.asynchttpclient.Response;
 import org.asynchttpclient.request.body.multipart.FilePart;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -40,10 +39,9 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
+@Slf4j
 @Service(value="slackService")
 public class SlackResponderService implements ResponderService {
-
-    private final static Logger LOGGER = LoggerFactory.getLogger(SlackResponderService.class);
 
     private final HttpClientPool httpClientPool;
     private final SlackClientPool slackClientPool;
@@ -61,7 +59,7 @@ public class SlackResponderService implements ResponderService {
 
     private SlackClient getSlackClient() throws Exception {
         SlackClient slackClient = slackClientPool.borrowObject();
-        LOGGER.info("slack Client {}", slackClient.toString());
+        log.info("slack Client {}", slackClient.toString());
         return slackClient;
     }
 
@@ -73,7 +71,7 @@ public class SlackResponderService implements ResponderService {
 
     private AsyncHttpClient getHttpClient() throws Exception {
         AsyncHttpClient client = httpClientPool.borrowObject();
-        LOGGER.info("http Client {}", client.toString());
+        log.info("http Client {}", client.toString());
         return client;
     }
 
@@ -86,7 +84,7 @@ public class SlackResponderService implements ResponderService {
     @Override
     @SbExceptionHandler
     public void sendMessage(ChatPostMessageParams params, String userEmail, String initiatorSlackId) {
-        LOGGER.info("Message sending {}...", params.getChannelId());
+        log.info("Message sending {}...", params.getChannelId());
         SlackClient slackClient = null;
         try {
             slackClient = getSlackClient();
@@ -124,7 +122,7 @@ public class SlackResponderService implements ResponderService {
     @Cacheable(value = "conversationIds", key = "#userSlackId",
             condition="#userSlackId!=null", unless = "#result== null")
     public String getConversationIdBySlackId(String userSlackId, String initiatorSlackId) {
-        LOGGER.info("getting conversationId by slackId...");
+        log.info("getting conversationId by slackId...");
         if (userSlackId == null) {
             throw new SbExtractsException("userSlackId could not be null", "Initiator", "Initiator");
         }
@@ -155,7 +153,7 @@ public class SlackResponderService implements ResponderService {
     @Override
     @SbExceptionHandler
     public void sendFile(String fileName, String userEmail, String initiatorSlackId) {
-        LOGGER.info("File sending {}...", fileName);
+        log.info("File sending {}...", fileName);
         String conversationId = getConversationIdByEmail(userEmail, initiatorSlackId);
         if (conversationId == null) {
             throw new SbExtractsException("conversationIdWithUser could not be null", userEmail, initiatorSlackId);
@@ -168,7 +166,7 @@ public class SlackResponderService implements ResponderService {
         if (userId == null) {
             throw new SbExtractsException("userId could not be null", userEmail, initiatorSlackId);
         }
-        LOGGER.info("Getting conversation ID for {}", userId);
+        log.info("Getting conversation ID for {}", userId);
         SlackClient slackClient = null;
         try {
             slackClient = getSlackClient();
@@ -214,8 +212,8 @@ public class SlackResponderService implements ResponderService {
         } catch (Exception e) {
             throw new SbExtractsException("Could not send file", e, userEmail, initiatorSlackId);
         }
-        LOGGER.info("file upload response: {}", response.getResponseBody());
-        LOGGER.info("file {} deleted {}", file.getName(), file.delete());
+        log.info("file upload response: {}", response.getResponseBody());
+        log.info("file {} deleted {}", file.getName(), file.delete());
     }
 
     private Response makeRequest(Request request) throws Exception {
@@ -255,7 +253,7 @@ public class SlackResponderService implements ResponderService {
         try (FileOutputStream stream = new FileOutputStream(fileName)) {
             client = getHttpClient();
             ListenableFuture<FileOutputStream> responseListenableFuture = client.executeRequest(request,
-                    new AsyncCompletionHandler<FileOutputStream>() {
+                    new AsyncCompletionHandler<>() {
 
                         @Override
                         public State onBodyPartReceived(HttpResponseBodyPart bodyPart)
@@ -271,7 +269,7 @@ public class SlackResponderService implements ResponderService {
                     });
 
             responseListenableFuture.get();
-            LOGGER.info("File downloaded");
+            log.info("File downloaded");
         } catch (Exception e) {
             throw new SbExtractsException("error during file close or download", e, "Initiator",
                     slackFile.getFileMetaInfo().getAuthor());

@@ -13,8 +13,7 @@ import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -26,16 +25,16 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
+@Slf4j
 @Component
 public class InvoiceListener implements ApplicationListener<Invoice> {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(InvoiceListener.class);
-
-    private final DateTimeFormatter formatterOutputEng = DateTimeFormatter.ofPattern("MM/dd/yyyy");
-    private final DateTimeFormatter formatterOutputUkr = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private final DateTimeFormatter formatterMonthYear = DateTimeFormatter.ofPattern("M-yyyy");
-    private final DateTimeFormatter formatterMonthFullYearEng = DateTimeFormatter.ofPattern("MMMM yyyy");
-    private final DateTimeFormatter formatterMonthFullYearUkr = DateTimeFormatter.ofPattern("LLLL yyyy", new Locale("uk"));
+    private static final DateTimeFormatter formatterOutputEng = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+    private static final DateTimeFormatter formatterOutputUkr = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter formatterMonthYear = DateTimeFormatter.ofPattern("M-yyyy");
+    private static final DateTimeFormatter formatterMonthFullYearEng = DateTimeFormatter.ofPattern("MMMM yyyy");
+    private static final DateTimeFormatter formatterMonthFullYearUkr = DateTimeFormatter.ofPattern("LLLL yyyy", new Locale("uk"));
+    private static final DateTimeFormatter formatterMonthFullYear = DateTimeFormatter.ofPattern("MM-yyyy");
 
     private final ResponderService slackResponderService;
     private Font font;
@@ -52,14 +51,14 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
         FileOutputStream fileOutputStream = null;
         String fileName = String.format("ML-%s_%s.pdf",
                 invoice.getFullNameEng().replaceAll(" ", "").trim(),
-                LocalDate.now().format(DateTimeFormatter.ofPattern("MM-yyyy")));
+                LocalDate.now().format(formatterMonthFullYear));
         try {
             document = new Document();
             fileOutputStream = new FileOutputStream(fileName);
             try {
                 PdfWriter.getInstance(document, fileOutputStream);
             } catch (DocumentException e) {
-                LOGGER.error("Error during document instance obtaining", e);
+                log.error("Error during document instance obtaining", e);
                 return;
             }
             document.open();
@@ -189,9 +188,8 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
 
             document.add(preface);
 
-
         } catch (IOException | DocumentException e) {
-            LOGGER.error("Error during document creation", e);
+            log.error("Error during document creation", e);
             return;
         } finally {
             if (document != null) {
@@ -201,7 +199,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
                 try {
                     fileOutputStream.close();
                 } catch (IOException e) {
-                    LOGGER.error("Error during document closing", e);
+                    log.error("Error during document closing", e);
                 }
             }
         }

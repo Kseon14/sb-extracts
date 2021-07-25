@@ -5,20 +5,18 @@ import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.TaxPayment;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TaxPaymentPublisher implements Publisher {
-    private final static Logger LOGGER = LoggerFactory.getLogger(TaxPaymentPublisher.class);
-
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
@@ -47,7 +45,7 @@ public class TaxPaymentPublisher implements Publisher {
                     taxPayment.setDueDate(XlsxUtil.getDateFromCell(row, "I"));
                     taxPayment.setTaxType(XlsxUtil.getCell(row, "J", evaluator));
                     taxPayment.setAuthorSlackId(fileMetaInfo.getAuthor());
-                    LOGGER.info("Tax payment: {}", taxPayment);
+                    log.info("Tax payment: {}", taxPayment);
                     applicationEventPublisher.publishEvent(taxPayment);
                 }
             }
