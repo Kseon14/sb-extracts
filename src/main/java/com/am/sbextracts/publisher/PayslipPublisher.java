@@ -5,20 +5,18 @@ import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.vo.Payslip;
 import com.am.sbextracts.vo.SlackEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class PayslipPublisher implements Publisher {
-
-    private final static Logger LOGGER = LoggerFactory.getLogger(PayslipPublisher.class);
 
     private final ApplicationEventPublisher applicationEventPublisher;
 
@@ -49,7 +47,7 @@ public class PayslipPublisher implements Publisher {
                     payslip.setTotalGross(XlsxUtil.getCell(row, "J", evaluator));
                     payslip.setUserEmail(XlsxUtil.getCell(row, "K", evaluator));
                     payslip.setAuthorSlackId(fileMetaInfo.getAuthor());
-                    LOGGER.info("Payslip: {}", payslip);
+                    log.info("Payslip: {}", payslip);
                     applicationEventPublisher.publishEvent(payslip);
                 }
             }

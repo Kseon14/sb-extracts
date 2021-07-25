@@ -1,16 +1,14 @@
 package com.am.sbextracts;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+@Slf4j
 public class DeleteOnCloseFileInputStream extends FileInputStream {
-
-    private final Logger LOGGER = LoggerFactory.getLogger(DeleteOnCloseFileInputStream.class);
 
     private File file;
 
@@ -29,7 +27,7 @@ public class DeleteOnCloseFileInputStream extends FileInputStream {
             super.close();
         } finally {
             if (file != null) {
-                LOGGER.info("file {} deleted : {}", file.getName(), file.delete());
+                log.info("file {} deleted : {}", file.getName(), file.delete());
                 file = null;
             }
         }
