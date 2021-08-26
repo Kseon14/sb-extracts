@@ -70,6 +70,7 @@ public class SlackInteractivityController {
 
     @PostMapping(value = "debtors", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Void> getDebtors(SlackInteractiveEvent request) {
+        log.info("Request for Debtors");
         slackResponderService.sendDebtors(request);
         return ResponseEntity.ok().build();
     }
