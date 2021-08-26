@@ -37,6 +37,9 @@ public class GDriveService {
     @Value("${google.authJson}")
     private final String authJson;
 
+    @Value("${app.url}")
+    private final String url;
+
     private final ObjectMapper objectMapper;
     private final ResponderService slackResponderService;
 
@@ -67,7 +70,8 @@ public class GDriveService {
                 .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
                 .setAccessType("offline")
                 .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
+        LocalServerReceiver receiver = new LocalServerReceiver.Builder()
+                .setHost(url).setPort(8888).build();
         return new AuthCodeWrapper(flow, receiver, slackResponderService,
                 initiatorSlackId).authorize("user");
     }

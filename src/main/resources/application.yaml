@@ -29,6 +29,8 @@ bamboo:
   reportId: 1207
 google:
   authJson: ${G_AUTH_JSON}
+app:
+  url: ${APP_URL}
 
 feign:
   client:
