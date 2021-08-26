@@ -35,6 +35,7 @@ public class SlackEvent {
         public enum Type {
             FILE_SHARE("file_share"),
             FILE_SHARED("file_shared"),
+            MESSAGE_CHANGED("message_changed"),
             MESSAGE("message");
 
             @Getter @JsonValue private final String value;
@@ -69,7 +70,6 @@ public class SlackEvent {
                     .append("timestamp", timestamp)
                     .append("author", author)
                     .append("fileType", fileType)
-                    .append("urlPrivate", urlPrivate)
                     .toString();
         }
     }
@@ -79,7 +79,6 @@ public class SlackEvent {
                 .append("type", type)
                 .append("event", event)
                 .append("challenge", challenge)
-                .append("token", token)
                 .toString();
     }
 }

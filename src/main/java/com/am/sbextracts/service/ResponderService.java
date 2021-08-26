@@ -2,15 +2,21 @@ package com.am.sbextracts.service;
 
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackFileInfo;
+import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
+import com.hubspot.slack.client.methods.params.chat.ChatUpdateMessageParams;
+import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
+import com.hubspot.slack.client.models.response.chat.ChatUpdateMessageResponse;
 
 public interface ResponderService {
 
-    void sendMessage(ChatPostMessageParams params, String userEmail, String initiatorSlackId);
+    ChatPostMessageResponse sendMessage(ChatPostMessageParams params, String userEmail, String initiatorSlackId);
 
     String getConversationIdByEmail(String userEmail, String initiatorSlackId);
 
-    void sendCompletionMessage(String initiatorSlackId, String userFullName, String userEmail);
+    void sendMessageToInitiator(String initiatorSlackId, String userFullName, String userEmail);
+
+    ChatPostMessageResponse sendMessageToInitiator(String initiatorSlackId, ChatPostMessageParams.Builder builder);
 
     void sendFile(String fileName, String userEmail, String initiatorSlackId);
 
@@ -22,4 +28,15 @@ public interface ResponderService {
 
     String getConversationIdBySlackId(String userSlackId, String initiatorSlackId);
 
-    }
+    void sendMarkupView(SlackInteractiveEvent slackInteractiveEvent);
+
+    void sendDebtors(SlackInteractiveEvent slackInteractiveEvent);
+
+    void sendDownloadSigned(SlackInteractiveEvent slackInteractiveEvent);
+
+    void updateMessage(ChatPostMessageResponse initialMessage, String text, String initiatorSlackId);
+
+    void updateMessage(ChatUpdateMessageParams.Builder builder, String initiatorSlackId);
+
+    ChatPostMessageResponse sendMessage(ChatPostMessageParams params, String initiatorSlackId);
+}

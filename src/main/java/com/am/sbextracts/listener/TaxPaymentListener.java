@@ -58,7 +58,7 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
                         ).addAttachments(Attachment.builder().setFields(fieldList).setColor("#36a64f").build())
                         .build(), taxPayment.getUserEmail(), taxPayment.getAuthorSlackId());
 
-        slackResponderService.sendCompletionMessage(taxPayment.getAuthorSlackId(), taxPayment.getFullName(), taxPayment.getUserEmail());
+        slackResponderService.sendMessageToInitiator(taxPayment.getAuthorSlackId(), taxPayment.getFullName(), taxPayment.getUserEmail());
 
     }
 }

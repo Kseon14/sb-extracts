@@ -1,0 +1,43 @@
+event:
+  concurrent:
+    threads: ${THREAD_COUNT}
+logging:
+  file:
+    max-history: 4
+    max-size: 10MB
+    name: logs/sb-extracts.log
+  level:
+    org.springframework.web: DEBUG
+    com.am.sbextracts.service: DEBUG
+pool:
+  max-idle: 2
+  max-total: 6
+server:
+  port: 9020
+slack:
+  token: ${TOKEN}
+  verification:
+    token: ${VERIFICATION_TOKEN}
+spring:
+  cache:
+    cache-names: conversationIds
+    caffeine:
+      spec: expireAfterAccess=600s
+
+bamboo:
+  apiKey: ${API_KEY}
+  reportId: 1207
+google:
+  authJson: ${G_AUTH_JSON}
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 10000
+        readTimeout: 10000
+        loggerLevel: basic
+      bambooHrAuth:
+        connectTimeout: 10000
+        readTimeout: 10000
+        loggerLevel: basic

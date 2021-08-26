@@ -4,20 +4,34 @@ import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.pool.HttpClientPool;
 import com.am.sbextracts.pool.SlackClientPool;
+import com.am.sbextracts.service.integration.SlackClientWrapper;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackFileInfo;
+import com.am.sbextracts.vo.SlackInteractiveEvent;
+import com.am.sbextracts.vo.View;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hubspot.algebra.Result;
 import com.hubspot.slack.client.SlackClient;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
+import com.hubspot.slack.client.methods.params.chat.ChatUpdateMessageParams;
 import com.hubspot.slack.client.methods.params.conversations.ConversationOpenParams;
 import com.hubspot.slack.client.methods.params.users.UserEmailParams;
+import com.hubspot.slack.client.methods.params.views.OpenViewParams;
 import com.hubspot.slack.client.models.Field;
+import com.hubspot.slack.client.models.blocks.Input;
 import com.hubspot.slack.client.models.blocks.Section;
+import com.hubspot.slack.client.models.blocks.elements.DatePicker;
+import com.hubspot.slack.client.models.blocks.elements.PlainTextInput;
 import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
+import com.hubspot.slack.client.models.response.SlackError;
+import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
+import com.hubspot.slack.client.models.response.chat.ChatUpdateMessageResponse;
 import com.hubspot.slack.client.models.response.conversations.ConversationsOpenResponse;
 import com.hubspot.slack.client.models.response.users.UsersInfoResponse;
+import com.hubspot.slack.client.models.views.ModalViewPayload;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.asynchttpclient.AsyncCompletionHandler;
@@ -35,13 +49,18 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 @Slf4j
 @Service(value="slackService")
+@RequiredArgsConstructor
 public class SlackResponderService implements ResponderService {
+
+    private final String FIELD = "field";
 
     private final HttpClientPool httpClientPool;
     private final SlackClientPool slackClientPool;
@@ -50,24 +69,7 @@ public class SlackResponderService implements ResponderService {
     SlackResponderService slackService;
 
     @Value("${slack.token}")
-    private String token;
-
-    public SlackResponderService(HttpClientPool httpClientPool, SlackClientPool slackClientPool) {
-        this.httpClientPool = httpClientPool;
-        this.slackClientPool = slackClientPool;
-    }
-
-    private SlackClient getSlackClient() throws Exception {
-        SlackClient slackClient = slackClientPool.borrowObject();
-        log.info("slack Client {}", slackClient.toString());
-        return slackClient;
-    }
-
-    private void returnSlackClient(SlackClient client) {
-        if (client != null) {
-            slackClientPool.returnObject(client);
-        }
-    }
+    private final String token;
 
     private AsyncHttpClient getHttpClient() throws Exception {
         AsyncHttpClient client = httpClientPool.borrowObject();
@@ -83,18 +85,131 @@ public class SlackResponderService implements ResponderService {
 
     @Override
     @SbExceptionHandler
-    public void sendMessage(ChatPostMessageParams params, String userEmail, String initiatorSlackId) {
+    public ChatPostMessageResponse sendMessage(ChatPostMessageParams params, String userEmail, String initiatorSlackId) {
         log.info("Message sending {}...", params.getChannelId());
-        SlackClient slackClient = null;
-        try {
-            slackClient = getSlackClient();
-            slackClient.postMessage(params);
+        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            CompletableFuture<Result<ChatPostMessageResponse, SlackError>> response = wrapper.getClient().postMessage(params);
+            return response.get().unwrapOrElseThrow();
         } catch (Exception e) {
             throw new SbExtractsException("Message not sent to:", e, userEmail, initiatorSlackId);
-        } finally {
-            returnSlackClient(slackClient);
         }
     }
+
+    @Override
+    @SbExceptionHandler
+    public ChatPostMessageResponse sendMessage(ChatPostMessageParams params, String initiatorSlackId) {
+        log.info("Message sending {}...", params.getChannelId());
+        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            CompletableFuture<Result<ChatPostMessageResponse, SlackError>> response = wrapper.getClient().postMessage(params);
+            return response.get().unwrapOrElseThrow();
+        } catch (Exception e) {
+            throw new SbExtractsException("Message not sent to:", e, initiatorSlackId);
+        }
+    }
+
+    @Override
+    @SbExceptionHandler
+    public void sendMarkupView(SlackInteractiveEvent slackInteractiveEvent) {
+        ModalViewPayload modalViewPayload =
+                ModalViewPayload.builder()
+                        .setExternalId(View.ModalActionType.MARKUP.name())
+                        .setTitle(Text.of(TextType.PLAIN_TEXT,"Markup and Send for Sign"))
+                        .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
+                        .addBlocks(Input.builder().setBlockId("sessionId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT,"SessionID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Input.builder().setBlockId("sectionId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT,"Bamboo FolderID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Input.builder().setBlockId("totalToProcessing")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT,"Total Documents to Process"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Section.builder()
+                                .setBlockId("date")
+                                .setText(Text.of(TextType.MARKDOWN, "Pick a date for Acts"))
+                                .setAccessory(DatePicker.builder()
+                                        .setActionId(FIELD)
+                                        .setInitialDate(LocalDate.now())
+                                        .setPlaceholder(Text.of(TextType.PLAIN_TEXT,"Select a date"))
+                                        .build())
+                                .build())
+                        .build();
+        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
+        } catch (Exception e) {
+            throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
+        }
+    }
+
+    @Override
+    @SbExceptionHandler
+    public void sendDebtors(SlackInteractiveEvent slackInteractiveEvent) {
+        ModalViewPayload modalViewPayload =
+                ModalViewPayload.builder()
+                        .setExternalId(View.ModalActionType.DEBTORS.name())
+                        .setTitle(Text.of(TextType.PLAIN_TEXT,"Markup and Send for Sign"))
+                        .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
+                        .addBlocks(Input.builder().setBlockId("sessionId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT,"SessionID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Input.builder().setBlockId("sectionId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT,"Bamboo FolderID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Section.builder()
+                                .setBlockId("date")
+                                .setText(Text.of(TextType.MARKDOWN, "Pick a date for Acts"))
+                                .setAccessory(DatePicker.builder()
+                                        .setActionId(FIELD)
+                                        .setInitialDate(LocalDate.now())
+                                        .setPlaceholder(Text.of(TextType.PLAIN_TEXT,"Select a date"))
+                                        .build())
+                                .build())
+                        .build();
+        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
+        } catch (Exception e) {
+            throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getTrigger_id());
+        }
+    }
+
+    @Override
+    @SbExceptionHandler
+    public void sendDownloadSigned(SlackInteractiveEvent slackInteractiveEvent) {
+        ModalViewPayload modalViewPayload =
+                ModalViewPayload.builder()
+                        .setExternalId(View.ModalActionType.SIGNED.name())
+                        .setTitle(Text.of(TextType.PLAIN_TEXT,"Markup and Send for Sign"))
+                        .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
+                        .addBlocks(Input.builder().setBlockId("sessionId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT,"SessionID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Input.builder().setBlockId("gFolderId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT,"Google folder ID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Section.builder()
+                                .setBlockId("date")
+                                .setText(Text.of(TextType.MARKDOWN, "Pick a date for Acts"))
+                                .setAccessory(DatePicker.builder()
+                                        .setActionId(FIELD)
+                                        .setInitialDate(LocalDate.now())
+                                        .setPlaceholder(Text.of(TextType.PLAIN_TEXT,"Select a date"))
+                                        .build())
+                                .build())
+                        .build();
+        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
+        } catch (Exception e) {
+            throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
+        }
+    }
+
 
     @Override
     @SbExceptionHandler
@@ -102,17 +217,13 @@ public class SlackResponderService implements ResponderService {
         if (userEmail == null) {
             throw new SbExtractsException("userEmail could not be null", userEmail, initiatorSlackId);
         }
-        SlackClient slackClient = null;
         UsersInfoResponse usersInfoResponse;
-        try {
-            slackClient = getSlackClient();
-            usersInfoResponse = slackClient.lookupUserByEmail(UserEmailParams.builder()
+        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            usersInfoResponse = wrapper.getClient().lookupUserByEmail(UserEmailParams.builder()
                     .setEmail(userEmail)
                     .build()).join().unwrapOrElseThrow();
         } catch (Exception e) {
             throw new SbExtractsException("Couldn't get userInfo from slack", e, userEmail, initiatorSlackId);
-        } finally {
-            returnSlackClient(slackClient);
         }
         return getOpenedConversationId(usersInfoResponse.getUser().getId(), initiatorSlackId, userEmail);
     }
@@ -130,7 +241,7 @@ public class SlackResponderService implements ResponderService {
     }
 
     @Override
-    public void sendCompletionMessage(String initiatorSlackId, String userFullName, String userEmail) {
+    public void sendMessageToInitiator(String initiatorSlackId, String userFullName, String userEmail) {
         sendMessage(ChatPostMessageParams.builder()
                 .setText("Processed...")
                 .setChannelId(slackService.getConversationIdBySlackId(initiatorSlackId, initiatorSlackId))
@@ -139,6 +250,35 @@ public class SlackResponderService implements ResponderService {
                                 userFullName,
                                 userEmail)))
                 ).build(), userEmail, initiatorSlackId);
+    }
+
+    @Override
+    public ChatPostMessageResponse sendMessageToInitiator(String initiatorSlackId, ChatPostMessageParams.Builder builder) {
+        return sendMessage(builder
+                .setChannelId(slackService.getConversationIdBySlackId(initiatorSlackId, initiatorSlackId))
+                .build(), initiatorSlackId);
+    }
+
+    public void updateMessage(ChatPostMessageResponse initialMessage, String text, String initiatorSlackId){
+        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            wrapper.getClient().updateMessage(ChatUpdateMessageParams.builder()
+                    .setChannelId(initialMessage.getChannel())
+                    .addBlocks(Section.of(
+                            Text.of(TextType.MARKDOWN, text)))
+                    .setTs(initialMessage.getTs())
+                    .build()).get().unwrapOrElseThrow();
+        } catch (Exception e) {
+            throw new SbExtractsException("Could not get opened conversation id", e, initiatorSlackId);
+        }
+    }
+
+    public void updateMessage(ChatUpdateMessageParams.Builder builder, String initiatorSlackId){
+        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            wrapper.getClient().updateMessage(builder
+                    .build()).get().unwrapOrElseThrow();
+        } catch (Exception e) {
+            throw new SbExtractsException("Could not get opened conversation id", e, initiatorSlackId);
+        }
     }
 
     @Override
@@ -167,17 +307,14 @@ public class SlackResponderService implements ResponderService {
             throw new SbExtractsException("userId could not be null", userEmail, initiatorSlackId);
         }
         log.info("Getting conversation ID for {}", userId);
-        SlackClient slackClient = null;
-        try {
-            slackClient = getSlackClient();
-            ConversationsOpenResponse conversation = slackClient.openConversation(
+
+        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            ConversationsOpenResponse conversation = wrapper.getClient().openConversation(
                     ConversationOpenParams.builder()
                             .addUsers(userId).setReturnIm(true).build()).join().unwrapOrElseThrow();
             return conversation.getConversation().getId();
         } catch (Exception e) {
             throw new SbExtractsException("Could not get opened conversation id", e, userEmail, initiatorSlackId);
-        } finally {
-            returnSlackClient(slackClient);
         }
     }
 

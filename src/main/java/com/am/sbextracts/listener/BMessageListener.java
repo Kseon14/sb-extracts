@@ -39,7 +39,7 @@ public class BMessageListener implements ApplicationListener<BMessage> {
                                         new SimpleDateFormat("dd MMM").format(message.getDueDate()))))
                         ).build(), message.getUserEmail(), message.getAuthorSlackId());
 
-        slackResponderService.sendCompletionMessage(message.getAuthorSlackId(), message.getFullName(), message.getUserEmail());
+        slackResponderService.sendMessageToInitiator(message.getAuthorSlackId(), message.getFullName(), message.getUserEmail());
 
     }
 }
