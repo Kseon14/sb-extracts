@@ -138,6 +138,7 @@ public class SlackResponderService implements ResponderService {
                                 .build())
                         .build();
         try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
             throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
@@ -150,7 +151,7 @@ public class SlackResponderService implements ResponderService {
         ModalViewPayload modalViewPayload =
                 ModalViewPayload.builder()
                         .setExternalId(View.ModalActionType.DEBTORS.name())
-                        .setTitle(Text.of(TextType.PLAIN_TEXT,"Markup and Send for Sign"))
+                        .setTitle(Text.of(TextType.PLAIN_TEXT,"Get Debtor List"))
                         .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
                         .addBlocks(Input.builder().setBlockId("sessionId")
                                 .setLabel(Text.of(TextType.PLAIN_TEXT,"SessionID"))
@@ -171,6 +172,7 @@ public class SlackResponderService implements ResponderService {
                                 .build())
                         .build();
         try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
             throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getTrigger_id());
@@ -183,7 +185,7 @@ public class SlackResponderService implements ResponderService {
         ModalViewPayload modalViewPayload =
                 ModalViewPayload.builder()
                         .setExternalId(View.ModalActionType.SIGNED.name())
-                        .setTitle(Text.of(TextType.PLAIN_TEXT,"Markup and Send for Sign"))
+                        .setTitle(Text.of(TextType.PLAIN_TEXT,"Download Signed files"))
                         .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
                         .addBlocks(Input.builder().setBlockId("sessionId")
                                 .setLabel(Text.of(TextType.PLAIN_TEXT,"SessionID"))
