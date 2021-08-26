@@ -204,6 +204,7 @@ public class SlackResponderService implements ResponderService {
                                 .build())
                         .build();
         try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
             throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
