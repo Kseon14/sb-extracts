@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.Map;
 
 @Component
@@ -21,23 +20,26 @@ public class PublisherFactory {
     private final TaxPaymentPublisher taxPaymentPublisher;
     private final BMessagePublisher bMessagePublisher;
 
-    private Map<Type, Publisher> getPublishersMap(){
-        Map<Type, Publisher> publisherMap = new EnumMap<>(Type.class);
-        publisherMap.put(Type.INVOICE, invoicePublisher);
-        publisherMap.put(Type.TAX_PAYMENT, taxPaymentPublisher);
-        publisherMap.put(Type.PAYSLIP, payslipPublisher);
-        publisherMap.put(Type.BROADCAST_MESSAGE, bMessagePublisher);
-        return publisherMap;
+    private Map<Type, Publisher> publisherMap;
+
+    @PostConstruct
+    public void initMap() {
+        publisherMap = Map.of(
+                Type.INVOICE, invoicePublisher,
+                Type.TAX_PAYMENT, taxPaymentPublisher,
+                Type.PAYSLIP, payslipPublisher,
+                Type.BROADCAST_MESSAGE, bMessagePublisher
+        );
     }
 
     public Publisher getProducer(SlackEvent.FileMetaInfo fileMetaInfo) {
         Type type = Type.getByFileName(fileMetaInfo.getName());
-        return getPublishersMap().get(type);
+        return publisherMap.get(type);
     }
 
     public enum Type {
         TAX_PAYMENT("tp"),
-        INVOICE("in") ,
+        INVOICE("in"),
         PAYSLIP("ps"),
         BROADCAST_MESSAGE("bm");
 
