@@ -19,6 +19,7 @@ public class ProcessingFactory {
 
     private final ProcessSignedService processSignedService;
     private final ProcessDebtorsService processDebtorsService;
+    private final ProcessMarkupService processMarkupService;
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
@@ -28,7 +29,8 @@ public class ProcessingFactory {
     public void initMap(){
         processorsMap =
                 Map.of(View.ModalActionType.SIGNED, processSignedService,
-                        View.ModalActionType.DEBTORS, processDebtorsService);
+                        View.ModalActionType.DEBTORS, processDebtorsService,
+                        View.ModalActionType.MARKUP, processMarkupService);
     }
 
     public void startProcessing(SlackInteractiveEvent slackInteractiveEvent){

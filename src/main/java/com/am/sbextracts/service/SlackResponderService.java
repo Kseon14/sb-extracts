@@ -12,7 +12,6 @@ import com.am.sbextracts.vo.View;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hubspot.algebra.Result;
-import com.hubspot.slack.client.SlackClient;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
 import com.hubspot.slack.client.methods.params.chat.ChatUpdateMessageParams;
 import com.hubspot.slack.client.methods.params.conversations.ConversationOpenParams;
@@ -27,7 +26,6 @@ import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
 import com.hubspot.slack.client.models.response.SlackError;
 import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
-import com.hubspot.slack.client.models.response.chat.ChatUpdateMessageResponse;
 import com.hubspot.slack.client.models.response.conversations.ConversationsOpenResponse;
 import com.hubspot.slack.client.models.response.users.UsersInfoResponse;
 import com.hubspot.slack.client.models.views.ModalViewPayload;
@@ -112,19 +110,19 @@ public class SlackResponderService implements ResponderService {
     public void sendMarkupView(SlackInteractiveEvent slackInteractiveEvent) {
         ModalViewPayload modalViewPayload =
                 ModalViewPayload.builder()
-                        .setExternalId(View.ModalActionType.MARKUP.name())
-                        .setTitle(Text.of(TextType.PLAIN_TEXT,"Markup and Send for Sign"))
+                        .setCallbackId(View.ModalActionType.MARKUP.name())
+                        .setTitle(Text.of(TextType.PLAIN_TEXT, "Markup and Send for Sign"))
                         .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
                         .addBlocks(Input.builder().setBlockId("sessionId")
-                                .setLabel(Text.of(TextType.PLAIN_TEXT,"SessionID"))
+                                .setLabel(Text.of(TextType.PLAIN_TEXT, "SessionID"))
                                 .setElement(PlainTextInput.of(FIELD))
                                 .build())
                         .addBlocks(Input.builder().setBlockId("sectionId")
-                                .setLabel(Text.of(TextType.PLAIN_TEXT,"Bamboo FolderID"))
+                                .setLabel(Text.of(TextType.PLAIN_TEXT, "Bamboo FolderID"))
                                 .setElement(PlainTextInput.of(FIELD))
                                 .build())
-                        .addBlocks(Input.builder().setBlockId("totalToProcessing")
-                                .setLabel(Text.of(TextType.PLAIN_TEXT,"Total Documents to Process"))
+                        .addBlocks(Input.builder().setBlockId("gFolderId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT, "Google folder ID"))
                                 .setElement(PlainTextInput.of(FIELD))
                                 .build())
                         .addBlocks(Section.builder()
@@ -150,7 +148,7 @@ public class SlackResponderService implements ResponderService {
     public void sendDebtors(SlackInteractiveEvent slackInteractiveEvent) {
         ModalViewPayload modalViewPayload =
                 ModalViewPayload.builder()
-                        .setExternalId(View.ModalActionType.DEBTORS.name())
+                        .setCallbackId(View.ModalActionType.DEBTORS.name())
                         .setTitle(Text.of(TextType.PLAIN_TEXT,"Get Debtor List"))
                         .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
                         .addBlocks(Input.builder().setBlockId("sessionId")
@@ -184,7 +182,7 @@ public class SlackResponderService implements ResponderService {
     public void sendDownloadSigned(SlackInteractiveEvent slackInteractiveEvent) {
         ModalViewPayload modalViewPayload =
                 ModalViewPayload.builder()
-                        .setExternalId(View.ModalActionType.SIGNED.name())
+                        .setCallbackId(View.ModalActionType.SIGNED.name())
                         .setTitle(Text.of(TextType.PLAIN_TEXT,"Download Signed files"))
                         .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
                         .addBlocks(Input.builder().setBlockId("sessionId")
@@ -262,8 +260,18 @@ public class SlackResponderService implements ResponderService {
                 .build(), initiatorSlackId);
     }
 
-    public void updateMessage(ChatPostMessageResponse initialMessage, String text, String initiatorSlackId){
-        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+    @Override
+    public ChatPostMessageResponse log(String initiatorSlackId, String text) {
+        return sendMessage(ChatPostMessageParams.builder()
+                .setText(text)
+                .addBlocks(Section.of(
+                        Text.of(TextType.MARKDOWN, text)))
+                .setChannelId(slackService.getConversationIdBySlackId(initiatorSlackId, initiatorSlackId))
+                .build(), initiatorSlackId);
+    }
+
+    public void updateMessage(ChatPostMessageResponse initialMessage, String text, String initiatorSlackId) {
+        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             wrapper.getClient().updateMessage(ChatUpdateMessageParams.builder()
                     .setChannelId(initialMessage.getChannel())
                     .addBlocks(Section.of(

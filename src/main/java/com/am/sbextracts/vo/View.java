@@ -3,20 +3,16 @@ package com.am.sbextracts.vo;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Data;
-import lombok.Getter;
 import org.apache.commons.lang3.EnumUtils;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 @Data
 public class View {
     State state;
-    @JsonProperty("external_id")
+    @JsonProperty("callback_id")
     ModalActionType type;
 
     @Data

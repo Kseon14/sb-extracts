@@ -1,7 +1,10 @@
 package com.am.sbextracts.service.integration;
 
 import com.am.sbextracts.client.BambooHrSignedFileClient;
+import com.am.sbextracts.exception.SbExceptionHandler;
+import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
+import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
 import com.google.api.client.http.FileContent;
 import com.jayway.jsonpath.JsonPath;
@@ -42,10 +45,13 @@ public class ProcessSignedService implements Process {
     private final BambooHrSignedFileClient bambooHrSignedFile;
     private final HeaderService headerService;
     private final GDriveService gDriveService;
+    private final ResponderService slackResponderService;
 
     @Override
     @SneakyThrows
+    @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
+        slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Start processing ....");
         feign.Response response = bambooHrSignedFile
                 .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId()));
         TagNode tagNode = getTagNode(response.body());
@@ -56,9 +62,7 @@ public class ProcessSignedService implements Process {
                 PROCESSED_ID_FILE_NAME);
         File file = null;
         try {
-
             file = gDriveService.getFile(logFileName, slackEventResponse.getInitiatorUserId());
-
             if (file.exists()) {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
@@ -71,6 +75,7 @@ public class ProcessSignedService implements Process {
                     .collect(Collectors.toList());
 
             log.info("Documents for download: {}", ids.size());
+            slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Documents for download: " + ids.size());
             for (String id : ids) {
                 feign.Response report = bambooHrSignedFile
                         .getSignatureReport(headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId()), id);
@@ -94,11 +99,13 @@ public class ProcessSignedService implements Process {
                 pdfFile.setParents(Collections.singletonList(slackEventResponse.getGFolderId()));
                 gDriveService.uploadFile(pdfFile, pdf, MediaType.APPLICATION_PDF_VALUE, slackEventResponse.getInitiatorUserId());
                 log.info("Document uploaded: {}", fileName);
+                slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Documents uploaded: " + fileName);
                 FileUtils.writeStringToFile(file, id + "\r\n", StandardCharsets.UTF_8.toString(), true);
             }
-
-        }catch (Throwable ex) {
+        } catch (Throwable ex) {
             log.error("Error during download of acts", ex);
+            throw new SbExtractsException("Error during download of acts:", ex, slackEventResponse.getInitiatorUserId());
+
         } finally {
             if (file != null) {
                 com.google.api.services.drive.model.File logFile = new com.google.api.services.drive.model.File();
@@ -112,9 +119,12 @@ public class ProcessSignedService implements Process {
                     gDriveService.updateFile(file.getName(), logFile, new FileContent(MediaType.TEXT_PLAIN_VALUE, file), slackEventResponse.getInitiatorUserId());
                 }
 
+                slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Google report updated");
+
                 log.info("Local report deleted: {}", file.delete());
                 log.info("Report updated: {}", file.getName());
                 log.info("DONE");
+                slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
             }
         }
     }

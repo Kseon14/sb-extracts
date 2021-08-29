@@ -6,7 +6,6 @@ import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
 import com.hubspot.slack.client.methods.params.chat.ChatUpdateMessageParams;
 import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
-import com.hubspot.slack.client.models.response.chat.ChatUpdateMessageResponse;
 
 public interface ResponderService {
 
@@ -17,6 +16,8 @@ public interface ResponderService {
     void sendMessageToInitiator(String initiatorSlackId, String userFullName, String userEmail);
 
     ChatPostMessageResponse sendMessageToInitiator(String initiatorSlackId, ChatPostMessageParams.Builder builder);
+
+    ChatPostMessageResponse log(String initiatorSlackId, String text);
 
     void sendFile(String fileName, String userEmail, String initiatorSlackId);
 
