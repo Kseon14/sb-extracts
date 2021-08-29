@@ -31,6 +31,8 @@ google:
   authJson: ${G_AUTH_JSON}
 app:
   url: ${APP_URL}
+  company:
+    name: ${COMPANY_NAME}
 
 feign:
   client:

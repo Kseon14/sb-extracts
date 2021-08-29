@@ -15,9 +15,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.Map;
 
-import static org.springframework.http.MediaType.*;
+import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_PDF_VALUE;
 
-@FeignClient(value = "bambooSignHr", configuration = FeignClientFormPostConfig.class, url = "https://squadukraine.bamboohr.com/ajax")
+@FeignClient(value = "bambooSignHr", configuration = FeignClientFormPostConfig.class, url = "https://${app.company.name}.bamboohr.com/ajax")
 public interface BambooHrSignClient {
 
     @RequestMapping(method = RequestMethod.POST, value = "files/send_signature_request.php?route=sendSignatureRequest&workflowId={workflowId}", consumes = APPLICATION_FORM_URLENCODED_VALUE)

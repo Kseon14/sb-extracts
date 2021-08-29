@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.Map;
 
-@FeignClient(value = "bambooHrAuth", configuration = FeignClientFormPostConfig.class, url = "https://squadukraine.bamboohr.com")
+@FeignClient(value = "bambooHrAuth", configuration = FeignClientFormPostConfig.class, url = "https://${app.company.name}.bamboohr.com")
 public interface BambooHrAuthClient {
 
     @RequestMapping(method = RequestMethod.GET, value = "auth/check_session?isOnboarding=false", consumes = "application/json")

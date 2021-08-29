@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.Map;
 
-@FeignClient(value = "bambooHrSignedFile", configuration = FeignClientFormPostConfig.class, url = "https://squadukraine.bamboohr.com")
+@FeignClient(value = "bambooHrSignedFile", configuration = FeignClientFormPostConfig.class, url = "https://${app.company.name}.bamboohr.com")
 public interface BambooHrSignedFileClient {
 
     @RequestMapping(method = RequestMethod.GET, value = "reports/?view=signedDocuments")
