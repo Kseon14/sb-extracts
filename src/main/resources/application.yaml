@@ -18,6 +18,7 @@ slack:
   token: ${TOKEN}
   verification:
     token: ${VERIFICATION_TOKEN}
+  allowedUsers: ${ALLOWED_USER}
 spring:
   cache:
     cache-names: conversationIds

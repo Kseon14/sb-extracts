@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Predicate;
 
 import static com.am.sbextracts.vo.SlackInteractiveEvent.Type.BLOCK_ACTIONS;
@@ -39,6 +40,10 @@ public class SlackInteractivityController {
     @Value("${slack.verification.token}")
     private String verificationToken;
     private final Predicate<String> isTokenValid = token -> !token.equals(verificationToken);
+
+    @Value("#{${slack.allowedUsers}}")
+    private final List<String> allowedUsers;
+
 
     @SneakyThrows
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
@@ -64,12 +69,18 @@ public class SlackInteractivityController {
 
     @PostMapping(value = "process/markup", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Void> markup(SlackInteractiveEvent request) {
+        if (isNotAllowedUser(request)) {
+            return ResponseEntity.ok().build();
+        }
         slackResponderService.sendMarkupView(request);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping(value = "debtors", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Void> getDebtors(SlackInteractiveEvent request) {
+        if (isNotAllowedUser(request)) {
+            return ResponseEntity.ok().build();
+        }
         log.info("Request for Debtors");
         log.info("trigger id {}", request.getTrigger_id());
         slackResponderService.sendDebtors(request);
@@ -78,6 +89,9 @@ public class SlackInteractivityController {
 
     @PostMapping(value = "process/signed", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Void> downloadSigned(SlackInteractiveEvent request) {
+        if (isNotAllowedUser(request)) {
+            return ResponseEntity.ok().build();
+        }
         slackResponderService.sendDownloadSigned(request);
         return ResponseEntity.ok().build();
     }
@@ -87,4 +101,7 @@ public class SlackInteractivityController {
         return new SlackResponse(Arrays.toString(PublisherFactory.Type.values()));
     }
 
+    private boolean isNotAllowedUser(SlackInteractiveEvent slackInteractiveEvent) {
+        return !allowedUsers.contains(slackInteractiveEvent.getUser_id());
+    }
 }
