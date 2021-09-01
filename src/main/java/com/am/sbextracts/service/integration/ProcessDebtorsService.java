@@ -26,7 +26,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.*;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNode;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isAkt;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequiredTag;
 
 @Slf4j
 @Service
@@ -109,8 +111,8 @@ public class ProcessDebtorsService implements Process {
                         .setTs(initialMessage.getTs())
                         .setChannelId(initialMessage.getChannel())
                         .addBlocks(Section.of(
-                                Text.of(TextType.MARKDOWN, "*Not Signe (" + notSignedFiles.size() + ")*\n"
-                                + String.join("\n", notSignedFiles))),
+                                        Text.of(TextType.MARKDOWN, "*Not Signed (" + notSignedFiles.size() + ")*\n"
+                                                + String.join("\n", notSignedFiles))),
                                 Divider.builder().build(),
                                 Section.of(
                                 Text.of(TextType.MARKDOWN, "*Not Sent*\n"
