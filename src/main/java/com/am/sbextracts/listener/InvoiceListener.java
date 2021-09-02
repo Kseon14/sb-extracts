@@ -205,7 +205,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
         }
 
         slackResponderService.sendFile( fileName, invoice.getUserEmail(), invoice.getAuthorSlackId());
-        slackResponderService.sendCompletionMessage(invoice.getAuthorSlackId(), invoice.getFullNameEng(),
+        slackResponderService.sendMessageToInitiator(invoice.getAuthorSlackId(), invoice.getFullNameEng(),
                 invoice.getUserEmail());
     }
 

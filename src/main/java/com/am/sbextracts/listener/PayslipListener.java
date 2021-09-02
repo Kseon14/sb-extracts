@@ -10,7 +10,7 @@ import com.hubspot.slack.client.models.blocks.Divider;
 import com.hubspot.slack.client.models.blocks.Section;
 import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
@@ -20,14 +20,10 @@ import java.util.Calendar;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class PayslipListener implements ApplicationListener<Payslip> {
 
     private final ResponderService slackResponderService;
-
-    @Autowired
-    public PayslipListener(ResponderService slackResponderService) {
-        this.slackResponderService = slackResponderService;
-    }
 
     @Override
     public void onApplicationEvent(Payslip payslip) {
@@ -65,6 +61,6 @@ public class PayslipListener implements ApplicationListener<Payslip> {
                         ).addAttachments(Attachment.builder().setFields(fieldList).setColor("#3655c7").build())
                         .build(), payslip.getUserEmail(), payslip.getAuthorSlackId());
 
-        slackResponderService.sendCompletionMessage(payslip.getAuthorSlackId(), payslip.getFullName(), payslip.getUserEmail());
+        slackResponderService.sendMessageToInitiator(payslip.getAuthorSlackId(), payslip.getFullName(), payslip.getUserEmail());
     }
 }
