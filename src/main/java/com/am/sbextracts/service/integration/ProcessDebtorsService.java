@@ -122,16 +122,19 @@ public class ProcessDebtorsService implements Process {
             );
             int currentPosition = 0;
             do {
+                int newPosition = currentPosition + 40;
                 slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
                         ChatPostMessageParams.builder()
                                 .setText("Not Sent")
                                 .addBlocks(Section.of(
                                         Text.of(TextType.MARKDOWN,
-                                                String.join("\n", notSentFiles.subList(currentPosition, currentPosition + 40)))))
+                                                String.join("\n", notSentFiles.subList(currentPosition,
+                                                        notSentFiles.size() > newPosition ? newPosition : notSentFiles.size() - 1)))))
                 );
-                currentPosition = currentPosition + 40;
+                currentPosition = newPosition;
             } while (notSentFiles.size() > currentPosition);
         }
+        log.info("DONE");
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
     }
 
