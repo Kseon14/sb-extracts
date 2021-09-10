@@ -118,7 +118,7 @@ public class ProcessDebtorsService implements Process {
                     ChatPostMessageParams.builder()
                             .setText("Not Sent")
                             .addBlocks(Section.of(
-                                    Text.of(TextType.MARKDOWN, "*Not Sent (" + notSignedFiles.size() + ")*\n")))
+                                    Text.of(TextType.MARKDOWN, "*Not Sent (" + notSentFiles.size() + ")*\n")))
             );
             int currentPosition = 0;
             do {
