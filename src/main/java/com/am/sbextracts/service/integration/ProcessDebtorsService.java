@@ -8,7 +8,6 @@ import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
 import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
 import com.hubspot.slack.client.methods.params.chat.ChatUpdateMessageParams;
-import com.hubspot.slack.client.models.blocks.Divider;
 import com.hubspot.slack.client.models.blocks.Section;
 import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
@@ -20,8 +19,9 @@ import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,12 +45,12 @@ public class ProcessDebtorsService implements Process {
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
 
-       ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
+        ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
                 slackEventResponse.getInitiatorUserId(),
                 ChatPostMessageParams.builder()
                         .setText("Starting....")
                         .addBlocks(Section.of(
-                                        Text.of(TextType.MARKDOWN, "Starting...")))
+                                Text.of(TextType.MARKDOWN, "Starting...")))
         );
         feign.Response response = bambooHrSignedFile
                 .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(),
@@ -59,12 +59,12 @@ public class ProcessDebtorsService implements Process {
 
         String text = "Processing..";
         slackResponderService.updateMessage(
-                initialMessage, text,   slackEventResponse.getInitiatorUserId());
+                initialMessage, text, slackEventResponse.getInitiatorUserId());
 
         Map<String, String> employees = reportService.getEmployees();
         text = text + "..";
         slackResponderService.updateMessage(
-                initialMessage, text,   slackEventResponse.getInitiatorUserId());
+                initialMessage, text, slackEventResponse.getInitiatorUserId());
 
         Set<String> notSignedFiles = Arrays
                 .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
@@ -72,10 +72,9 @@ public class ProcessDebtorsService implements Process {
                 .filter(td -> ParsingUtils.isAktAndDate(td, slackEventResponse.getAktDate()))
                 .filter(rec -> !ParsingUtils.isSigned(rec))
                 .map(ParsingUtils::getName)
-                .map(fileName -> fileName.split("\\.")[0])
                 .collect(Collectors.toSet());
 
-        Set<String> filesSentForSignature  = Arrays
+        Set<String> filesSentForSignature = Arrays
                 .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
                         true, false))
                 .filter(td -> ParsingUtils.isAktAndDate(td, slackEventResponse.getAktDate()))
@@ -84,20 +83,20 @@ public class ProcessDebtorsService implements Process {
 
         var offset = 0;
         int fileCount;
-        Set<String> notSentFiles = new HashSet<>();
+        List<String> notSentFiles = new ArrayList<>();
         do {
             Folder folder = getFolderContent(slackEventResponse.getSessionId(), offset,
                     slackEventResponse.getBambooFolderId(), slackEventResponse.getInitiatorUserId());
 
             text = text + "..";
             slackResponderService.updateMessage(
-                    initialMessage, text,  slackEventResponse.getInitiatorUserId());
+                    initialMessage, text, slackEventResponse.getInitiatorUserId());
 
             TagNode tagNodeFolderWithActs = new HtmlCleaner().clean(folder.getHtml());
             notSentFiles.addAll(tagNodeFolderWithActs.getElementListByName("button", true).stream()
                     .filter(isRequiredTag)
                     .filter(isAkt)
-                    .filter(b -> employees.get(ParsingUtils.getInn(b)) !=null)
+                    .filter(b -> employees.get(ParsingUtils.getInn(b)) != null)
                     .map(ParsingUtils::getFileTitle)
                     .filter(name -> !CollectionUtils.containsAny(filesSentForSignature, name))
                     .collect(Collectors.toSet()));
@@ -111,18 +110,32 @@ public class ProcessDebtorsService implements Process {
                         .setTs(initialMessage.getTs())
                         .setChannelId(initialMessage.getChannel())
                         .addBlocks(Section.of(
-                                        Text.of(TextType.MARKDOWN, "*Not Signed (" + notSignedFiles.size() + ")*\n"
-                                                + String.join("\n", notSignedFiles))),
-                                Divider.builder().build(),
-                                Section.of(
-                                Text.of(TextType.MARKDOWN, "*Not Sent*\n"
-                                        + String.join("\n", notSentFiles)))
-                        )
-                        ,  slackEventResponse.getInitiatorUserId());
+                                Text.of(TextType.MARKDOWN, "*Not Signed (" + notSignedFiles.size() + ")*\n")))
+                , slackEventResponse.getInitiatorUserId());
+
+        if (notSentFiles.size() != 0) {
+            slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
+                    ChatPostMessageParams.builder()
+                            .setText("Not Sent")
+                            .addBlocks(Section.of(
+                                    Text.of(TextType.MARKDOWN, "*Not Sent*")))
+            );
+            int currentPosition = 0;
+            do {
+                slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
+                        ChatPostMessageParams.builder()
+                                .setText("Not Sent")
+                                .addBlocks(Section.of(
+                                        Text.of(TextType.MARKDOWN,
+                                                String.join("\n", notSentFiles.subList(currentPosition, currentPosition + 40)))))
+                );
+                currentPosition = currentPosition + 40;
+            } while (notSentFiles.size() > currentPosition);
+        }
     }
 
     public Folder getFolderContent(String sessionId, int offset, int sectionId, String initiatorSlackId) {
-        return bambooHrSignClient.getFolderContent(headerService.getBchHeaders(sessionId,initiatorSlackId),
+        return bambooHrSignClient.getFolderContent(headerService.getBchHeaders(sessionId, initiatorSlackId),
                 BambooHrSignClient.FolderParams.of(sectionId, offset));
     }
 

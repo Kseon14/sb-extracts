@@ -86,7 +86,7 @@ public final class ParsingUtils {
         return Arrays
                 .stream(tagNode.getElementsByAttValue("class", "ReportsTable__reportNameText", true, false)).findFirst()
                 .map(at -> at.getAttributeByName("title"))
-                .orElseThrow(() -> new IllegalArgumentException("can find title"));
+                .orElseThrow(() -> new IllegalArgumentException("can not find title"));
     }
 
 }
