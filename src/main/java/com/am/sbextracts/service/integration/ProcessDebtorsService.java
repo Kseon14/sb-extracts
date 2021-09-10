@@ -129,7 +129,7 @@ public class ProcessDebtorsService implements Process {
                                 .addBlocks(Section.of(
                                         Text.of(TextType.MARKDOWN,
                                                 String.join("\n", notSentFiles.subList(currentPosition,
-                                                        notSentFiles.size() > newPosition ? newPosition : notSentFiles.size() - 1)))))
+                                                        Math.min(notSentFiles.size(), newPosition))))))
                 );
                 currentPosition = newPosition;
             } while (notSentFiles.size() > currentPosition);
