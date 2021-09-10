@@ -118,7 +118,7 @@ public class ProcessDebtorsService implements Process {
                     ChatPostMessageParams.builder()
                             .setText("Not Sent")
                             .addBlocks(Section.of(
-                                    Text.of(TextType.MARKDOWN, "*Not Sent*")))
+                                    Text.of(TextType.MARKDOWN, "*Not Sent (" + notSignedFiles.size() + ")*\n")))
             );
             int currentPosition = 0;
             do {
@@ -132,6 +132,7 @@ public class ProcessDebtorsService implements Process {
                 currentPosition = currentPosition + 40;
             } while (notSentFiles.size() > currentPosition);
         }
+        slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
     }
 
     public Folder getFolderContent(String sessionId, int offset, int sectionId, String initiatorSlackId) {
