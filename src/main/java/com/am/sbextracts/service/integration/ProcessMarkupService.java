@@ -68,6 +68,7 @@ public class ProcessMarkupService implements Process {
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Starting....");
+        gDriveService.isFolderExist(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
         Map<String, String> employees = reportService.getEmployees();
         int fileCount;
         var offset = 0;

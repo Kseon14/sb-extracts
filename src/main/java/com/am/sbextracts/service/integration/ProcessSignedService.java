@@ -54,6 +54,7 @@ public class ProcessSignedService implements Process {
     @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Start processing ....");
+        gDriveService.isFolderExist(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
         feign.Response response = bambooHrSignedFile
                 .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId()));
         TagNode tagNode = getTagNode(response.body());

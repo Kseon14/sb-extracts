@@ -12,6 +12,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.FileContent;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -40,6 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -125,6 +127,25 @@ public class GDriveService {
 
     public String getRedirectURI() {
         return url + "/api/gauth";
+    }
+
+    @SneakyThrows
+    @SbExceptionHandler
+    public boolean isFolderExist(String fileId, String initiatorSlackId) {
+        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+        Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT, initiatorSlackId))
+                .setApplicationName(APPLICATION_NAME).build();
+        Optional<File> folder;
+        try {
+            folder = Optional.of(service
+                    .files()
+                    .get(fileId)
+                    .execute());
+        } catch (GoogleJsonResponseException ex) {
+            throw new SbExtractsException("Error during folder validation", ex, initiatorSlackId);
+        }
+        return folder.map(f -> f.getMimeType().equals("application/vnd.google-apps.folder"))
+                .orElseThrow(IllegalStateException::new);
     }
 
     @SneakyThrows
