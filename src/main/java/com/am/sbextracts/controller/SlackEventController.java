@@ -55,7 +55,7 @@ public class SlackEventController {
         if (isEventCallback.and(isFileShare).negate().test(slackEvent) ||
                 CollectionUtils.isEmpty(slackEvent.getEvent().getFileMetaInfos()) ||
                 isXlsx.negate().test(slackEvent)) {
-            log.info("{} skipping....", slackEvent);
+            log.debug("{} skipping....", slackEvent);
             return ResponseEntity.ok().build();
         }
 

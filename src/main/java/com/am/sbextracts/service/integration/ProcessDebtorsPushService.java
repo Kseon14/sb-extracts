@@ -68,26 +68,12 @@ public class ProcessDebtorsPushService implements Process {
                 .map(ParsingUtils::getInn)
                 .collect(Collectors.toSet());
 
-        var offset = 0;
-        int fileCount;
-        do {
-            Folder folder = getFolderContent(slackEventResponse.getSessionId(), offset,
-                    slackEventResponse.getFolderId(), slackEventResponse.getInitiatorUserId());
-            text = text + "..";
-            slackResponderService.updateMessage(
-                    initialMessage, text, slackEventResponse.getInitiatorUserId());
-            offset = folder.getOffset();
-            fileCount = folder.getSectionFileCount();
-        } while (offset < fileCount);
-
+        log.info("Count of user for notification {}", notSignedFilesInn.size());
         for (String inn : notSignedFilesInn) {
-
             String userEmail = employeesEmails.get(inn);
             try {
-
                 String conversationIdWithUser = slackResponderService.getConversationIdByEmail(userEmail,
                         slackEventResponse.getInitiatorUserId());
-
                 slackResponderService.sendMessage(
                         ChatPostMessageParams.builder()
                                 .setText("Unsigned akt")
@@ -95,7 +81,7 @@ public class ProcessDebtorsPushService implements Process {
                                 .addBlocks(Section.of(
                                         Text.of(TextType.MARKDOWN, String.format(
                                                 ":alert:\n" +
-                                                        "Hi, you have unsigned akt from TechHosting from %s, please sign the akt in bambooHr\n" +
+                                                        "Hi, you have unsigned akt from TechHosting from %s, please sign it in bambooHr\n" +
                                                         "If you have any questions, please contact <@%s> :paw_prints:",
                                                 slackEventResponse.getDate(), slackEventResponse.getInitiatorUserId())))
                                 ).build(), userEmail, slackEventResponse.getInitiatorUserId());
