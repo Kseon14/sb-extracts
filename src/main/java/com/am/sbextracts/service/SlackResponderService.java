@@ -203,7 +203,41 @@ public class SlackResponderService implements ResponderService {
                                         .build())
                                 .build())
                         .build();
-        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
+            wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
+        } catch (Exception e) {
+            throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
+        }
+    }
+
+    @Override
+    @SbExceptionHandler
+    public void sendDownloadInvoice(SlackInteractiveEvent slackInteractiveEvent) {
+        ModalViewPayload modalViewPayload =
+                ModalViewPayload.builder()
+                        .setCallbackId(View.ModalActionType.INVOICE_DOWNLOAD.name())
+                        .setTitle(Text.of(TextType.PLAIN_TEXT, "Download Invoice files"))
+                        .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
+                        .addBlocks(Input.builder().setBlockId("sessionId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT, "NS SessionID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Input.builder().setBlockId("sectionId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT, "NS FolderID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Section.builder()
+                                .setBlockId("date")
+                                .setText(Text.of(TextType.MARKDOWN, "Pick a date for Invoices"))
+                                .setAccessory(DatePicker.builder()
+                                        .setActionId(FIELD)
+                                        .setInitialDate(LocalDate.now())
+                                        .setPlaceholder(Text.of(TextType.PLAIN_TEXT, "Select a date"))
+                                        .build())
+                                .build())
+                        .build();
+        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
@@ -219,7 +253,7 @@ public class SlackResponderService implements ResponderService {
             throw new SbExtractsException("userEmail could not be null", userEmail, initiatorSlackId);
         }
         UsersInfoResponse usersInfoResponse;
-        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             usersInfoResponse = wrapper.getClient().lookupUserByEmail(UserEmailParams.builder()
                     .setEmail(userEmail)
                     .build()).join().unwrapOrElseThrow();

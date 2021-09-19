@@ -69,7 +69,7 @@ public class ProcessDebtorsService implements Process {
         Set<String> notSignedFiles = Arrays
                 .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
                         true, false))
-                .filter(td -> ParsingUtils.isAktAndDate(td, slackEventResponse.getAktDate()))
+                .filter(td -> ParsingUtils.isAktAndDate(td, slackEventResponse.getDate()))
                 .filter(rec -> !ParsingUtils.isSigned(rec))
                 .map(ParsingUtils::getName)
                 .collect(Collectors.toSet());
@@ -77,7 +77,7 @@ public class ProcessDebtorsService implements Process {
         Set<String> filesSentForSignature = Arrays
                 .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
                         true, false))
-                .filter(td -> ParsingUtils.isAktAndDate(td, slackEventResponse.getAktDate()))
+                .filter(td -> ParsingUtils.isAktAndDate(td, slackEventResponse.getDate()))
                 .map(ParsingUtils::getName)
                 .collect(Collectors.toSet());
 
@@ -86,7 +86,7 @@ public class ProcessDebtorsService implements Process {
         List<String> notSentFiles = new ArrayList<>();
         do {
             Folder folder = getFolderContent(slackEventResponse.getSessionId(), offset,
-                    slackEventResponse.getBambooFolderId(), slackEventResponse.getInitiatorUserId());
+                    slackEventResponse.getFolderId(), slackEventResponse.getInitiatorUserId());
 
             text = text + "..";
             slackResponderService.updateMessage(

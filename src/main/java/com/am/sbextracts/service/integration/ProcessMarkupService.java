@@ -10,7 +10,6 @@ import com.am.sbextracts.model.Response;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.FileContent;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -31,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -53,6 +51,9 @@ public class ProcessMarkupService implements Process {
     private final static String PROCESSED_ID_FILE_NAME = "processedId.log";
     private final static String PROCESSED_ID_FILE_NAME_PREFIX = "markup";
 
+    @Value("${app.perRequestProcessingFilesCount}")
+    private final int perRequestProcessingFilesCount;
+
     private final static Properties prop = new Properties();
 
     private final ObjectMapper mapper;
@@ -73,7 +74,7 @@ public class ProcessMarkupService implements Process {
 
         final List<String> processedIds = new ArrayList<>();
         File file = null;
-        String logFileName = String.format("%s-%s-%s", slackEventResponse.getAktDate(), PROCESSED_ID_FILE_NAME_PREFIX,
+        String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,
                 PROCESSED_ID_FILE_NAME);
         try {
             file = gDriveService.getFile(logFileName, slackEventResponse.getInitiatorUserId());
@@ -93,20 +94,20 @@ public class ProcessMarkupService implements Process {
                         .map(b -> DocumentInfo.of(ParsingUtils.getInn(b),
                                 ParsingUtils.getFileId(b), ParsingUtils.getTemplateFileId(b)))
                         .filter(info -> !CollectionUtils.containsAny(processedIds, info.getFileId() + ""))
+                        .filter(info -> employees.get(info.getInn()) != null)
                         .collect(Collectors.toList());
                 log.info("Following Documents count {} will be processed", infos.size());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(),
                         String.format("Following Documents count %s will be processed", infos.size()));
 
-                for (var info : infos) {
+                for (int i = 0; i < Math.min(perRequestProcessingFilesCount, infos.size()); i++) {
+                    var info = infos.get(i);
                     String employeeInternalId = employees.get(info.getInn());
-                    if (employeeInternalId == null) {
-                        log.error("user with inn: {} not found", info.getInn());
-                        continue;
-                    }
-                    log.info("Start processing {}....", info.getInn());
+                    log.info("Start processing  [{}/{}]: {}....", i + 1,
+                            Math.min(perRequestProcessingFilesCount, infos.size()), info.getInn());
                     slackResponderService.log(slackEventResponse.getInitiatorUserId(),
-                            String.format("Start processing %s....", info.getInn()));
+                            String.format("Start processing [%s/%s]: %s...", i + 1,
+                                    Math.min(perRequestProcessingFilesCount, infos.size()), info.getInn()));
                     processDocuments(employeeInternalId, info, slackEventResponse, file);
                 }
                 offset = folder.getOffset();
@@ -116,34 +117,14 @@ public class ProcessMarkupService implements Process {
             log.error("Error during markup of acts", ex);
             throw new SbExtractsException("Error during markup of acts:", ex, slackEventResponse.getInitiatorUserId());
         } finally {
-            if (file != null) {
-                com.google.api.services.drive.model.File logFile = new com.google.api.services.drive.model.File();
-                logFile.setName(logFileName);
-                logFile.setMimeType(MediaType.TEXT_PLAIN_VALUE);
-
-                if (StringUtils.equals(file.getName(), logFileName)) {
-                    logFile.setParents(Collections.singletonList(slackEventResponse.getGFolderId()));
-                    gDriveService.uploadFile(logFile, FileUtils.readFileToByteArray(file), MediaType.TEXT_PLAIN_VALUE,
-                            slackEventResponse.getInitiatorUserId());
-                } else {
-                    gDriveService.updateFile(file.getName(), logFile, new FileContent(MediaType.TEXT_PLAIN_VALUE, file),
-                            slackEventResponse.getInitiatorUserId());
-                }
-
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Google report updated");
-
-                log.info("Local report deleted: {}", file.delete());
-                log.info("Report updated: {}", file.getName());
-                log.info("DONE");
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
-            }
+            gDriveService.saveFile(file, logFileName, slackEventResponse);
         }
     }
 
     private Folder getFolderContent(InternalSlackEventResponse slackEventResponse, int offset) {
         return bambooHrSignClient.getFolderContent(headerService.getBchHeaders(slackEventResponse.getSessionId(),
                         slackEventResponse.getInitiatorUserId()),
-                BambooHrSignClient.FolderParams.of(slackEventResponse.getBambooFolderId(), offset));
+                BambooHrSignClient.FolderParams.of(slackEventResponse.getFolderId(), offset));
     }
 
     @SneakyThrows

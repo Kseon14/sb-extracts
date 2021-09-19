@@ -32,10 +32,11 @@ public class View {
         Map<String, Item> values;
     }
 
-    public enum ModalActionType{
+    public enum ModalActionType {
         MARKUP,
         SIGNED,
-        DEBTORS;
+        DEBTORS,
+        INVOICE_DOWNLOAD;
 
         @JsonCreator
         public static ModalActionType forValue(String value) {

@@ -6,5 +6,6 @@ import lombok.Value;
 public class FileInfo {
     String fileName;
     String href;
+    String id;
 
 }
