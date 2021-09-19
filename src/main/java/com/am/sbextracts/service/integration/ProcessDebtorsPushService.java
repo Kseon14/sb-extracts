@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.htmlcleaner.TagNode;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
@@ -96,7 +95,7 @@ public class ProcessDebtorsPushService implements Process {
                                 .addBlocks(Section.of(
                                         Text.of(TextType.MARKDOWN, String.format(
                                                 "Hi, you have unsigned akt from TechHosting from %s, please sign the akt in bambooHr",
-                                                new SimpleDateFormat("dd MM").format(slackEventResponse.getDate()))))
+                                                slackEventResponse.getDate())))
                                 ).build(), userEmail, slackEventResponse.getInitiatorUserId());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", employeesEmails));
             } catch (Exception ex) {
