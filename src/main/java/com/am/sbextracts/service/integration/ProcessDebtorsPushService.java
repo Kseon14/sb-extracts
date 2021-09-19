@@ -94,10 +94,12 @@ public class ProcessDebtorsPushService implements Process {
                                 .setChannelId(conversationIdWithUser)
                                 .addBlocks(Section.of(
                                         Text.of(TextType.MARKDOWN, String.format(
-                                                "Hi, you have unsigned akt from TechHosting from %s, please sign the akt in bambooHr",
-                                                slackEventResponse.getDate())))
+                                                ":alert:\n" +
+                                                        "Hi, you have unsigned akt from TechHosting from %s, please sign the akt in bambooHr\n" +
+                                                        "If you have any questions, please contact <@%s> :paw_prints:",
+                                                slackEventResponse.getDate(), slackEventResponse.getInitiatorUserId())))
                                 ).build(), userEmail, slackEventResponse.getInitiatorUserId());
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", employeesEmails));
+                slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", userEmail));
             } catch (Exception ex) {
                 log.error("Error during debtor push", ex);
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("Error: %s", ex.getMessage()));
