@@ -169,7 +169,41 @@ public class SlackResponderService implements ResponderService {
                                         .build())
                                 .build())
                         .build();
-        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
+            wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
+        } catch (Exception e) {
+            throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getTrigger_id());
+        }
+    }
+
+    @Override
+    @SbExceptionHandler
+    public void pushDebtors(SlackInteractiveEvent slackInteractiveEvent) {
+        ModalViewPayload modalViewPayload =
+                ModalViewPayload.builder()
+                        .setCallbackId(View.ModalActionType.PUSH_DEBTORS.name())
+                        .setTitle(Text.of(TextType.PLAIN_TEXT, "Push debtors"))
+                        .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
+                        .addBlocks(Input.builder().setBlockId("sessionId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT, "SessionID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Input.builder().setBlockId("sectionId")
+                                .setLabel(Text.of(TextType.PLAIN_TEXT, "Bamboo FolderID"))
+                                .setElement(PlainTextInput.of(FIELD))
+                                .build())
+                        .addBlocks(Section.builder()
+                                .setBlockId("date")
+                                .setText(Text.of(TextType.MARKDOWN, "Pick a date for Acts"))
+                                .setAccessory(DatePicker.builder()
+                                        .setActionId(FIELD)
+                                        .setInitialDate(LocalDate.now())
+                                        .setPlaceholder(Text.of(TextType.PLAIN_TEXT, "Select a date"))
+                                        .build())
+                                .build())
+                        .build();
+        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
@@ -183,7 +217,7 @@ public class SlackResponderService implements ResponderService {
         ModalViewPayload modalViewPayload =
                 ModalViewPayload.builder()
                         .setCallbackId(View.ModalActionType.SIGNED.name())
-                        .setTitle(Text.of(TextType.PLAIN_TEXT,"Download Signed files"))
+                        .setTitle(Text.of(TextType.PLAIN_TEXT, "Download Signed files"))
                         .setSubmitButtonText(Text.of(TextType.PLAIN_TEXT, "Start"))
                         .addBlocks(Input.builder().setBlockId("sessionId")
                                 .setLabel(Text.of(TextType.PLAIN_TEXT,"SessionID"))

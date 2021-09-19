@@ -28,4 +28,12 @@ public class ReportService {
         }
         return report.getEmployees().stream().collect(Collectors.toMap(Employee::getInn, Employee::getId));
     }
+
+    public Map<String, String> getEmployeesEmails() {
+        Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(), reportId);
+        if (CollectionUtils.isEmpty(report.getEmployees())) {
+            throw new IllegalArgumentException("employee list is empty");
+        }
+        return report.getEmployees().stream().collect(Collectors.toMap(Employee::getInn, Employee::getWorkEmail));
+    }
 }

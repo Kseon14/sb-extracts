@@ -22,6 +22,10 @@ public final class ParsingUtils {
         return StringUtils.strip(((ContentNode) tag.getAllChildren().get(0)).getContent()).split("\\.")[1];
     }
 
+    public static String getInn(String fileName) {
+        return StringUtils.strip(fileName).split("\\.")[1];
+    }
+
     public static String getFileTitle(TagNode tag) {
         return StringUtils.strip(((ContentNode) tag.getAllChildren().get(0)).getContent());
     }
