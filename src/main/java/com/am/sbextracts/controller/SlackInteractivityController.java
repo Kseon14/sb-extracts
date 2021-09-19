@@ -81,8 +81,6 @@ public class SlackInteractivityController {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }
-        log.info("Request for Debtors");
-        log.info("trigger id {}", request.getTrigger_id());
         slackResponderService.sendDebtors(request);
         return ResponseEntity.ok().build();
     }
@@ -102,6 +100,15 @@ public class SlackInteractivityController {
             return ResponseEntity.ok().build();
         }
         slackResponderService.sendDownloadInvoice(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(value = "debtors/push", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<Void> pushDebtors(SlackInteractiveEvent request) {
+        if (isNotAllowedUser(request)) {
+            return ResponseEntity.ok().build();
+        }
+        slackResponderService.pushDebtors(request);
         return ResponseEntity.ok().build();
     }
 

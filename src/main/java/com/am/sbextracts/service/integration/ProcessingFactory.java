@@ -21,6 +21,7 @@ public class ProcessingFactory {
     private final ProcessDebtorsService processDebtorsService;
     private final ProcessMarkupService processMarkupService;
     private final ProcessingInvoiceService processingInvoiceService;
+    private final ProcessDebtorsPushService processDebtorsPushService;
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
@@ -32,7 +33,8 @@ public class ProcessingFactory {
                 Map.of(View.ModalActionType.SIGNED, processSignedService,
                         View.ModalActionType.DEBTORS, processDebtorsService,
                         View.ModalActionType.MARKUP, processMarkupService,
-                        View.ModalActionType.INVOICE_DOWNLOAD, processingInvoiceService);
+                        View.ModalActionType.INVOICE_DOWNLOAD, processingInvoiceService,
+                        View.ModalActionType.PUSH_DEBTORS, processDebtorsPushService);
     }
 
     public void startProcessing(SlackInteractiveEvent slackInteractiveEvent){

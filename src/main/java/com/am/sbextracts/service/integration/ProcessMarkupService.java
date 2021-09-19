@@ -175,7 +175,7 @@ public class ProcessMarkupService implements Process {
                                             slackEventResponse.getInitiatorUserId()),
                                     new BambooHrSignClient.UpdateRequest(true,
                                             Integer.parseInt(completed.getEsignatureTemplateId()), markUp)));
-                    log.info("Response {}, error {}, message {}", update.isSuccess(), update.getError(),
+                    log.debug("Response {}, error {}, message {}", update.isSuccess(), update.getError(),
                             update.getMessage());
 
                     Map<String, Object> signParams = Map.of("allIds", "off", "message",

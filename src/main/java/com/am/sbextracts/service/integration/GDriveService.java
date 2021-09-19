@@ -1,5 +1,7 @@
 package com.am.sbextracts.service.integration;
 
+import com.am.sbextracts.exception.SbExceptionHandler;
+import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.LockIndicator;
@@ -162,25 +164,30 @@ public class GDriveService {
     }
 
     @SneakyThrows
+    @SbExceptionHandler
     public void saveFile(java.io.File file, String logFileName, String initiatorUserId, String gFolderId) {
-        if (file != null) {
-            com.google.api.services.drive.model.File logFile = new com.google.api.services.drive.model.File();
-            logFile.setName(logFileName);
-            logFile.setMimeType(MediaType.TEXT_PLAIN_VALUE);
+        try {
+            if (file != null) {
+                com.google.api.services.drive.model.File logFile = new com.google.api.services.drive.model.File();
+                logFile.setName(logFileName);
+                logFile.setMimeType(MediaType.TEXT_PLAIN_VALUE);
 
-            if (StringUtils.equals(file.getName(), logFileName)) {
-                logFile.setParents(Collections.singletonList(gFolderId));
-                uploadFile(logFile, FileUtils.readFileToByteArray(file), MediaType.TEXT_PLAIN_VALUE, initiatorUserId);
-            } else {
-                updateFile(file.getName(), logFile, new FileContent(MediaType.TEXT_PLAIN_VALUE, file), initiatorUserId);
+                if (StringUtils.equals(file.getName(), logFileName)) {
+                    logFile.setParents(Collections.singletonList(gFolderId));
+                    uploadFile(logFile, FileUtils.readFileToByteArray(file), MediaType.TEXT_PLAIN_VALUE, initiatorUserId);
+                } else {
+                    updateFile(file.getName(), logFile, new FileContent(MediaType.TEXT_PLAIN_VALUE, file), initiatorUserId);
+                }
+
+                slackResponderService.log(initiatorUserId, "Google report updated");
+
+                log.info("Local report deleted: {}", file.delete());
+                log.info("Report updated: {}", file.getName());
+                log.info("DONE");
+                slackResponderService.log(initiatorUserId, "Done");
             }
-
-            slackResponderService.log(initiatorUserId, "Google report updated");
-
-            log.info("Local report deleted: {}", file.delete());
-            log.info("Report updated: {}", file.getName());
-            log.info("DONE");
-            slackResponderService.log(initiatorUserId, "Done");
+        } catch (Exception ex) {
+            throw new SbExtractsException("Error during upload to google-drive:", ex, initiatorUserId);
         }
     }
 

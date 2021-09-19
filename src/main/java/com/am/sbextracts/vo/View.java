@@ -36,7 +36,8 @@ public class View {
         MARKUP,
         SIGNED,
         DEBTORS,
-        INVOICE_DOWNLOAD;
+        INVOICE_DOWNLOAD,
+        PUSH_DEBTORS;
 
         @JsonCreator
         public static ModalActionType forValue(String value) {

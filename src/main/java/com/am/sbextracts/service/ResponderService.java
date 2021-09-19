@@ -37,6 +37,8 @@ public interface ResponderService {
 
     void sendDownloadInvoice(SlackInteractiveEvent slackInteractiveEvent);
 
+    void pushDebtors(SlackInteractiveEvent slackInteractiveEvent);
+
     void updateMessage(ChatPostMessageResponse initialMessage, String text, String initiatorSlackId);
 
     void updateMessage(ChatUpdateMessageParams.Builder builder, String initiatorSlackId);
