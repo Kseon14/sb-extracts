@@ -99,6 +99,7 @@ public class ProcessDebtorsPushService implements Process {
                                 ).build(), userEmail, slackEventResponse.getInitiatorUserId());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", employeesEmails));
             } catch (Exception ex) {
+                log.error("Error during debtor push", ex);
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("Error: %s", ex.getMessage()));
             }
         }
