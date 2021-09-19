@@ -71,7 +71,7 @@ public class SlackResponderService implements ResponderService {
 
     private AsyncHttpClient getHttpClient() throws Exception {
         AsyncHttpClient client = httpClientPool.borrowObject();
-        log.info("http Client {}", client.toString());
+        log.debug("http Client {}", client.toString());
         return client;
     }
 
@@ -136,7 +136,6 @@ public class SlackResponderService implements ResponderService {
                                 .build())
                         .build();
         try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
             throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
@@ -170,7 +169,6 @@ public class SlackResponderService implements ResponderService {
                                 .build())
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
             throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getTrigger_id());
@@ -204,7 +202,6 @@ public class SlackResponderService implements ResponderService {
                                 .build())
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
             throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getTrigger_id());
@@ -238,7 +235,6 @@ public class SlackResponderService implements ResponderService {
                                 .build())
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
             throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
@@ -272,7 +268,6 @@ public class SlackResponderService implements ResponderService {
                                 .build())
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            log.info("trigger id {}", slackInteractiveEvent.getTrigger_id());
             wrapper.getClient().openView(OpenViewParams.of(slackInteractiveEvent.getTrigger_id(), modalViewPayload));
         } catch (Exception e) {
             throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
@@ -302,7 +297,7 @@ public class SlackResponderService implements ResponderService {
     @Cacheable(value = "conversationIds", key = "#userSlackId",
             condition="#userSlackId!=null", unless = "#result== null")
     public String getConversationIdBySlackId(String userSlackId, String initiatorSlackId) {
-        log.info("getting conversationId by slackId...");
+        log.debug("getting conversationId by slackId...");
         if (userSlackId == null) {
             throw new SbExtractsException("userSlackId could not be null", "Initiator", "Initiator");
         }

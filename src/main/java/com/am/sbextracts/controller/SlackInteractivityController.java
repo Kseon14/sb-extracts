@@ -81,8 +81,6 @@ public class SlackInteractivityController {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }
-        log.info("Request for Debtors");
-        log.info("trigger id {}", request.getTrigger_id());
         slackResponderService.sendDebtors(request);
         return ResponseEntity.ok().build();
     }

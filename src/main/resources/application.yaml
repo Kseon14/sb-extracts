@@ -8,7 +8,7 @@ logging:
     name: logs/sb-extracts.log
   level:
     org.springframework.web: ERROR
-    com.am.sbextracts: DEBUG
+    com.am.sbextracts: INFO
 pool:
   max-idle: 2
   max-total: 6
