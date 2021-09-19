@@ -18,4 +18,5 @@ public interface GoogleAuthClient {
             consumes = MULTIPART_FORM_DATA_VALUE, produces = APPLICATION_JSON_VALUE)
     String getToken(@RequestBody Map<String, ?> request);
 
+
 }
