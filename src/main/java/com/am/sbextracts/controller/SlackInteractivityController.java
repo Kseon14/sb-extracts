@@ -96,6 +96,15 @@ public class SlackInteractivityController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping(value = "process/invoice", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<Void> downloadInvoice(SlackInteractiveEvent request) {
+        if (isNotAllowedUser(request)) {
+            return ResponseEntity.ok().build();
+        }
+        slackResponderService.sendDownloadInvoice(request);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("file_types")
     public SlackResponse getFileTypeInfo() {
         return new SlackResponse(Arrays.toString(PublisherFactory.Type.values()));

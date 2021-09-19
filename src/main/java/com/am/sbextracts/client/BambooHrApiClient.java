@@ -21,7 +21,7 @@ public interface BambooHrApiClient {
     Report getEmployees(@RequestHeader Map<String, String> headerMap, @PathVariable String reportId);
 
     @RequestMapping(method = RequestMethod.POST, value = "/employees/{employeeId}/files", consumes = MULTIPART_FORM_DATA_VALUE, produces = APPLICATION_JSON_VALUE)
-    void uploadFile(@RequestHeader Map<String, String> headerMap, @PathVariable int employeeId,
-            @RequestBody Map<String, ?> request);
+    void uploadFile(@RequestHeader Map<String, String> headerMap, @PathVariable String employeeId,
+                    @RequestBody Map<String, ?> request);
 
 }

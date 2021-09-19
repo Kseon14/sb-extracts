@@ -1,5 +1,6 @@
 package com.am.sbextracts.service.integration;
 
+import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.LockIndicator;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +21,10 @@ import com.google.api.services.drive.model.File;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
@@ -32,7 +36,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -53,8 +57,6 @@ public class GDriveService {
 
     private final LockIndicator lock = new LockIndicator();
 
-    private static final List<String> SCOPES = Arrays.asList(
-            DriveScopes.DRIVE);
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static final String APPLICATION_NAME = "BCH-Upload";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
@@ -153,6 +155,33 @@ public class GDriveService {
             byteArrayOutputStream.writeTo(outputStream);
         }
         return file;
+    }
+
+    public void saveFile(java.io.File file, String logFileName, InternalSlackEventResponse slackEventResponse) {
+        saveFile(file, logFileName, slackEventResponse.getInitiatorUserId(), slackEventResponse.getGFolderId());
+    }
+
+    @SneakyThrows
+    public void saveFile(java.io.File file, String logFileName, String initiatorUserId, String gFolderId) {
+        if (file != null) {
+            com.google.api.services.drive.model.File logFile = new com.google.api.services.drive.model.File();
+            logFile.setName(logFileName);
+            logFile.setMimeType(MediaType.TEXT_PLAIN_VALUE);
+
+            if (StringUtils.equals(file.getName(), logFileName)) {
+                logFile.setParents(Collections.singletonList(gFolderId));
+                uploadFile(logFile, FileUtils.readFileToByteArray(file), MediaType.TEXT_PLAIN_VALUE, initiatorUserId);
+            } else {
+                updateFile(file.getName(), logFile, new FileContent(MediaType.TEXT_PLAIN_VALUE, file), initiatorUserId);
+            }
+
+            slackResponderService.log(initiatorUserId, "Google report updated");
+
+            log.info("Local report deleted: {}", file.delete());
+            log.info("Report updated: {}", file.getName());
+            log.info("DONE");
+            slackResponderService.log(initiatorUserId, "Done");
+        }
     }
 
     @SneakyThrows

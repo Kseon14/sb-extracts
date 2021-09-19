@@ -7,7 +7,7 @@ logging:
     max-size: 10MB
     name: logs/sb-extracts.log
   level:
-    org.springframework.web: DEBUG
+    org.springframework.web: ERROR
     com.am.sbextracts: DEBUG
 pool:
   max-idle: 2
@@ -31,9 +31,12 @@ bamboo:
 google:
   authJson: ${G_AUTH_JSON}
 app:
+  reportGFolderId: ${G_REPORT_FOLDER_ID}
+  perRequestProcessingFilesCount: 400
   url: ${APP_URL}
   company:
     name: ${COMPANY_NAME}
+    nsUrl: ${NS_URL}
 
 feign:
   client:
@@ -41,8 +44,4 @@ feign:
       default:
         connectTimeout: 10000
         readTimeout: 10000
-        loggerLevel: basic
-      bambooHrAuth:
-        connectTimeout: 10000
-        readTimeout: 10000
-        loggerLevel: basic
+        loggerLevel: none

@@ -28,7 +28,7 @@ public class HeaderService {
     @SbExceptionHandler
     public Map<String, String> getBchHeaders(String sessionId, String initiatorSlackId) {
         String phpsessid = String.format("%s=%s", "PHPSESSID", sessionId);
-        BambooHrAuthClient.SessionInfo sessionInfo = null;
+        BambooHrAuthClient.SessionInfo sessionInfo;
         if (csrfToken == null) {
             try {
                sessionInfo = bambooHrAuthClient.getSessionInfo(Map.of(COOKIE, phpsessid));

@@ -8,4 +8,5 @@ public class Employee {
     String id;
     @JsonProperty("customID#")
     String inn;
+    String workEmail;
 }
