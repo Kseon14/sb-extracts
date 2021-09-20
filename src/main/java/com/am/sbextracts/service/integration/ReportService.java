@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,6 +35,9 @@ public class ReportService {
         if (CollectionUtils.isEmpty(report.getEmployees())) {
             throw new IllegalArgumentException("employee list is empty");
         }
-        return report.getEmployees().stream().collect(Collectors.toMap(Employee::getInn, Employee::getWorkEmail));
+        return report.getEmployees()
+                .stream()
+                .filter(e -> Objects.nonNull(e.getInn()) && Objects.nonNull(e.getWorkEmail()))
+                .collect(Collectors.toMap(Employee::getInn, Employee::getWorkEmail));
     }
 }
