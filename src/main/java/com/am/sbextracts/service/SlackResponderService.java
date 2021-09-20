@@ -279,7 +279,7 @@ public class SlackResponderService implements ResponderService {
     @SbExceptionHandler
     public String getConversationIdByEmail(String userEmail, String initiatorSlackId) {
         if (userEmail == null) {
-            throw new SbExtractsException("userEmail could not be null", userEmail, initiatorSlackId);
+            throw new SbExtractsException("userEmail could not be null", initiatorSlackId);
         }
         UsersInfoResponse usersInfoResponse;
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {

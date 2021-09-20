@@ -7,6 +7,8 @@ import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Aspect
 @Component
 @RequiredArgsConstructor
@@ -25,6 +27,7 @@ public class SbExceptionHandlerAspect {
             return String.format("Error for <%s> | %s: %s", e.getAffectedUserEmail(),
                     e.getMessage(), e.getCause().getMessage());
         }
-        return String.format("%s: %s", e.getMessage(), e.getCause().getMessage());
+        return String.format("%s: %s", e.getMessage(),
+                Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse(""));
     }
 }
