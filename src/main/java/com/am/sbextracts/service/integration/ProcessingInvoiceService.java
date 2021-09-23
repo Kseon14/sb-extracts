@@ -65,7 +65,7 @@ public class ProcessingInvoiceService implements Process {
     @SneakyThrows
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
-        gDriveService.isFolderExist(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
+        gDriveService.isFolderExist(reportGFolderId, slackEventResponse.getInitiatorUserId());
         Map<String, String> employees = reportService.getEmployees();
         File file = null;
         String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,

@@ -2,7 +2,8 @@ package com.am.sbextracts.service.integration;
 
 import com.am.sbextracts.client.BambooHrSignClient;
 import com.am.sbextracts.client.BambooHrSignedFileClient;
-import com.am.sbextracts.model.Folder;
+import com.am.sbextracts.exception.SbExceptionHandler;
+import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
@@ -11,6 +12,7 @@ import com.hubspot.slack.client.models.blocks.Section;
 import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
 import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
+import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.htmlcleaner.TagNode;
@@ -36,6 +38,7 @@ public class ProcessDebtorsPushService implements Process {
 
 
     @Override
+    @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
 
         ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
@@ -45,9 +48,14 @@ public class ProcessDebtorsPushService implements Process {
                         .addBlocks(Section.of(
                                 Text.of(TextType.MARKDOWN, "Starting...")))
         );
-        feign.Response response = bambooHrSignedFile
-                .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                        slackEventResponse.getInitiatorUserId()));
+        feign.Response response;
+        try {
+            response = bambooHrSignedFile
+                    .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(),
+                            slackEventResponse.getInitiatorUserId()));
+        } catch (RetryableException ex) {
+            throw new SbExtractsException("Error during signedDocuments request", ex, slackEventResponse.getInitiatorUserId());
+        }
         TagNode tagNode = getTagNode(response.body());
 
         String text = "Processing..";
@@ -87,18 +95,13 @@ public class ProcessDebtorsPushService implements Process {
                                 ).build(), userEmail, slackEventResponse.getInitiatorUserId());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", userEmail));
             } catch (Exception ex) {
-                log.error("Error during debtor push", ex);
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("Error: %s", ex.getMessage()));
+                log.error("Error during debtor push for {} and inn {}", userEmail, inn, ex);
+                slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("Error for inn %s: %s ", inn, ex.getMessage()));
             }
         }
 
         log.info("DONE");
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
-    }
-
-    public Folder getFolderContent(String sessionId, int offset, int sectionId, String initiatorSlackId) {
-        return bambooHrSignClient.getFolderContent(headerService.getBchHeaders(sessionId, initiatorSlackId),
-                BambooHrSignClient.FolderParams.of(sectionId, offset));
     }
 
 }
