@@ -133,10 +133,10 @@ public class GDriveService {
     @SbExceptionHandler
     public boolean isFolderExist(String fileId, String initiatorSlackId) {
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT, initiatorSlackId))
-                .setApplicationName(APPLICATION_NAME).build();
         Optional<File> folder;
         try {
+            Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT, initiatorSlackId))
+                    .setApplicationName(APPLICATION_NAME).build();
             folder = Optional.of(service
                     .files()
                     .get(fileId)
