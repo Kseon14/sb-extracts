@@ -83,7 +83,7 @@ public class GDriveService {
             log.info("File ID: {}", file.getId());
         } catch (GoogleJsonResponseException ex) {
             if (ex.getStatusCode() == 401) {
-                GoogleCredential googleCredential = deserialize();
+                GoogleCredential googleCredential = deserialize(HTTP_TRANSPORT);
                 if (googleCredential == null) {
                     throw new IllegalStateException("cred file not exist");
                 }
@@ -118,7 +118,7 @@ public class GDriveService {
 
     @SneakyThrows
     private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT, String initiatorSlackId) {
-        GoogleCredential googleCredential = deserialize();
+        GoogleCredential googleCredential = deserialize(HTTP_TRANSPORT);
         if (googleCredential != null) {
             return googleCredential;
         }
@@ -264,13 +264,19 @@ public class GDriveService {
         oos.close();
     }
 
-    public static GoogleCredential deserialize() {
+    public static GoogleCredential deserialize(NetHttpTransport HTTP_TRANSPORT) {
         String fileName = TOKENS_DIRECTORY_PATH + "/" + GoogleCredential.class.getSimpleName();
         if (new java.io.File(fileName).exists()) {
             try (FileInputStream fin = new FileInputStream(fileName);
                  ObjectInputStream ois = new ObjectInputStream(fin)) {
                 StoredCredential storedCredential = (StoredCredential) ois.readObject();
-                return new GoogleCredential()
+                return new GoogleCredential.Builder()
+                        .setTransport(HTTP_TRANSPORT)
+                        .setJsonFactory(JSON_FACTORY)
+                        .setClientAuthentication(request -> {
+                        })
+                        .setTokenServerEncodedUrl("http://localhost")
+                        .build()
                         .setAccessToken(storedCredential.getAccessToken())
                         .setRefreshToken(storedCredential.getRefreshToken())
                         .setExpirationTimeMilliseconds(storedCredential.getExpirationTimeMilliseconds());
