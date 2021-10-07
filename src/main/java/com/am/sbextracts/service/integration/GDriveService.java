@@ -93,7 +93,7 @@ public class GDriveService {
                         Map.of("refresh_token", googleCredential.getRefreshToken(),
                                 "client_id", details.getClientId(),
                                 "client_secret", details.getClientSecret(),
-                                "grant_type", "authorization_code")
+                                "grant_type", "refresh_token")
                 );
                 GoogleTokenResponse googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
                 serialize(new GoogleCredential.Builder()
@@ -104,6 +104,7 @@ public class GDriveService {
                         .setFromTokenResponse(googleTokenResponse));
                 uploadFile(fileMetadata, fileBody, type, initiatorSlackId);
             }
+            throw new Exception(ex);
         }
     }
 
@@ -128,7 +129,8 @@ public class GDriveService {
                 "&client_id=%s" +
                 "&redirect_uri=%s" +
                 "&response_type=code" +
-                "&scope=%s", details.getClientId(), getRedirectURI(), DriveScopes.DRIVE);
+                "&scope=%s" +
+                "&prompt=consent", details.getClientId(), getRedirectURI(), DriveScopes.DRIVE);
 
         slackResponderService.log(initiatorSlackId, redirectUrl);
 
