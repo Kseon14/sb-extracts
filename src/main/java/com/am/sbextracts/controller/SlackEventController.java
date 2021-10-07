@@ -45,7 +45,7 @@ public class SlackEventController {
     @PostMapping
     public Object eventHandler(@RequestBody SlackEvent slackEvent) {
 
-        log.info("Request content {}", slackEvent);
+        log.debug("Request content {}", slackEvent);
         if (isTokenValid.test(slackEvent.getToken())) {
             throw new IllegalArgumentException();
         }
