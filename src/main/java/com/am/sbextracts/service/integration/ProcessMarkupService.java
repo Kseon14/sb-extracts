@@ -72,6 +72,7 @@ public class ProcessMarkupService implements Process {
         Map<String, String> employees = reportService.getEmployees();
         int fileCount;
         var offset = 0;
+        var globalCounter = 0;
 
         final List<String> processedIds = new ArrayList<>();
         File file = null;
@@ -101,15 +102,25 @@ public class ProcessMarkupService implements Process {
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(),
                         String.format("Following Documents count %s will be processed", infos.size()));
 
-                for (int i = 0; i < Math.min(perRequestProcessingFilesCount, infos.size()); i++) {
+                for (int i = 0; i < infos.size(); i++) {
                     var info = infos.get(i);
                     String employeeInternalId = employees.get(info.getInn());
-                    log.info("Start processing  [{}/{}]: {}....", i + 1,
-                            Math.min(perRequestProcessingFilesCount, infos.size()), info.getInn());
+                    log.info("Start processing  [{}/{}] already processed: [{}]: {}....",
+                            i + 1,
+                            infos.size(),
+                            globalCounter,
+                            info.getInn());
                     slackResponderService.log(slackEventResponse.getInitiatorUserId(),
-                            String.format("Start processing [%s/%s]: %s...", i + 1,
-                                    Math.min(perRequestProcessingFilesCount, infos.size()), info.getInn()));
+                            String.format("Start processing [%s/%s] already processed: [%s]: %s...",
+                                    i + 1,
+                                    infos.size(),
+                                    globalCounter,
+                                    info.getInn()));
                     processDocuments(employeeInternalId, info, slackEventResponse, file);
+                    globalCounter++;
+                    if (globalCounter > perRequestProcessingFilesCount) {
+                        return;
+                    }
                 }
                 offset = folder.getOffset();
                 fileCount = folder.getSectionFileCount();

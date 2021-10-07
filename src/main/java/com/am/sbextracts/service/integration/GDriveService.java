@@ -1,10 +1,12 @@
 package com.am.sbextracts.service.integration;
 
+import com.am.sbextracts.client.GoogleAuthClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.LockIndicator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.StoredCredential;
@@ -41,6 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -58,6 +61,7 @@ public class GDriveService {
 
     private final ObjectMapper objectMapper;
     private final ResponderService slackResponderService;
+    private final GoogleAuthClient googleAuthClient;
 
     private final LockIndicator lock = new LockIndicator();
 
@@ -73,8 +77,34 @@ public class GDriveService {
                 .setApplicationName(APPLICATION_NAME).build();
 
         ByteArrayContent mediaContent = new ByteArrayContent(type, fileBody);
-        File file = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
-        log.info("File ID: {}", file.getId());
+        File file;
+        try {
+            file = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
+            log.info("File ID: {}", file.getId());
+        } catch (GoogleJsonResponseException ex) {
+            if (ex.getStatusCode() == 401) {
+                GoogleCredential googleCredential = deserialize();
+                if (googleCredential == null) {
+                    throw new IllegalStateException("cred file not exist");
+                }
+                objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
+                GoogleClientSecrets.Details details = objectMapper.readValue(authJson, GoogleClientSecrets.Details.class);
+                String tokenResponse = googleAuthClient.getToken(
+                        Map.of("refresh_token", googleCredential.getRefreshToken(),
+                                "client_id", details.getClientId(),
+                                "client_secret", details.getClientSecret(),
+                                "grant_type", "authorization_code")
+                );
+                GoogleTokenResponse googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
+                serialize(new GoogleCredential.Builder()
+                        .setTransport(HTTP_TRANSPORT)
+                        .setJsonFactory(JSON_FACTORY)
+                        .setClientSecrets(new GoogleClientSecrets().setInstalled(details))
+                        .build()
+                        .setFromTokenResponse(googleTokenResponse));
+                uploadFile(fileMetadata, fileBody, type, initiatorSlackId);
+            }
+        }
     }
 
     public void setToken(GoogleTokenResponse token) {
