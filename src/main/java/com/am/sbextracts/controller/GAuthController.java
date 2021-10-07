@@ -42,8 +42,7 @@ public class GAuthController {
                         "client_id", details.getClientId(),
                         "client_secret", details.getClientSecret(),
                         "grant_type", "authorization_code",
-                        "redirect_uri", gDriveService.getRedirectURI(),
-                        "prompt", "consent")
+                        "redirect_uri", gDriveService.getRedirectURI())
         );
         GoogleTokenResponse googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
         gDriveService.setToken(googleTokenResponse);

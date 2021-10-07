@@ -1,6 +1,5 @@
 package com.am.sbextracts.service.integration;
 
-import com.am.sbextracts.client.BambooHrSignClient;
 import com.am.sbextracts.client.BambooHrSignedFileClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
@@ -31,7 +30,6 @@ import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNod
 public class ProcessDebtorsPushService implements Process {
 
     private final BambooHrSignedFileClient bambooHrSignedFile;
-    private final BambooHrSignClient bambooHrSignClient;
     private final HeaderService headerService;
     private final ReportService reportService;
     private final ResponderService slackResponderService;
