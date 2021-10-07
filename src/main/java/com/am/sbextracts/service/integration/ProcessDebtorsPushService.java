@@ -91,7 +91,7 @@ public class ProcessDebtorsPushService implements Process {
                                                 ":alert:\n" +
                                                         "Hi, Please take a moment to sign Acts of acceptance with coworking. \n" +
                                                         "If you have any questions regarding the documents," +
-                                                        " you can contact Marina Stankevich via slack or email (marina.stankevich@ringteam.com)",
+                                                        " you can contact Marina Stankevich via slack or email",
                                                 slackEventResponse.getDate(), slackEventResponse.getInitiatorUserId())))
                                 ).build(), userEmail, slackEventResponse.getInitiatorUserId());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", userEmail));
