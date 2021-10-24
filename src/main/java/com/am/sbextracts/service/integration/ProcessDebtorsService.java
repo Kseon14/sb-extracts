@@ -2,6 +2,7 @@ package com.am.sbextracts.service.integration;
 
 import com.am.sbextracts.client.BambooHrSignClient;
 import com.am.sbextracts.client.BambooHrSignedFileClient;
+import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.Folder;
 import com.am.sbextracts.model.InternalSlackEventResponse;
@@ -45,6 +46,7 @@ public class ProcessDebtorsService implements Process {
 
 
     @Override
+    @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
 
         ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
