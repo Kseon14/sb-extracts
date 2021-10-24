@@ -7,6 +7,7 @@ import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
 import com.jayway.jsonpath.JsonPath;
+import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -55,8 +56,13 @@ public class ProcessSignedService implements Process {
     public void process(InternalSlackEventResponse slackEventResponse) {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Start processing ....");
         gDriveService.isFolderExist(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
-        feign.Response response = bambooHrSignedFile
-                .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId()));
+        feign.Response response;
+        try {
+            response = bambooHrSignedFile
+                    .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId()));
+        } catch (RetryableException ex) {
+            throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
+        }
         TagNode tagNode = getTagNode(response.body());
 
         final List<String> processedIds = new ArrayList<>();

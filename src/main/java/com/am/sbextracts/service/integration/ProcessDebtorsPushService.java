@@ -52,7 +52,7 @@ public class ProcessDebtorsPushService implements Process {
                     .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(),
                             slackEventResponse.getInitiatorUserId()));
         } catch (RetryableException ex) {
-            throw new SbExtractsException("Error during signedDocuments request", ex, slackEventResponse.getInitiatorUserId());
+            throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
         }
         TagNode tagNode = getTagNode(response.body());
 
