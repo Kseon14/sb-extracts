@@ -45,3 +45,7 @@ feign:
         connectTimeout: 10000
         readTimeout: 10000
         loggerLevel: none
+      bambooHrSignedFile:
+        connectTimeout: 20000
+        readTimeout: 20000
+        loggerLevel: none

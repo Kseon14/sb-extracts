@@ -2,6 +2,7 @@ package com.am.sbextracts.service.integration;
 
 import com.am.sbextracts.client.BambooHrSignClient;
 import com.am.sbextracts.client.BambooHrSignedFileClient;
+import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.Folder;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
@@ -12,6 +13,7 @@ import com.hubspot.slack.client.models.blocks.Section;
 import com.hubspot.slack.client.models.blocks.objects.Text;
 import com.hubspot.slack.client.models.blocks.objects.TextType;
 import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
+import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -52,9 +54,14 @@ public class ProcessDebtorsService implements Process {
                         .addBlocks(Section.of(
                                 Text.of(TextType.MARKDOWN, "Starting...")))
         );
-        feign.Response response = bambooHrSignedFile
-                .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                        slackEventResponse.getInitiatorUserId()));
+        feign.Response response;
+        try {
+            response = bambooHrSignedFile
+                    .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(),
+                            slackEventResponse.getInitiatorUserId()));
+        } catch (RetryableException ex) {
+            throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
+        }
         TagNode tagNode = getTagNode(response.body());
 
         String text = "Processing..";
