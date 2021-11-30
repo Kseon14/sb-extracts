@@ -60,7 +60,7 @@ public final class ParsingUtils {
     public static boolean isSigned(TagNode tagNode) {
         ContentNode node = (ContentNode) tagNode.getParent().getElementsByAttValue("class", "ReportsTable__statusIcon",
                 true, false)[0].getParent().getAllChildren().get(2);
-        return StringUtils.equals(node.getContent(), "1");
+        return Integer.parseInt(node.getContent()) > 0;
     }
 
     public static boolean isAktAndDate(TagNode tagNode, String date) {
