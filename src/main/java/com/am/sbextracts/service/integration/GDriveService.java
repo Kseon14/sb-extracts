@@ -6,6 +6,7 @@ import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.LockIndicator;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.auth.oauth2.Credential;
@@ -42,6 +43,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,8 +53,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class GDriveService {
 
-    @Value("${google.authJson}")
-    private final String authJson;
+    @Value("${google.authJsons}")
+    private final String authJsons;
 
     @Value("${app.url}")
     private final String url;
@@ -68,6 +70,7 @@ public class GDriveService {
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static final String APPLICATION_NAME = "BCH-Upload";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final TypeReference<HashMap<String, GoogleClientSecrets.Details>> TYPE_REF = new TypeReference<>() {};
 
     @SneakyThrows
     public void uploadFile(File fileMetadata, byte[] fileBody, String type, String initiatorSlackId) {
@@ -88,7 +91,11 @@ public class GDriveService {
                     throw new IllegalStateException("cred file not exist");
                 }
                 objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
-                GoogleClientSecrets.Details details = objectMapper.readValue(authJson, GoogleClientSecrets.Details.class);
+                GoogleClientSecrets.Details details =
+                        objectMapper.readValue(authJsons, TYPE_REF).get(initiatorSlackId);
+                if (details == null){
+                    throw new IllegalArgumentException("google account not found for "+ initiatorSlackId);
+                }
                 String tokenResponse = googleAuthClient.getToken(
                         Map.of("refresh_token", googleCredential.getRefreshToken(),
                                 "client_id", details.getClientId(),
@@ -123,7 +130,8 @@ public class GDriveService {
             return googleCredential;
         }
 
-        GoogleClientSecrets.Details details = objectMapper.readValue(authJson, GoogleClientSecrets.Details.class);
+        GoogleClientSecrets.Details details =
+                objectMapper.readValue(authJsons, TYPE_REF).get(initiatorSlackId);
         String redirectUrl = String.format("https://accounts.google.com/o/oauth2/auth?" +
                 "access_type=offline" +
                 "&client_id=%s" +

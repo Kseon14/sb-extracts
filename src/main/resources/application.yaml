@@ -29,7 +29,7 @@ bamboo:
   apiKey: ${API_KEY}
   reportId: 1207
 google:
-  authJson: ${G_AUTH_JSON}
+  authJsons: ${G_AUTH_JSON}
 app:
   reportGFolderId: ${G_REPORT_FOLDER_ID}
   perRequestProcessingFilesCount: 400
