@@ -321,9 +321,6 @@ public class GDriveService {
                         .setTransport(getNetHttpTransport())
                         .setJsonFactory(JSON_FACTORY)
                         .setClientSecrets(new GoogleClientSecrets().setInstalled(getCredFromLocalSource(initiatorSlackId)))
-//                        .setClientAuthentication(request -> {
-//                        })
-//                        .setTokenServerEncodedUrl("http://localhost")
                         .build()
                         .setAccessToken(storedCredential.getAccessToken())
                         .setRefreshToken(storedCredential.getRefreshToken())
