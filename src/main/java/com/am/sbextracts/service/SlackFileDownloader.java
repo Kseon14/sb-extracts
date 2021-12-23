@@ -3,6 +3,7 @@ package com.am.sbextracts.service;
 import com.am.sbextracts.DeleteOnCloseFileInputStream;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackFileInfo;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -17,17 +18,12 @@ import java.util.concurrent.Executors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SlackFileDownloader implements FileDownloader {
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
     private final ProcessorService processorService;
     private final SlackResponderService slackResponderService;
-
-    @Autowired
-    public SlackFileDownloader(ProcessorService processorService, SlackResponderService slackResponderService) {
-        this.processorService = processorService;
-        this.slackResponderService = slackResponderService;
-    }
 
     @Override
     public void downloadFile(List<SlackEvent.FileMetaInfo> fileMetaInfos) {

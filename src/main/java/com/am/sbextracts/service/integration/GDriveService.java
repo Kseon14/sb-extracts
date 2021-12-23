@@ -6,6 +6,8 @@ import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.LockIndicator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.auth.oauth2.Credential;
@@ -19,7 +21,7 @@ import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.FileContent;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
@@ -42,17 +44,23 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class GDriveService {
 
-    @Value("${google.authJson}")
-    private final String authJson;
+    private static final TypeReference<HashMap<String, GoogleClientSecrets.Details>> TYPE_REF = new TypeReference<>() {
+    };
+    private static final int MAX_RETRY = 2;
+
+    @Value("${google.authJsons}")
+    private final String authJsons;
 
     @Value("${app.url}")
     private final String url;
@@ -67,45 +75,46 @@ public class GDriveService {
 
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static final String APPLICATION_NAME = "BCH-Upload";
-    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
     @SneakyThrows
     public void uploadFile(File fileMetadata, byte[] fileBody, String type, String initiatorSlackId) {
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-
-        Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT, initiatorSlackId))
-                .setApplicationName(APPLICATION_NAME).build();
-
         ByteArrayContent mediaContent = new ByteArrayContent(type, fileBody);
         File file;
         try {
-            file = service.files().create(fileMetadata, mediaContent).setFields("id").execute();
+            file = getService(initiatorSlackId).files().create(fileMetadata, mediaContent).setFields("id").execute();
             log.info("File ID: {}", file.getId());
         } catch (GoogleJsonResponseException ex) {
             if (ex.getStatusCode() == 401) {
-                GoogleCredential googleCredential = deserialize(HTTP_TRANSPORT);
-                if (googleCredential == null) {
-                    throw new IllegalStateException("cred file not exist");
-                }
-                objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
-                GoogleClientSecrets.Details details = objectMapper.readValue(authJson, GoogleClientSecrets.Details.class);
-                String tokenResponse = googleAuthClient.getToken(
-                        Map.of("refresh_token", googleCredential.getRefreshToken(),
-                                "client_id", details.getClientId(),
-                                "client_secret", details.getClientSecret(),
-                                "grant_type", "refresh_token")
-                );
-                GoogleTokenResponse googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
-                serialize(new GoogleCredential.Builder()
-                        .setTransport(HTTP_TRANSPORT)
-                        .setJsonFactory(JSON_FACTORY)
-                        .setClientSecrets(new GoogleClientSecrets().setInstalled(details))
-                        .build()
-                        .setFromTokenResponse(googleTokenResponse));
+                reAuth(initiatorSlackId);
                 uploadFile(fileMetadata, fileBody, type, initiatorSlackId);
             }
             throw new Exception(ex);
         }
+    }
+
+    @SneakyThrows
+    private void reAuth(String initiatorSlackId) {
+        log.info("reauth for google");
+        GoogleCredential googleCredential = deserialize(initiatorSlackId);
+        if (googleCredential == null) {
+            throw new IllegalStateException("cred file not exist");
+        }
+        objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
+        GoogleClientSecrets.Details details =
+                getCredFromLocalSource(initiatorSlackId);
+        if (details == null) {
+            throw new IllegalArgumentException("google account not found for " + initiatorSlackId);
+        }
+        String tokenResponse = googleAuthClient.getToken(
+                Map.of("refresh_token", googleCredential.getRefreshToken(),
+                        "client_id", details.getClientId(),
+                        "client_secret", details.getClientSecret(),
+                        "grant_type", "refresh_token")
+        );
+        GoogleTokenResponse googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
+        googleCredential.setAccessToken(googleTokenResponse.getAccessToken());
+        serialize(googleCredential, initiatorSlackId);
     }
 
     public void setToken(GoogleTokenResponse token) {
@@ -117,34 +126,40 @@ public class GDriveService {
     }
 
     @SneakyThrows
-    private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT, String initiatorSlackId) {
-        GoogleCredential googleCredential = deserialize(HTTP_TRANSPORT);
+    private Credential getCredentials(String initiatorSlackId) {
+        GoogleCredential googleCredential = deserialize(initiatorSlackId);
         if (googleCredential != null) {
             return googleCredential;
         }
 
-        GoogleClientSecrets.Details details = objectMapper.readValue(authJson, GoogleClientSecrets.Details.class);
+        GoogleClientSecrets.Details details =
+                getCredFromLocalSource(initiatorSlackId);
         String redirectUrl = String.format("https://accounts.google.com/o/oauth2/auth?" +
                 "access_type=offline" +
                 "&client_id=%s" +
                 "&redirect_uri=%s" +
                 "&response_type=code" +
                 "&scope=%s" +
-                "&prompt=consent", details.getClientId(), getRedirectURI(), DriveScopes.DRIVE);
+                "&prompt=consent", details.getClientId(), getRedirectURI(initiatorSlackId), DriveScopes.DRIVE);
 
         slackResponderService.log(initiatorSlackId, redirectUrl);
 
         waitToken();
 
         googleCredential = new GoogleCredential.Builder()
-                .setTransport(HTTP_TRANSPORT)
+                .setTransport(getNetHttpTransport())
                 .setJsonFactory(JSON_FACTORY)
                 .setClientSecrets(new GoogleClientSecrets().setInstalled(details))
                 .build()
                 .setFromTokenResponse(token);
 
-        serialize(googleCredential);
+        serialize(googleCredential, initiatorSlackId);
         return googleCredential;
+    }
+
+    @SneakyThrows
+    public GoogleClientSecrets.Details getCredFromLocalSource(String initiatorSlackId) {
+        return objectMapper.readValue(authJsons, TYPE_REF).get(initiatorSlackId);
     }
 
     @SneakyThrows
@@ -157,35 +172,67 @@ public class GDriveService {
         }
     }
 
-    public String getRedirectURI() {
-        return url + "/api/gauth";
+    public String getRedirectURI(String slackId) {
+        return url + "/api/gauth/" + slackId;
     }
 
     @SneakyThrows
     @SbExceptionHandler
-    public boolean isFolderExist(String fileId, String initiatorSlackId) {
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        Optional<File> folder;
+    public void validateFolderExistence(String fileId, String initiatorSlackId) {
+        int attempt = 1;
+        circuitBreaker(attempt, validateFolder(), fileId, initiatorSlackId);
+    }
+
+    private BiConsumer<String, String> validateFolder() {
+        return (fileId, initiatorSlackId) -> {
+            try {
+                Optional.of(getService(initiatorSlackId)
+                                .files()
+                                .get(fileId)
+                                .execute())
+                        .map(f -> f.getMimeType().equals("application/vnd.google-apps.folder"))
+                        .orElseThrow(() ->
+                                new SbExtractsException("Error during folder validation", initiatorSlackId));
+            } catch (IOException ex) {
+                reAuth(initiatorSlackId);
+            }
+        };
+    }
+
+    private Drive getService(String initiatorSlackId) {
+        return new Drive.Builder(getNetHttpTransport(), JSON_FACTORY, getCredentials(initiatorSlackId))
+                .setApplicationName(APPLICATION_NAME).build();
+    }
+
+    @SneakyThrows
+    private static NetHttpTransport getNetHttpTransport() {
+        return GoogleNetHttpTransport.newTrustedTransport();
+    }
+
+    @SneakyThrows
+    private static int circuitBreaker(int attempt, BiConsumer<String, String> consumer, String fileId, String initiatorSlackId) {
         try {
-            Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT, initiatorSlackId))
-                    .setApplicationName(APPLICATION_NAME).build();
-            folder = Optional.of(service
-                    .files()
-                    .get(fileId)
-                    .execute());
-        } catch (GoogleJsonResponseException ex) {
-            throw new SbExtractsException("Error during folder validation", ex, initiatorSlackId);
+            if (attempt <= MAX_RETRY) {
+                consumer.accept(fileId, initiatorSlackId);
+            }
+            return attempt + 1;
+        } catch (Exception ex) {
+            removeToken(initiatorSlackId);
+            return circuitBreaker(attempt + 1, consumer, fileId, initiatorSlackId);
         }
-        return folder.map(f -> f.getMimeType().equals("application/vnd.google-apps.folder"))
-                .orElseThrow(IllegalStateException::new);
+    }
+
+    private static void removeToken(String initiatorSlackId) {
+        String fileName = String.format("%s/%s-%s", TOKENS_DIRECTORY_PATH,
+                initiatorSlackId, GoogleCredential.class.getSimpleName());
+        log.info("removing invalid credentials");
+        new java.io.File(fileName).delete();
     }
 
     @SneakyThrows
     public java.io.File getFile(String fileName, String initiatorSlackId) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT, initiatorSlackId))
-                .setApplicationName(APPLICATION_NAME).build();
+        Drive service = getService(initiatorSlackId);
         List<File> result = service
                 .files()
                 .list()
@@ -212,70 +259,68 @@ public class GDriveService {
         return file;
     }
 
-    public void saveFile(java.io.File file, String logFileName, InternalSlackEventResponse slackEventResponse) {
-        saveFile(file, logFileName, slackEventResponse.getInitiatorUserId(), slackEventResponse.getGFolderId());
+    public void saveFile(java.io.File file, long dateOfModification, String logFileName, InternalSlackEventResponse slackEventResponse) {
+        saveFile(file, dateOfModification, logFileName, slackEventResponse.getInitiatorUserId(), slackEventResponse.getGFolderId());
     }
 
     @SneakyThrows
     @SbExceptionHandler
-    public void saveFile(java.io.File file, String logFileName, String initiatorUserId, String gFolderId) {
-        try {
-            if (file != null) {
-                com.google.api.services.drive.model.File logFile = new com.google.api.services.drive.model.File();
-                logFile.setName(logFileName);
-                logFile.setMimeType(MediaType.TEXT_PLAIN_VALUE);
+    public void saveFile(java.io.File file, long dateOfModification, String logFileName, String initiatorUserId, String gFolderId) {
+        if (dateOfModification >= 0 && file.lastModified() > 0 && dateOfModification < file.lastModified()) {
+            try {
+                if (file != null && file.exists()) {
+                    com.google.api.services.drive.model.File logFile = new com.google.api.services.drive.model.File();
+                    logFile.setName(logFileName);
+                    logFile.setMimeType(MediaType.TEXT_PLAIN_VALUE);
 
-                if (StringUtils.equals(file.getName(), logFileName)) {
-                    logFile.setParents(Collections.singletonList(gFolderId));
-                    uploadFile(logFile, FileUtils.readFileToByteArray(file), MediaType.TEXT_PLAIN_VALUE, initiatorUserId);
-                } else {
-                    updateFile(file.getName(), logFile, new FileContent(MediaType.TEXT_PLAIN_VALUE, file), initiatorUserId);
+                    if (StringUtils.equals(file.getName(), logFileName)) {
+                        logFile.setParents(Collections.singletonList(gFolderId));
+                        uploadFile(logFile, FileUtils.readFileToByteArray(file), MediaType.TEXT_PLAIN_VALUE, initiatorUserId);
+                    } else {
+                        updateFile(file.getName(), logFile, new FileContent(MediaType.TEXT_PLAIN_VALUE, file), initiatorUserId);
+                    }
+
+                    slackResponderService.log(initiatorUserId, "Google report updated");
+
+                    log.info("Local report deleted: {}", file.delete());
+                    log.info("Report updated: {}", file.getName());
+                    log.info("DONE");
+                    slackResponderService.log(initiatorUserId, "Done");
                 }
-
-                slackResponderService.log(initiatorUserId, "Google report updated");
-
-                log.info("Local report deleted: {}", file.delete());
-                log.info("Report updated: {}", file.getName());
-                log.info("DONE");
-                slackResponderService.log(initiatorUserId, "Done");
+            } catch (Exception ex) {
+                throw new SbExtractsException("Error during upload to google-drive:", ex, initiatorUserId);
             }
-        } catch (Exception ex) {
-            throw new SbExtractsException("Error during upload to google-drive:", ex, initiatorUserId);
         }
     }
 
     @SneakyThrows
     public void updateFile(String fileId, File file, FileContent fileContent, String initiatorSlackId) {
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-
-        Drive service = new Drive.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT, initiatorSlackId))
-                .setApplicationName(APPLICATION_NAME).build();
         log.info("{} will be uploaded", fileId);
-        File updated = service.files().update(fileId, file, fileContent).execute();
+        File updated = getService(initiatorSlackId).files().update(fileId, file, fileContent).execute();
         log.info("{} uploaded", updated.getId());
     }
 
 
-    public static void serialize(GoogleCredential googleCredential) throws IOException {
+    public static void serialize(GoogleCredential googleCredential, String initiatorSlackId) throws IOException {
         Files.createDirectories(Paths.get(TOKENS_DIRECTORY_PATH));
-        FileOutputStream fos = new FileOutputStream(TOKENS_DIRECTORY_PATH + "/" + GoogleCredential.class.getSimpleName());
+        FileOutputStream fos = new FileOutputStream(String.format("%s/%s-%s", TOKENS_DIRECTORY_PATH,
+                initiatorSlackId, GoogleCredential.class.getSimpleName()));
         ObjectOutputStream oos = new ObjectOutputStream(fos);
         oos.writeObject(new StoredCredential(googleCredential));
         oos.close();
     }
 
-    public static GoogleCredential deserialize(NetHttpTransport HTTP_TRANSPORT) {
-        String fileName = TOKENS_DIRECTORY_PATH + "/" + GoogleCredential.class.getSimpleName();
+    public GoogleCredential deserialize(String initiatorSlackId) {
+        String fileName = String.format("%s/%s-%s", TOKENS_DIRECTORY_PATH,
+                initiatorSlackId, GoogleCredential.class.getSimpleName());
         if (new java.io.File(fileName).exists()) {
             try (FileInputStream fin = new FileInputStream(fileName);
                  ObjectInputStream ois = new ObjectInputStream(fin)) {
                 StoredCredential storedCredential = (StoredCredential) ois.readObject();
                 return new GoogleCredential.Builder()
-                        .setTransport(HTTP_TRANSPORT)
+                        .setTransport(getNetHttpTransport())
                         .setJsonFactory(JSON_FACTORY)
-                        .setClientAuthentication(request -> {
-                        })
-                        .setTokenServerEncodedUrl("http://localhost")
+                        .setClientSecrets(new GoogleClientSecrets().setInstalled(getCredFromLocalSource(initiatorSlackId)))
                         .build()
                         .setAccessToken(storedCredential.getAccessToken())
                         .setRefreshToken(storedCredential.getRefreshToken())

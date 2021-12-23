@@ -19,5 +19,6 @@ public interface BambooHrAuthClient {
     class SessionInfo {
         int SessionMinutesLeft;
         String CSRFToken;
+        String error;
     }
 }

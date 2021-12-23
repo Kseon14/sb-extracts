@@ -7,24 +7,26 @@ import org.springframework.context.ApplicationEvent;
 
 import java.util.Date;
 
+@Getter
+@Setter
 public class Invoice extends ApplicationEvent {
 
-    @Getter @Setter private String agreementNumber;
-    @Getter @Setter private Date agreementIssueDate;
-    @Getter @Setter private String fullNameEng;
-    @Getter @Setter private String fullNameUkr;
-    @Getter @Setter private String addressEng;
-    @Getter @Setter private String addressUrk;
-    @Getter @Setter private String ipn;
-    @Getter @Setter private String serviceEng;
-    @Getter @Setter private String serviceUkr;
-    @Getter @Setter private String price;
-    @Getter @Setter private String accountNumberUsd;
-    @Getter @Setter private String bankNameEng;
-    @Getter @Setter private String bankAddress;
-    @Getter @Setter private String swiftNumber;
-    @Getter @Setter private String userEmail;
-    @Getter @Setter private String authorSlackId;
+    private String agreementNumber;
+    private Date agreementIssueDate;
+    private String fullNameEng;
+    private String fullNameUkr;
+    private String addressEng;
+    private String addressUrk;
+    private String ipn;
+    private String serviceEng;
+    private String serviceUkr;
+    private String price;
+    private String accountNumberUsd;
+    private String bankNameEng;
+    private String bankAddress;
+    private String swiftNumber;
+    private String userEmail;
+    private String authorSlackId;
 
     public Invoice(Object source) {
         super(source);

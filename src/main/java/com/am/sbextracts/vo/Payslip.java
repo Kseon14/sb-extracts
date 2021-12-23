@@ -5,20 +5,22 @@ import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.springframework.context.ApplicationEvent;
 
+@Setter
+@Getter
 public class Payslip extends ApplicationEvent {
 
-    @Getter @Setter private String fullName;
-    @Getter @Setter private String contractRate;
-    @Getter @Setter private String otherIncome;
-    @Getter @Setter private String socialTax;
-    @Getter @Setter private String insurance;
-    @Getter @Setter private String rent;
-    @Getter @Setter private String currencyRate;
-    @Getter @Setter private String totalNet;
-    @Getter @Setter private String currentPaymentTax;
-    @Getter @Setter private String totalGross;
-    @Getter @Setter private String userEmail;
-    @Getter @Setter private String authorSlackId;
+    private String fullName;
+    private String contractRate;
+    private String otherIncome;
+    private String socialTax;
+    private String insurance;
+    private String rent;
+    private String currencyRate;
+    private String totalNet;
+    private String currentPaymentTax;
+    private String totalGross;
+    private String userEmail;
+    private String authorSlackId;
 
     public Payslip(Object source) {
         super(source);

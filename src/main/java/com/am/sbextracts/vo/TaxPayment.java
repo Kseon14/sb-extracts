@@ -7,19 +7,21 @@ import org.springframework.context.ApplicationEvent;
 
 import java.util.Date;
 
+@Getter
+@Setter
 public class TaxPayment extends ApplicationEvent {
 
-    @Getter @Setter private String taxCode;
-    @Getter @Setter private String fullName;
-    @Getter @Setter private String amount;
-    @Getter @Setter private String receiver;
-    @Getter @Setter private String account;
-    @Getter @Setter private String code;
-    @Getter @Setter private String purposeOfPayment;
-    @Getter @Setter private String userEmail;
-    @Getter @Setter private Date dueDate;
-    @Getter @Setter private String taxType;
-    @Getter @Setter private String authorSlackId;
+    private String taxCode;
+    private String fullName;
+    private String amount;
+    private String receiver;
+    private String account;
+    private String code;
+    private String purposeOfPayment;
+    private String userEmail;
+    private Date dueDate;
+    private String taxType;
+    private String authorSlackId;
 
     public TaxPayment(Object source) {
         super(source);

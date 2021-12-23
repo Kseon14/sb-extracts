@@ -2,18 +2,21 @@ package com.am.sbextracts.vo;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.Value;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.springframework.context.ApplicationEvent;
 
 import java.util.Date;
 
+@Getter
+@Setter
 public class BMessage extends ApplicationEvent {
 
-    @Getter @Setter private String fullName;
-    @Getter @Setter private Date dueDate;
-    @Getter @Setter private String text;
-    @Getter @Setter private String userEmail;
-    @Getter @Setter private String authorSlackId;
+    private String fullName;
+    private Date dueDate;
+    private String text;
+    private String userEmail;
+    private String authorSlackId;
 
 
     public BMessage(Object source) {
