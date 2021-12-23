@@ -39,11 +39,10 @@ import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequire
 public class ProcessDebtorsService implements Process {
 
     private final BambooHrSignedFileClient bambooHrSignedFile;
-    private final BambooHrSignClient bambooHrSignClient;
     private final HeaderService headerService;
     private final ReportService reportService;
     private final ResponderService slackResponderService;
-
+    private final SignClientCommon signClientCommon;
 
     @Override
     @SbExceptionHandler
@@ -57,10 +56,10 @@ public class ProcessDebtorsService implements Process {
                                 Text.of(TextType.MARKDOWN, "Starting...")))
         );
         feign.Response response;
+        Map<String, String> bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(),
+                slackEventResponse.getInitiatorUserId());
         try {
-            response = bambooHrSignedFile
-                    .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                            slackEventResponse.getInitiatorUserId()));
+            response = bambooHrSignedFile.getSignedDocumentList(bchHeaders);
         } catch (RetryableException ex) {
             throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
         }
@@ -94,8 +93,7 @@ public class ProcessDebtorsService implements Process {
         int fileCount;
         List<String> notSentFiles = new ArrayList<>();
         do {
-            Folder folder = getFolderContent(slackEventResponse.getSessionId(), offset,
-                    slackEventResponse.getFolderId(), slackEventResponse.getInitiatorUserId());
+            Folder folder = signClientCommon.getFolderContent(offset, slackEventResponse.getFolderId(), bchHeaders);
 
             text = text + "..";
             slackResponderService.updateMessage(
@@ -145,11 +143,6 @@ public class ProcessDebtorsService implements Process {
         }
         log.info("DONE");
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
-    }
-
-    public Folder getFolderContent(String sessionId, int offset, int sectionId, String initiatorSlackId) {
-        return bambooHrSignClient.getFolderContent(headerService.getBchHeaders(sessionId, initiatorSlackId),
-                BambooHrSignClient.FolderParams.of(sectionId, offset));
     }
 
 }

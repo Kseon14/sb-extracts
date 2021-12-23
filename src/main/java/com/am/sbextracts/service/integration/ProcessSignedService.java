@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -55,11 +56,11 @@ public class ProcessSignedService implements Process {
     @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Start processing ....");
-        gDriveService.isFolderExist(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
+        gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
         feign.Response response;
+        Map<String, String> bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId());
         try {
-            response = bambooHrSignedFile
-                    .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId()));
+            response = bambooHrSignedFile.getSignedDocumentList(bchHeaders);
         } catch (RetryableException ex) {
             throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
         }
@@ -70,12 +71,13 @@ public class ProcessSignedService implements Process {
         String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,
                 PROCESSED_ID_FILE_NAME);
         File file = null;
+        long dateOfModification = -1;
         try {
             file = gDriveService.getFile(logFileName, slackEventResponse.getInitiatorUserId());
             if (file.exists()) {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
-
+            dateOfModification = file.lastModified();
             // find and filter out documents ids with specific date and "akt" in name
             List<String> ids = Arrays
                     .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName", true, false))
@@ -88,7 +90,7 @@ public class ProcessSignedService implements Process {
             for (int i = 0; i < Math.min(perRequestProcessingFilesCount, ids.size()); i++) {
                 String id = ids.get(i);
                 feign.Response report = bambooHrSignedFile
-                        .getSignatureReport(headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId()), id);
+                        .getSignatureReport(bchHeaders, id);
                 TagNode reportTag = getTagNode(report.body());
 
                 Optional<? extends TagNode> tagNodeOptional = Arrays
@@ -100,7 +102,7 @@ public class ProcessSignedService implements Process {
                 String fileId = ((JSONArray) JsonPath.parse(jsonData).read("$..['most_recent_employee_file_data_id']"))
                         .get(0).toString();
 
-                byte[] pdf = bambooHrSignedFile.getPdf(headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId()), fileId);
+                byte[] pdf = bambooHrSignedFile.getPdf(bchHeaders, fileId);
                 String fileName = ((JSONArray) JsonPath.parse(jsonData).read("$..['original_file_name']")).get(0)
                         .toString();
 
@@ -118,7 +120,7 @@ public class ProcessSignedService implements Process {
             log.error("Error during download of acts", ex);
             throw new SbExtractsException("Error during download of acts:", ex, slackEventResponse.getInitiatorUserId());
         } finally {
-            gDriveService.saveFile(file, logFileName, slackEventResponse);
+            gDriveService.saveFile(file, dateOfModification, logFileName, slackEventResponse);
         }
     }
 

@@ -42,6 +42,7 @@ import org.asynchttpclient.Response;
 import org.asynchttpclient.request.body.multipart.FilePart;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -54,7 +55,7 @@ import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 @Slf4j
-@Service(value="slackService")
+@Service
 @RequiredArgsConstructor
 public class SlackResponderService implements ResponderService {
 
@@ -63,8 +64,8 @@ public class SlackResponderService implements ResponderService {
     private final HttpClientPool httpClientPool;
     private final SlackClientPool slackClientPool;
 
-    @Resource(name="slackService")
-    SlackResponderService slackService;
+    @Lazy
+    private final SlackResponderService slackService;
 
     @Value("${slack.token}")
     private final String token;

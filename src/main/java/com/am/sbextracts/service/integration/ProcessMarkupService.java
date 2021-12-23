@@ -62,13 +62,14 @@ public class ProcessMarkupService implements Process {
     private final HeaderService headerService;
     private final GDriveService gDriveService;
     private final ResponderService slackResponderService;
+    private final SignClientCommon signClientCommon;
 
     @SbExceptionHandler
     @SneakyThrows
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Starting....");
-        gDriveService.isFolderExist(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
+        gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
         Map<String, String> employees = reportService.getEmployees();
         int fileCount;
         var offset = 0;
@@ -78,13 +79,21 @@ public class ProcessMarkupService implements Process {
         File file = null;
         String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,
                 PROCESSED_ID_FILE_NAME);
+        long dateOfModification = -1;
         try {
             file = gDriveService.getFile(logFileName, slackEventResponse.getInitiatorUserId());
             if (file.exists()) {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
+            dateOfModification = file.lastModified();
+            Map<String, String> bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(),
+                    slackEventResponse.getInitiatorUserId());
             do {
-                Folder folder = getFolderContent(slackEventResponse, offset);
+                Folder folder = signClientCommon.getFolderContent(offset, slackEventResponse.getFolderId(), bchHeaders);
+                if (folder == null) {
+                    throw new SbExtractsException("folder content is null, possible you are not logged in, please refresh your bamboo session",
+                            slackEventResponse.getInitiatorUserId());
+                }
                 log.info("start processing folder: {}, filesCount: {}, offset: {}", folder.getSectionName(),
                         folder.getSectionFileCount(), offset);
                 TagNode tagNode = new HtmlCleaner().clean(folder.getHtml());
@@ -116,7 +125,7 @@ public class ProcessMarkupService implements Process {
                                     infos.size(),
                                     globalCounter,
                                     info.getInn()));
-                    processDocuments(employeeInternalId, info, slackEventResponse, file);
+                    processDocuments(employeeInternalId, info, slackEventResponse, file, bchHeaders);
                     globalCounter++;
                     if (globalCounter > perRequestProcessingFilesCount) {
                         return;
@@ -126,33 +135,29 @@ public class ProcessMarkupService implements Process {
                 fileCount = folder.getSectionFileCount();
             } while (offset < fileCount);
         } catch (Throwable ex) {
-            log.error("Error during markup of acts", ex);
-            throw new SbExtractsException("Error during markup of acts:", ex, slackEventResponse.getInitiatorUserId());
+            throw new SbExtractsException("Error during markup of acts", ex, slackEventResponse.getInitiatorUserId());
         } finally {
-            gDriveService.saveFile(file, logFileName, slackEventResponse);
+            //file not exist in gdrive and not updated -> dateOfModification = 0 and last mod file = false (0)   -> false
+            //file not exist in gdrive and not updated -> dateOfModification = 0 and last mod file = true (124)   -> true
+            //file exist in gdrive and not updated -> dateOfModification = 1234 and last mod file = false (1234)  -> false
+            //file exist on gdrive and updated -> dateOfModification = 1234 and last mod file = true (5678)  -> true
+            gDriveService.saveFile(file, dateOfModification, logFileName, slackEventResponse);
         }
-    }
-
-    private Folder getFolderContent(InternalSlackEventResponse slackEventResponse, int offset) {
-        return bambooHrSignClient.getFolderContent(headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                        slackEventResponse.getInitiatorUserId()),
-                BambooHrSignClient.FolderParams.of(slackEventResponse.getFolderId(), offset));
     }
 
     @SneakyThrows
     private void processDocuments(String employeeInternalId, DocumentInfo info,
-                                  InternalSlackEventResponse slackEventResponse, File file) {
+                                  InternalSlackEventResponse slackEventResponse, File file, Map<String, String> bchHeaders) {
+
         Response updateTemplateResponse = convert(
-                bambooHrSignClient.createTemplate(headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                                slackEventResponse.getInitiatorUserId()),
+                bambooHrSignClient.createTemplate(bchHeaders,
                         new BambooHrSignClient.CrtRequest(true, info.getTemplateFileId())));
         log.info("updateTemplateResponse {}", updateTemplateResponse.isSuccess());
         if (updateTemplateResponse.isSuccess()) {
             Response isReady;
             int attempts = 0;
             do {
-                isReady = bambooHrSignClient.isReady(headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                                slackEventResponse.getInitiatorUserId()),
+                isReady = bambooHrSignClient.isReady(bchHeaders,
                         BambooHrSignClient.CompleteParams.of(info.getFileId()));
                 TimeUnit.SECONDS.sleep(ATTEMPTS_DELAY);
                 attempts++;
@@ -161,13 +166,12 @@ public class ProcessMarkupService implements Process {
             log.info("isReady {}", isReady.isSuccess());
             if (isReady.isSuccess()) {
                 TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
-                Response completed = bambooHrSignClient.getCompleted(headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                                slackEventResponse.getInitiatorUserId()),
+                Response completed = bambooHrSignClient.getCompleted(bchHeaders,
                         BambooHrSignClient.CompleteParams.of(info.getFileId()));
-                log.info("updateTemplateResponse {}", updateTemplateResponse.isSuccess());
+                log.info("updateTemplateResponse {}", completed.isSuccess());
                 if (completed.isSuccess()) {
                     TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
-                    int pagesCount = getPdfPagesCount(slackEventResponse, info.getTemplateFileId());
+                    int pagesCount = getPdfPagesCount(info.getTemplateFileId(), bchHeaders);
                     if (pagesCount == 0) {
                         log.error("File download problem for inn {}", info.getInn());
                         slackResponderService.log(slackEventResponse.getInitiatorUserId(),
@@ -183,8 +187,7 @@ public class ProcessMarkupService implements Process {
                     }
                     TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
                     Response update =
-                            convert(bambooHrSignClient.updateTemplate(headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                                            slackEventResponse.getInitiatorUserId()),
+                            convert(bambooHrSignClient.updateTemplate(bchHeaders,
                                     new BambooHrSignClient.UpdateRequest(true,
                                             Integer.parseInt(completed.getEsignatureTemplateId()), markUp)));
                     log.debug("Response {}, error {}, message {}", update.isSuccess(), update.getError(),
@@ -194,7 +197,7 @@ public class ProcessMarkupService implements Process {
                             "Please take a moment to sign this document", "employeeIds[]", employeeInternalId);
                     TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
                     Response signatureRequest = convert(bambooHrSignClient.signatureRequest(
-                            headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId()),
+                            bchHeaders,
                             signParams, update.getWorkflowId()));
                     log.info("Document for inn: {}, error:{}, success: {}", info.getInn(), signatureRequest.getError(),
                             signatureRequest.isSuccess());
@@ -205,9 +208,11 @@ public class ProcessMarkupService implements Process {
 
                 }
             }
+        } else {
+            slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                    String.format("Update Template action is failed for inn %s skipping...", info.getInn()));
         }
     }
-
 
     @SneakyThrows
     private Response convert(feign.Response response) {
@@ -215,9 +220,8 @@ public class ProcessMarkupService implements Process {
     }
 
     @SneakyThrows
-    private int getPdfPagesCount(InternalSlackEventResponse slackEventResponse, int templateFileId) {
-        byte[] pdf = bambooHrSignClient.getPdf(headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                slackEventResponse.getInitiatorUserId()), templateFileId);
+    private int getPdfPagesCount(int templateFileId, Map<String, String> bchHeaders) {
+        byte[] pdf = bambooHrSignClient.getPdf(bchHeaders, templateFileId);
         if (pdf.length == 0) {
             return 0;
         }
