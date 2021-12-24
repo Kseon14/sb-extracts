@@ -51,7 +51,7 @@ public class ProcessDebtorsPushService implements Process {
             response = bambooHrSignedFile
                     .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(),
                             slackEventResponse.getInitiatorUserId()));
-        } catch (RetryableException ex) {
+        } catch (RetryableException | IllegalArgumentException ex) {
             throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
         }
         TagNode tagNode = getTagNode(response.body());
@@ -85,12 +85,11 @@ public class ProcessDebtorsPushService implements Process {
                                 .setText("Unsigned akt")
                                 .setChannelId(conversationIdWithUser)
                                 .addBlocks(Section.of(
-                                        Text.of(TextType.MARKDOWN, String.format(
+                                        Text.of(TextType.MARKDOWN,
                                                 ":alert:\n" +
                                                         "Hi, Please take a moment to sign Acts of acceptance with coworking. \n" +
                                                         "If you have any questions regarding the documents," +
-                                                        " you can contact Marina Stankevich via slack or email",
-                                                slackEventResponse.getDate(), slackEventResponse.getInitiatorUserId())))
+                                                        " you can contact Marina Stankevich via slack or email"))
                                 ).build(), userEmail, slackEventResponse.getInitiatorUserId());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", userEmail));
             } catch (Exception ex) {
