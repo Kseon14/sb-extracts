@@ -6,7 +6,6 @@ import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.LockIndicator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

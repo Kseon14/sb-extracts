@@ -1,6 +1,5 @@
 package com.am.sbextracts.service.integration;
 
-import com.am.sbextracts.client.BambooHrSignClient;
 import com.am.sbextracts.client.BambooHrSignedFileClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
@@ -16,6 +15,7 @@ import com.hubspot.slack.client.models.blocks.objects.TextType;
 import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.htmlcleaner.HtmlCleaner;
@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNode;
@@ -38,6 +39,8 @@ import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequire
 @RequiredArgsConstructor
 public class ProcessDebtorsService implements Process {
 
+    private final static int DEFAULT_DELAY = 1;
+
     private final BambooHrSignedFileClient bambooHrSignedFile;
     private final HeaderService headerService;
     private final ReportService reportService;
@@ -46,6 +49,7 @@ public class ProcessDebtorsService implements Process {
 
     @Override
     @SbExceptionHandler
+    @SneakyThrows
     public void process(InternalSlackEventResponse slackEventResponse) {
 
         ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
@@ -56,8 +60,13 @@ public class ProcessDebtorsService implements Process {
                                 Text.of(TextType.MARKDOWN, "Starting...")))
         );
         feign.Response response;
-        Map<String, String> bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                slackEventResponse.getInitiatorUserId());
+        Map<String, String> bchHeaders;
+        try {
+            bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(),
+                    slackEventResponse.getInitiatorUserId());
+        } catch (IllegalArgumentException ex) {
+            throw new SbExtractsException(ex.getMessage(), slackEventResponse.getInitiatorUserId());
+        }
         try {
             response = bambooHrSignedFile.getSignedDocumentList(bchHeaders);
         } catch (RetryableException ex) {
@@ -117,10 +126,27 @@ public class ProcessDebtorsService implements Process {
                         .setTs(initialMessage.getTs())
                         .setChannelId(initialMessage.getChannel())
                         .addBlocks(Section.of(
-                                Text.of(TextType.MARKDOWN, "*Not Signed (" + notSignedFiles.size() + ")*\n")))
-                , slackEventResponse.getInitiatorUserId());
+                                Text.of(TextType.MARKDOWN, "*Not Signed (" + notSignedFiles.size() + ")*\n"))),
+                slackEventResponse.getInitiatorUserId());
 
-        if (notSentFiles.size() != 0) {
+        if (notSignedFiles.size() > 0) {
+            int currentPosition = 0;
+            do {
+                int newPosition = currentPosition + 40;
+                slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
+                        ChatPostMessageParams.builder()
+                                .setText("Not Signed")
+                                .addBlocks(Section.of(
+                                        Text.of(TextType.MARKDOWN,
+                                                String.join("\n", new ArrayList<>(notSignedFiles).subList(currentPosition,
+                                                        Math.min(notSignedFiles.size(), newPosition))))))
+                );
+                currentPosition = newPosition;
+                TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+            } while (notSentFiles.size() > currentPosition);
+        }
+
+        if (notSentFiles.size() > 0) {
             slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
                     ChatPostMessageParams.builder()
                             .setText("Not Sent")
@@ -139,6 +165,7 @@ public class ProcessDebtorsService implements Process {
                                                         Math.min(notSentFiles.size(), newPosition))))))
                 );
                 currentPosition = newPosition;
+                TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
             } while (notSentFiles.size() > currentPosition);
         }
         log.info("DONE");

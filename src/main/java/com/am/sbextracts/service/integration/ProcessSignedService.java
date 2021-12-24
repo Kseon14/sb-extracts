@@ -58,10 +58,11 @@ public class ProcessSignedService implements Process {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Start processing ....");
         gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
         feign.Response response;
-        Map<String, String> bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId());
+        Map<String, String> bchHeaders;
         try {
+            bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId());
             response = bambooHrSignedFile.getSignedDocumentList(bchHeaders);
-        } catch (RetryableException ex) {
+        } catch (RetryableException | IllegalArgumentException ex) {
             throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
         }
         TagNode tagNode = getTagNode(response.body());
