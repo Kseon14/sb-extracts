@@ -38,9 +38,9 @@ public class PayslipPublisher implements Publisher {
                     payslip.setFullName(firstCell);
                     payslip.setContractRate(XlsxUtil.getCell(row, "B", evaluator));
                     payslip.setOtherIncome(XlsxUtil.getCell(row, "C", evaluator));
-                    payslip.setSocialTax(XlsxUtil.getCell(row, "D", evaluator));
-                    payslip.setInsurance(XlsxUtil.getCell(row, "E", evaluator));
-                    payslip.setRent(XlsxUtil.getCell(row, "F", evaluator));
+                    payslip.setBonus(XlsxUtil.getCell(row, "D", evaluator));
+                    payslip.setSocialTax(XlsxUtil.getCell(row, "E", evaluator));
+                    payslip.setInsurance(XlsxUtil.getCell(row, "F", evaluator));
                     payslip.setCurrencyRate(XlsxUtil.getCell(row, "G", evaluator));
                     payslip.setTotalNet(XlsxUtil.getCell(row, "H", evaluator));
                     payslip.setCurrentPaymentTax(XlsxUtil.getCell(row, "I", evaluator));
