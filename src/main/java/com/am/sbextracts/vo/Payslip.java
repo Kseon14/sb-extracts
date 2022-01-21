@@ -14,7 +14,7 @@ public class Payslip extends ApplicationEvent {
     private String otherIncome;
     private String socialTax;
     private String insurance;
-    private String rent;
+    private String bonus;
     private String currencyRate;
     private String totalNet;
     private String currentPaymentTax;
@@ -33,7 +33,7 @@ public class Payslip extends ApplicationEvent {
                 .append("otherIncome", otherIncome)
                 .append("socialTax", socialTax)
                 .append("insurance", insurance)
-                .append("rent", rent)
+                .append("bonus", bonus)
                 .append("currencyRate", currencyRate)
                 .append("currentPaymentTax", currentPaymentTax)
                 .append("userEmail", userEmail)

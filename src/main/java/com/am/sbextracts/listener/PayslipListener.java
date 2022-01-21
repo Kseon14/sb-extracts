@@ -33,9 +33,9 @@ public class PayslipListener implements ApplicationListener<Payslip> {
         List<Field> fieldList = new ArrayList<>();
         SlackResponderService.addIfNotNull(fieldList, "Contract Rate", payslip.getContractRate());
         SlackResponderService.addIfNotNull(fieldList, "Other Income", payslip.getOtherIncome());
+        SlackResponderService.addIfNotNull(fieldList, "Bonus", payslip.getBonus());
         SlackResponderService.addIfNotNull(fieldList, "Social Tax", payslip.getSocialTax());
         SlackResponderService.addIfNotNull(fieldList, "Insurance", payslip.getInsurance());
-        SlackResponderService.addIfNotNull(fieldList, "Rent", payslip.getRent());
         SlackResponderService.addIfNotNull(fieldList, "Currency Exchange Rate", payslip.getCurrencyRate());
         if( payslip.getTotalGross() == null) {
             SlackResponderService.addIfNotNull(fieldList, "Total Net", payslip.getTotalNet());
