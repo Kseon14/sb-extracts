@@ -24,10 +24,12 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -40,8 +42,11 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -75,6 +80,9 @@ public class GDriveService {
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static final String APPLICATION_NAME = "BCH-Upload";
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+
+    @Getter
+    private static final Map<String, String> codeVerifier = new HashMap<>();
 
     @SneakyThrows
     public void uploadFile(File fileMetadata, byte[] fileBody, String type, String initiatorSlackId) {
@@ -133,13 +141,15 @@ public class GDriveService {
 
         GoogleClientSecrets.Details details =
                 getCredFromLocalSource(initiatorSlackId);
-        String redirectUrl = String.format("https://accounts.google.com/o/oauth2/auth?" +
+        String redirectUrl = String.format("https://accounts.google.com/o/oauth2/v2/auth?" +
                 "access_type=offline" +
                 "&client_id=%s" +
                 "&redirect_uri=%s" +
                 "&response_type=code" +
+                "&code_challenge=%s" +
+                "&code_challenge_method=S256" +
                 "&scope=%s" +
-                "&prompt=consent", details.getClientId(), getRedirectURI(initiatorSlackId), DriveScopes.DRIVE);
+                "&prompt=consent", details.getClientId(), getRedirectURI(initiatorSlackId), getCodeChallenge(initiatorSlackId), DriveScopes.DRIVE);
 
         slackResponderService.log(initiatorSlackId, redirectUrl);
 
@@ -154,6 +164,16 @@ public class GDriveService {
 
         serialize(googleCredential, initiatorSlackId);
         return googleCredential;
+    }
+
+    @SneakyThrows
+    public String getCodeChallenge(final String initiatorSlackId) {
+        codeVerifier.put(initiatorSlackId, RandomStringUtils
+                .random(43, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"));
+        return Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(MessageDigest.getInstance("SHA-256")
+                        .digest(codeVerifier.get(initiatorSlackId).getBytes(StandardCharsets.US_ASCII)));
     }
 
     @SneakyThrows

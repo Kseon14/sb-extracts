@@ -41,14 +41,26 @@ public class GAuthController {
                 Map.of("code", code,
                         "client_id", details.getClientId(),
                         "client_secret", details.getClientSecret(),
+                        "code_verifier", GDriveService.getCodeVerifier().get(initiatorSlackId),
                         "grant_type", "authorization_code",
                         "redirect_uri", gDriveService.getRedirectURI(initiatorSlackId))
         );
         GoogleTokenResponse googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
         gDriveService.setToken(googleTokenResponse);
 
-        return new ResponseEntity("Now you can close this page page", HttpStatus.OK);
-
+        return new ResponseEntity("<!DOCTYPE html>\n" +
+                "<html lang=\"en\">\n" +
+                "<head>\n" +
+                "    <meta charset=\"UTF-8\">\n" +
+                "    <title>Title</title>\n" +
+                "    <script type=\"text/javascript\">\n" +
+                "        window.close() ;\n" +
+                "    </script>\n" +
+                "</head>\n" +
+                "<body>\n" +
+                "Now you can close this page\n" +
+                "</body>\n" +
+                "</html>", HttpStatus.OK);
     }
 
 }

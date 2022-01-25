@@ -146,7 +146,6 @@ public class ProcessDebtorsService implements Process {
             } while (notSignedFiles.size() > currentPosition);
         }
 
-
         slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
                 ChatPostMessageParams.builder()
                         .setText("Not Sent")
