@@ -7,12 +7,11 @@ import com.am.sbextracts.model.Folder;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
-import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
-import com.hubspot.slack.client.methods.params.chat.ChatUpdateMessageParams;
-import com.hubspot.slack.client.models.blocks.Section;
-import com.hubspot.slack.client.models.blocks.objects.Text;
-import com.hubspot.slack.client.models.blocks.objects.TextType;
-import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
+import com.slack.api.methods.request.chat.ChatPostMessageRequest;
+import com.slack.api.methods.request.chat.ChatUpdateRequest;
+import com.slack.api.methods.response.chat.ChatPostMessageResponse;
+import com.slack.api.model.block.SectionBlock;
+import com.slack.api.model.block.composition.MarkdownTextObject;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -54,11 +53,11 @@ public class ProcessDebtorsService implements Process {
 
         ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
                 slackEventResponse.getInitiatorUserId(),
-                ChatPostMessageParams.builder()
-                        .setText("Starting....")
-                        .addBlocks(Section.of(
-                                Text.of(TextType.MARKDOWN, "Starting...")))
-        );
+                ChatPostMessageRequest.builder()
+                        .text("Starting....")
+                        .blocks(List.of(SectionBlock.builder()
+                                .text(MarkdownTextObject.builder()
+                                        .text("Starting...").build()).build())));
         feign.Response response;
         Map<String, String> bchHeaders;
         try {
@@ -121,12 +120,12 @@ public class ProcessDebtorsService implements Process {
         } while (offset < fileCount);
 
         slackResponderService.updateMessage(
-                ChatUpdateMessageParams.builder()
-                        .setText("Debtors...")
-                        .setTs(initialMessage.getTs())
-                        .setChannelId(initialMessage.getChannel())
-                        .addBlocks(Section.of(
-                                Text.of(TextType.MARKDOWN, "*Not Signed (" + notSignedFiles.size() + ")*\n"))),
+                ChatUpdateRequest.builder()
+                        .text("Debtors...")
+                        .ts(initialMessage.getTs())
+                        .channel(initialMessage.getChannel())
+                        .blocks(List.of(SectionBlock.builder()
+                                .text(MarkdownTextObject.builder().text("*Not Signed (" + notSignedFiles.size() + ")*\n").build()).build())),
                 slackEventResponse.getInitiatorUserId());
 
         if (notSignedFiles.size() > 0) {
@@ -134,36 +133,34 @@ public class ProcessDebtorsService implements Process {
             do {
                 int newPosition = currentPosition + 40;
                 slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
-                        ChatPostMessageParams.builder()
-                                .setText("Not Signed")
-                                .addBlocks(Section.of(
-                                        Text.of(TextType.MARKDOWN,
-                                                String.join("\n", new ArrayList<>(notSignedFiles).subList(currentPosition,
-                                                        Math.min(notSignedFiles.size(), newPosition))))))
-                );
+                        ChatPostMessageRequest.builder()
+                                .text("Not Signed")
+                                .blocks(List.of(SectionBlock.builder()
+                                        .text(MarkdownTextObject.builder()
+                                                .text(String.join("\n", new ArrayList<>(notSignedFiles).subList(currentPosition,
+                                                        Math.min(notSignedFiles.size(), newPosition)))).build()).build())));
                 currentPosition = newPosition;
                 TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
             } while (notSignedFiles.size() > currentPosition);
         }
 
         slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
-                ChatPostMessageParams.builder()
-                        .setText("Not Sent")
-                        .addBlocks(Section.of(
-                                Text.of(TextType.MARKDOWN, "*Not Sent (" + notSentFiles.size() + ")*\n")))
-        );
+                ChatPostMessageRequest.builder()
+                        .text("Not Sent")
+                        .blocks(List.of(SectionBlock.builder()
+                                .text(MarkdownTextObject.builder()
+                                        .text("*Not Sent (" + notSentFiles.size() + ")*\n").build()).build())));
         if (notSentFiles.size() > 0) {
             int currentPosition = 0;
             do {
                 int newPosition = currentPosition + 40;
                 slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
-                        ChatPostMessageParams.builder()
-                                .setText("Not Sent")
-                                .addBlocks(Section.of(
-                                        Text.of(TextType.MARKDOWN,
-                                                String.join("\n", notSentFiles.subList(currentPosition,
-                                                        Math.min(notSentFiles.size(), newPosition))))))
-                );
+                        ChatPostMessageRequest.builder()
+                                .text("Not Sent")
+                                .blocks(List.of(SectionBlock.builder()
+                                        .text(MarkdownTextObject.builder()
+                                                .text(String.join("\n", notSentFiles.subList(currentPosition,
+                                                        Math.min(notSentFiles.size(), newPosition)))).build()).build())));
                 currentPosition = newPosition;
                 TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
             } while (notSentFiles.size() > currentPosition);
