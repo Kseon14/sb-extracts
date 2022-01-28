@@ -6,18 +6,18 @@ import com.am.sbextracts.pool.HttpClientPool;
 import com.am.sbextracts.pool.SlackClientPool;
 import com.am.sbextracts.service.integration.SlackClientWrapper;
 import com.am.sbextracts.vo.SlackEvent;
-import com.am.sbextracts.vo.SlackFileInfo;
 import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.am.sbextracts.vo.View;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.methods.request.chat.ChatUpdateRequest;
 import com.slack.api.methods.request.conversations.ConversationsOpenRequest;
+import com.slack.api.methods.request.files.FilesInfoRequest;
 import com.slack.api.methods.request.users.UsersLookupByEmailRequest;
 import com.slack.api.methods.request.views.ViewsOpenRequest;
 import com.slack.api.methods.response.chat.ChatPostMessageResponse;
+import com.slack.api.methods.response.chat.ChatUpdateResponse;
 import com.slack.api.methods.response.conversations.ConversationsOpenResponse;
+import com.slack.api.methods.response.files.FilesInfoResponse;
 import com.slack.api.methods.response.users.UsersLookupByEmailResponse;
 import com.slack.api.methods.response.views.ViewsOpenResponse;
 import com.slack.api.model.ErrorResponseMetadata;
@@ -33,6 +33,7 @@ import com.slack.api.model.view.ViewTitle;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.asynchttpclient.AsyncCompletionHandler;
 import org.asynchttpclient.AsyncHttpClient;
@@ -53,7 +54,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
@@ -87,27 +87,25 @@ public class SlackResponderService implements ResponderService {
         }
     }
 
+    @SneakyThrows
     @Override
     @SbExceptionHandler
-    public void sendMessage(ChatPostMessageRequest params, String userEmail, String initiatorSlackId) {
-        log.info("Message sending {}...", params.getChannel());
+    public void sendMessage(ChatPostMessageRequest request, String userEmail, String initiatorSlackId) {
+        log.info("Message sending {}...", request.getChannel());
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             CompletableFuture<ChatPostMessageResponse> response =
-                    wrapper.getClient().chatPostMessage(params);
-            response.get();
-        } catch (ExecutionException | InterruptedException e) {
-            throw new SbExtractsException("Message not sent to:", e, userEmail, initiatorSlackId);
+                    wrapper.getClient().chatPostMessage(request);
+            handleError(response.get(), userEmail, initiatorSlackId);
         }
     }
 
+    @SneakyThrows
     @Override
     @SbExceptionHandler
-    public ChatPostMessageResponse sendMessage(ChatPostMessageRequest params, String initiatorSlackId) {
+    public ChatPostMessageResponse sendMessage(ChatPostMessageRequest request, String initiatorSlackId) {
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            CompletableFuture<ChatPostMessageResponse> response = wrapper.getClient().chatPostMessage(params);
-            return response.get();
-        } catch (Exception e) {
-            throw new SbExtractsException("Message not sent to:", e, initiatorSlackId);
+            CompletableFuture<ChatPostMessageResponse> response = wrapper.getClient().chatPostMessage(request);
+            return handleError(response.get(), initiatorSlackId);
         }
     }
 
@@ -124,17 +122,17 @@ public class SlackResponderService implements ResponderService {
                         .blocks(List.of(InputBlock.builder()
                                         .blockId("sessionId")
                                         .label(PlainTextObject.builder().text("SessionID").build())
-                                        .element(PlainTextInputElement.builder().build())
+                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 InputBlock.builder()
                                         .blockId("sectionId")
                                         .label(PlainTextObject.builder().text("Bamboo FolderID").build())
-                                        .element(PlainTextInputElement.builder().build())
+                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 InputBlock.builder()
                                         .blockId("gFolderId")
                                         .label(PlainTextObject.builder().text("Google folder ID").build())
-                                        .element(PlainTextInputElement.builder().build())
+                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 SectionBlock.builder()
                                         .blockId("date")
@@ -147,8 +145,8 @@ public class SlackResponderService implements ResponderService {
                                         .build()))
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTrigger_id())
-                    .view(view).build()).get(), slackInteractiveEvent.getUser_id());
+            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                    .view(view).build()).get(), slackInteractiveEvent.getUserId());
         }
     }
 
@@ -159,6 +157,29 @@ public class SlackResponderService implements ResponderService {
         }
     }
 
+    private static ChatPostMessageResponse handleError(ChatPostMessageResponse response, String userId) {
+        List<String> errors = response.getErrors();
+        if (CollectionUtils.isNotEmpty(errors)) {
+            throw new SbExtractsException(String.format("Error: %s", errors), userId);
+        }
+        return response;
+    }
+
+    private static void handleError(ChatPostMessageResponse response, String userEmail, String userId) {
+        List<String> errors = response.getErrors();
+        if (CollectionUtils.isNotEmpty(errors)) {
+            throw new SbExtractsException(String.format("Error: %s", errors), userEmail, userId);
+        }
+    }
+
+    private static void handleError(ChatUpdateResponse response, String userId) {
+        String responseError = response.getError();
+        if (responseError != null) {
+            throw new SbExtractsException(String.format("Error: %s", responseError), userId);
+        }
+    }
+
+    @SneakyThrows
     @Override
     @SbExceptionHandler
     public void sendDebtors(SlackInteractiveEvent slackInteractiveEvent) {
@@ -170,11 +191,11 @@ public class SlackResponderService implements ResponderService {
                         .submit(ViewSubmit.builder().type(PLAIN_TEXT).text("Start").build())
                         .blocks(List.of(InputBlock.builder().blockId("sessionId")
                                         .label(PlainTextObject.builder().text("SessionID").build())
-                                        .element(PlainTextInputElement.builder().build())
+                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 InputBlock.builder().blockId("sectionId")
                                         .label(PlainTextObject.builder().text("Bamboo FolderID").build())
-                                        .element(PlainTextInputElement.builder().build())
+                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 SectionBlock.builder()
                                         .blockId("date")
@@ -187,13 +208,12 @@ public class SlackResponderService implements ResponderService {
                                         .build()))
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTrigger_id())
-                    .view(view).build());
-        } catch (Exception e) {
-            throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getTrigger_id());
+            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                    .view(view).build()).get(), slackInteractiveEvent.getTriggerId());
         }
     }
 
+    @SneakyThrows
     @Override
     @SbExceptionHandler
     public void pushDebtors(SlackInteractiveEvent slackInteractiveEvent) {
@@ -206,12 +226,12 @@ public class SlackResponderService implements ResponderService {
                         .blocks(List.of(InputBlock.builder()
                                         .blockId("sessionId")
                                         .label(PlainTextObject.builder().text("SessionID").build())
-                                        .element(PlainTextInputElement.builder().build())
+                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 InputBlock.builder()
                                         .blockId("sectionId")
                                         .label(PlainTextObject.builder().text("Bamboo FolderID").build())
-                                        .element(PlainTextInputElement.builder().build())
+                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 SectionBlock.builder()
                                         .blockId("date")
@@ -224,13 +244,12 @@ public class SlackResponderService implements ResponderService {
                                         .build()))
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTrigger_id())
-                    .view(view).build());
-        } catch (Exception e) {
-            throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getTrigger_id());
+            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                    .view(view).build()).get(), slackInteractiveEvent.getTriggerId());
         }
     }
 
+    @SneakyThrows
     @Override
     @SbExceptionHandler
     public void sendDownloadSigned(SlackInteractiveEvent slackInteractiveEvent) {
@@ -242,12 +261,12 @@ public class SlackResponderService implements ResponderService {
                         .submit(ViewSubmit.builder().type(PLAIN_TEXT).text("Start").build())
                         .blocks(List.of(InputBlock.builder().blockId("sessionId")
                                         .label(PlainTextObject.builder().text("SessionID").build())
-                                        .element(PlainTextInputElement.builder().build())
+                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 InputBlock.builder()
                                         .blockId("gFolderId")
                                         .label(PlainTextObject.builder().text("Google folder ID").build())
-                                        .element(PlainTextInputElement.builder().build())
+                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 SectionBlock.builder()
                                         .blockId("date")
@@ -260,13 +279,12 @@ public class SlackResponderService implements ResponderService {
                                         .build()))
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTrigger_id())
-                    .view(view).build());
-        } catch (Exception e) {
-            throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
+            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                    .view(view).build()).get(), slackInteractiveEvent.getTriggerId());
         }
     }
 
+    @SneakyThrows
     @Override
     @SbExceptionHandler
     public void sendDownloadInvoice(SlackInteractiveEvent slackInteractiveEvent) {
@@ -280,11 +298,11 @@ public class SlackResponderService implements ResponderService {
                                 List.of(InputBlock.builder()
                                                 .blockId("sessionId")
                                                 .label(PlainTextObject.builder().text("NS SessionID").build())
-                                                .element(PlainTextInputElement.builder().build())
+                                                .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                                 .build(),
                                         InputBlock.builder().blockId("sectionId")
                                                 .label(PlainTextObject.builder().text("NS FolderID").build())
-                                                .element(PlainTextInputElement.builder().build())
+                                                .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                                 .build(),
                                         SectionBlock.builder()
                                                 .blockId("date")
@@ -297,14 +315,13 @@ public class SlackResponderService implements ResponderService {
                                                 .build()))
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTrigger_id())
-                    .view(view).build());
-        } catch (Exception e) {
-            throw new SbExtractsException("Message not sent to:", e, slackInteractiveEvent.getUser_id());
+            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                    .view(view).build()).get(), slackInteractiveEvent.getTriggerId());
         }
     }
 
 
+    @SneakyThrows
     @Override
     @SbExceptionHandler
     public String getConversationIdByEmail(String userEmail, String initiatorSlackId) {
@@ -316,8 +333,10 @@ public class SlackResponderService implements ResponderService {
             usersInfoResponse = wrapper.getClient().usersLookupByEmail(UsersLookupByEmailRequest.builder()
                     .email(userEmail)
                     .build()).get();
-        } catch (Exception e) {
-            throw new SbExtractsException("Couldn't get userInfo from slack", e, userEmail, initiatorSlackId);
+            if (usersInfoResponse.getError() != null) {
+                throw new SbExtractsException(String.format("Couldn't get userInfo from slack: %s", usersInfoResponse.getError()),
+                        userEmail, initiatorSlackId);
+            }
         }
         return getOpenedConversationId(usersInfoResponse.getUser().getId(), initiatorSlackId, userEmail);
     }
@@ -329,7 +348,7 @@ public class SlackResponderService implements ResponderService {
     public String getConversationIdBySlackId(String userSlackId, String initiatorSlackId) {
         log.debug("getting conversationId by slackId...");
         if (userSlackId == null) {
-            throw new SbExtractsException("userSlackId could not be null", "Initiator", "Initiator");
+            throw new SbExtractsException("userSlackId could not be null", "Initiator");
         }
         return getOpenedConversationId(userSlackId, initiatorSlackId, "Initiator");
     }
@@ -342,7 +361,7 @@ public class SlackResponderService implements ResponderService {
     }
 
     @Override
-    public com.slack.api.methods.response.chat.ChatPostMessageResponse sendMessageToInitiator(String initiatorSlackId, ChatPostMessageRequest.ChatPostMessageRequestBuilder builder) {
+    public ChatPostMessageResponse sendMessageToInitiator(String initiatorSlackId, ChatPostMessageRequest.ChatPostMessageRequestBuilder builder) {
         return sendMessage(builder
                 .channel(slackService.getConversationIdBySlackId(initiatorSlackId, initiatorSlackId))
                 .build(), initiatorSlackId);
@@ -363,38 +382,30 @@ public class SlackResponderService implements ResponderService {
                 .build();
     }
 
+    @SneakyThrows
     public void updateMessage(com.slack.api.methods.response.chat.ChatPostMessageResponse initialMessage, String text, String initiatorSlackId) {
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            wrapper.getClient().chatUpdate(ChatUpdateRequest.builder()
+            handleError(wrapper.getClient().chatUpdate(ChatUpdateRequest.builder()
                     .channel(initialMessage.getChannel())
                     .blocks(List.of(SectionBlock.builder()
                             .text(MarkdownTextObject.builder()
                                     .text(text).build()).build()))
                     .ts(initialMessage.getTs())
-                    .build()).get();
-        } catch (Exception e) {
-            throw new SbExtractsException("Could not get opened conversation id", e, initiatorSlackId);
+                    .build()).get(), initiatorSlackId);
         }
     }
 
+    @SneakyThrows
     public void updateMessage(ChatUpdateRequest.ChatUpdateRequestBuilder builder, String initiatorSlackId) {
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            wrapper.getClient().chatUpdate(builder
-                    .build()).get();
-        } catch (Exception e) {
-            throw new SbExtractsException("Could not get opened conversation id", e, initiatorSlackId);
+            handleError(wrapper.getClient().chatUpdate(builder
+                    .build()).get(), initiatorSlackId);
         }
     }
 
     @Override
     public void sendErrorMessageToInitiator(String userSlackId, String shortText, String text) {
-        sendMessage(ChatPostMessageRequest.builder()
-                .text(shortText)
-                .channel(slackService.getConversationIdBySlackId(userSlackId, userSlackId))
-                .blocks(List.of(SectionBlock.builder()
-                        .text(MarkdownTextObject.builder()
-                                .text(String.format("`%s`", text)).build()).build())
-                ).build(), userSlackId);
+        sendMessage(getRequest(userSlackId, shortText, String.format("`%s`", text)), userSlackId);
     }
 
     @Override
@@ -408,6 +419,7 @@ public class SlackResponderService implements ResponderService {
         postFile(fileName, conversationId, userEmail, initiatorSlackId);
     }
 
+    @SneakyThrows
     @SbExceptionHandler
     private String getOpenedConversationId(String userId, String initiatorSlackId, String userEmail) {
         if (userId == null) {
@@ -419,9 +431,11 @@ public class SlackResponderService implements ResponderService {
             ConversationsOpenResponse conversation = wrapper.getClient().conversationsOpen(
                     ConversationsOpenRequest.builder()
                             .users(List.of(userId)).returnIm(true).build()).get();
+            if (conversation.getError() != null) {
+                throw new SbExtractsException(String.format("Could not get opened conversation id: %s", conversation.getError()),
+                        userEmail, initiatorSlackId);
+            }
             return conversation.getChannel().getId();
-        } catch (Exception e) {
-            throw new SbExtractsException("Could not get opened conversation id", e, userEmail, initiatorSlackId);
         }
     }
 
@@ -473,15 +487,13 @@ public class SlackResponderService implements ResponderService {
     }
 
     @Override
-    public SlackFileInfo getFileInfo(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception {
-        Request request = getBuilder("GET").setUrl("https://slack.com/api/files.info")
-                .addQueryParam("file", fileMetaInfo.getId())
-                .build();
-
-        Response response = makeRequest(request);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return mapper.readValue(response.getResponseBody(), SlackFileInfo.class);
+    public com.slack.api.model.File getFile(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception {
+        FilesInfoResponse fileInfo = new SlackClientWrapper(slackClientPool).getClient().filesInfo(FilesInfoRequest.builder().file(fileMetaInfo.getId()).build())
+                .get();
+        if (fileInfo.getError() != null) {
+            throw new SbExtractsException("Could not get fileInfo", fileMetaInfo.getAuthor());
+        }
+        return fileInfo.getFile();
     }
 
     private RequestBuilder getBuilder(String httpMethod) {
@@ -490,8 +502,8 @@ public class SlackResponderService implements ResponderService {
 
     @Override
     @SbExceptionHandler
-    public void downloadFile(String fileName, SlackFileInfo slackFile) {
-        Request request = getBuilder("GET").setUrl(slackFile.getFileMetaInfo().getUrlPrivate())
+    public void downloadFile(String fileName, com.slack.api.model.File slackFile) {
+        Request request = getBuilder("GET").setUrl(slackFile.getUrlPrivateDownload())
                 .build();
         AsyncHttpClient client = null;
         try (FileOutputStream stream = new FileOutputStream(fileName)) {
@@ -516,7 +528,7 @@ public class SlackResponderService implements ResponderService {
             log.info("File downloaded");
         } catch (Exception e) {
             throw new SbExtractsException("error during file close or download", e, "Initiator",
-                    slackFile.getFileMetaInfo().getAuthor());
+                    slackFile.getUser());
         } finally {
             returnHttpClientToPool(client);
         }

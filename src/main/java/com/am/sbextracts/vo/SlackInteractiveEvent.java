@@ -7,16 +7,30 @@ import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class SlackInteractiveEvent {
-    @Getter @Setter private Type type;
-    @Getter @Setter  private String trigger_id;
-    @Getter @Setter  private String user_id;
+    @Getter
+    @Setter
+    private Type type;
+    @Getter
+    @Setter
+    private String triggerId;
+    @Getter
+    @Setter
+    private String userId;
 
-    @Getter @Setter private Action action;
+    @Getter
+    @Setter
+    private Action action;
 
-    @Getter @Setter private String token;
-    @Getter @Setter private View view;
+    @Getter
+    @Setter
+    private String token;
+    @Getter
+    @Setter
+    private View view;
 
-    @Getter @Setter private User user;
+    @Getter
+    @Setter
+    private User user;
 
 
     @Data

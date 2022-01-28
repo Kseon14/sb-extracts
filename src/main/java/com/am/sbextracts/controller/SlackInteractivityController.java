@@ -68,7 +68,7 @@ public class SlackInteractivityController {
     }
 
     @PostMapping(value = "process/markup", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> markup(SlackInteractiveEvent request) {
+    public ResponseEntity<Void> markup(@SIE SlackInteractiveEvent request) {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }
@@ -77,7 +77,7 @@ public class SlackInteractivityController {
     }
 
     @PostMapping(value = "debtors", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> getDebtors(SlackInteractiveEvent request) {
+    public ResponseEntity<Void> getDebtors(@SIE SlackInteractiveEvent request) {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }
@@ -86,7 +86,7 @@ public class SlackInteractivityController {
     }
 
     @PostMapping(value = "process/signed", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> downloadSigned(SlackInteractiveEvent request) {
+    public ResponseEntity<Void> downloadSigned(@SIE SlackInteractiveEvent request) {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }
@@ -95,7 +95,7 @@ public class SlackInteractivityController {
     }
 
     @PostMapping(value = "process/invoice", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> downloadInvoice(SlackInteractiveEvent request) {
+    public ResponseEntity<Void> downloadInvoice(@SIE SlackInteractiveEvent request) {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }
@@ -104,7 +104,7 @@ public class SlackInteractivityController {
     }
 
     @PostMapping(value = "debtors/push", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> pushDebtors(SlackInteractiveEvent request) {
+    public ResponseEntity<Void> pushDebtors(@SIE SlackInteractiveEvent request) {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }
@@ -118,6 +118,6 @@ public class SlackInteractivityController {
     }
 
     private boolean isNotAllowedUser(SlackInteractiveEvent slackInteractiveEvent) {
-        return !allowedUsers.contains(slackInteractiveEvent.getUser_id());
+        return !allowedUsers.contains(slackInteractiveEvent.getUserId());
     }
 }

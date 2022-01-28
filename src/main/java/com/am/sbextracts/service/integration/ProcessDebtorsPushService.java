@@ -7,6 +7,7 @@ import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
+import com.slack.api.model.block.LayoutBlock;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import feign.RetryableException;
@@ -40,11 +41,9 @@ public class ProcessDebtorsPushService implements Process {
 
         com.slack.api.methods.response.chat.ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
                 slackEventResponse.getInitiatorUserId(),
-                ChatPostMessageRequest.builder()
-                        .text("Starting....")
-                        .blocks(List.of(SectionBlock.builder()
-                                .text(MarkdownTextObject.builder()
-                                        .text("Starting...").build()).build())));
+                getPostMessage("Starting....", List.of(SectionBlock.builder()
+                        .text(MarkdownTextObject.builder()
+                                .text("Starting...").build()).build())));
         feign.Response response;
         try {
             response = bambooHrSignedFile
@@ -80,16 +79,14 @@ public class ProcessDebtorsPushService implements Process {
                 String conversationIdWithUser = slackResponderService.getConversationIdByEmail(userEmail,
                         slackEventResponse.getInitiatorUserId());
                 slackResponderService.sendMessage(
-                        ChatPostMessageRequest.builder()
-                                .text("Unsigned akt")
+                        getPostMessage("Unsigned akt", List.of(SectionBlock.builder()
+                                .text(MarkdownTextObject.builder()
+                                        .text(
+                                                ":alert:\n" +
+                                                        "Hi, Please take a moment to sign Acts of acceptance with coworking. \n" +
+                                                        "If you have any questions regarding the documents," +
+                                                        " you can contact Marina Stankevich via slack or email").build()).build()))
                                 .channel(conversationIdWithUser)
-                                .blocks(List.of(SectionBlock.builder()
-                                        .text(MarkdownTextObject.builder()
-                                                .text(
-                                                        ":alert:\n" +
-                                                                "Hi, Please take a moment to sign Acts of acceptance with coworking. \n" +
-                                                                "If you have any questions regarding the documents," +
-                                                                " you can contact Marina Stankevich via slack or email").build()).build()))
                                 .build(), userEmail, slackEventResponse.getInitiatorUserId());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", userEmail));
             } catch (Exception ex) {
@@ -100,6 +97,12 @@ public class ProcessDebtorsPushService implements Process {
 
         log.info("DONE");
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
+    }
+
+    private ChatPostMessageRequest.ChatPostMessageRequestBuilder getPostMessage(String headerText, List<LayoutBlock> layoutBlocks) {
+        return ChatPostMessageRequest.builder()
+                .text(headerText)
+                .blocks(layoutBlocks);
     }
 
 }

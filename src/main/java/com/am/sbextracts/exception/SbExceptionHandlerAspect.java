@@ -24,8 +24,8 @@ public class SbExceptionHandlerAspect {
 
     private String composeErrorMessage(SbExtractsException e) {
         if (StringUtils.isNotBlank(e.getAffectedUserEmail())) {
-            return String.format("Error for <%s> | %s: %s", e.getAffectedUserEmail(),
-                    e.getMessage(), e.getCause().getMessage());
+            return String.format("Error for <%s> | %s %s", e.getAffectedUserEmail(),
+                    e.getMessage(), e.getCause() != null ? " :" + e.getCause().getMessage() : "");
         }
         return String.format("%s: %s", e.getMessage(),
                 Optional.ofNullable(e.getCause()).map(Throwable::getMessage).orElse(""));

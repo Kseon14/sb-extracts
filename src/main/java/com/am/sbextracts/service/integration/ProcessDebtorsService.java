@@ -53,11 +53,7 @@ public class ProcessDebtorsService implements Process {
 
         ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
                 slackEventResponse.getInitiatorUserId(),
-                ChatPostMessageRequest.builder()
-                        .text("Starting....")
-                        .blocks(List.of(SectionBlock.builder()
-                                .text(MarkdownTextObject.builder()
-                                        .text("Starting...").build()).build())));
+                getPostMessage("Starting....", "Starting..."));
         feign.Response response;
         Map<String, String> bchHeaders;
         try {
@@ -133,40 +129,36 @@ public class ProcessDebtorsService implements Process {
             do {
                 int newPosition = currentPosition + 40;
                 slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
-                        ChatPostMessageRequest.builder()
-                                .text("Not Signed")
-                                .blocks(List.of(SectionBlock.builder()
-                                        .text(MarkdownTextObject.builder()
-                                                .text(String.join("\n", new ArrayList<>(notSignedFiles).subList(currentPosition,
-                                                        Math.min(notSignedFiles.size(), newPosition)))).build()).build())));
+                        getPostMessage("Not Signed", String.join("\n", new ArrayList<>(notSignedFiles).subList(currentPosition,
+                                Math.min(notSignedFiles.size(), newPosition)))));
                 currentPosition = newPosition;
                 TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
             } while (notSignedFiles.size() > currentPosition);
         }
 
         slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
-                ChatPostMessageRequest.builder()
-                        .text("Not Sent")
-                        .blocks(List.of(SectionBlock.builder()
-                                .text(MarkdownTextObject.builder()
-                                        .text("*Not Sent (" + notSentFiles.size() + ")*\n").build()).build())));
+                getPostMessage("Not Sent", "*Not Sent (" + notSentFiles.size() + ")*\n"));
         if (notSentFiles.size() > 0) {
             int currentPosition = 0;
             do {
                 int newPosition = currentPosition + 40;
                 slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
-                        ChatPostMessageRequest.builder()
-                                .text("Not Sent")
-                                .blocks(List.of(SectionBlock.builder()
-                                        .text(MarkdownTextObject.builder()
-                                                .text(String.join("\n", notSentFiles.subList(currentPosition,
-                                                        Math.min(notSentFiles.size(), newPosition)))).build()).build())));
+                        getPostMessage("Not Sent", String.join("\n", notSentFiles.subList(currentPosition,
+                                Math.min(notSentFiles.size(), newPosition)))));
                 currentPosition = newPosition;
                 TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
             } while (notSentFiles.size() > currentPosition);
         }
         log.info("DONE");
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
+    }
+
+    private ChatPostMessageRequest.ChatPostMessageRequestBuilder getPostMessage(String headerText, String text) {
+        return ChatPostMessageRequest.builder()
+                .text(headerText)
+                .blocks(List.of(SectionBlock.builder()
+                        .text(MarkdownTextObject.builder()
+                                .text(text).build()).build()));
     }
 
 }
