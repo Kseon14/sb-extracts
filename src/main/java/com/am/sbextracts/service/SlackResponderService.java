@@ -1,5 +1,6 @@
 package com.am.sbextracts.service;
 
+import com.am.sbextracts.client.SlackApiClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.pool.HttpClientPool;
@@ -12,12 +13,14 @@ import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.methods.request.chat.ChatUpdateRequest;
 import com.slack.api.methods.request.conversations.ConversationsOpenRequest;
 import com.slack.api.methods.request.files.FilesInfoRequest;
+import com.slack.api.methods.request.files.FilesUploadRequest;
 import com.slack.api.methods.request.users.UsersLookupByEmailRequest;
 import com.slack.api.methods.request.views.ViewsOpenRequest;
 import com.slack.api.methods.response.chat.ChatPostMessageResponse;
 import com.slack.api.methods.response.chat.ChatUpdateResponse;
 import com.slack.api.methods.response.conversations.ConversationsOpenResponse;
 import com.slack.api.methods.response.files.FilesInfoResponse;
+import com.slack.api.methods.response.files.FilesUploadResponse;
 import com.slack.api.methods.response.users.UsersLookupByEmailResponse;
 import com.slack.api.methods.response.views.ViewsOpenResponse;
 import com.slack.api.model.ErrorResponseMetadata;
@@ -41,8 +44,6 @@ import org.asynchttpclient.HttpResponseBodyPart;
 import org.asynchttpclient.ListenableFuture;
 import org.asynchttpclient.Request;
 import org.asynchttpclient.RequestBuilder;
-import org.asynchttpclient.Response;
-import org.asynchttpclient.request.body.multipart.FilePart;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
@@ -54,7 +55,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 @Slf4j
@@ -71,6 +71,8 @@ public class SlackResponderService implements ResponderService {
 
     @Lazy
     private final SlackResponderService slackService;
+
+    private final SlackApiClient slackApiClient;
 
     @Value("${slack.token}")
     private final String token;
@@ -455,35 +457,19 @@ public class SlackResponderService implements ResponderService {
             && !StringUtils.equals(input, "0.0")
             && !StringUtils.equals(input, "0.00");
 
+    @SneakyThrows
     private void postFile(String fileName, String conversationId, String userEmail, String initiatorSlackId) {
         File file = new File(fileName);
-        Request request = getBuilder("POST").setUrl("https://slack.com/api/files.upload")
-                .addQueryParam("channels", conversationId)
-                .addQueryParam("initial_comment",
-                        "Please *keep* this invoice for the next *three years*")
-                .addBodyPart(new FilePart("file", file))
-                .build();
-
-        Response response;
-        try {
-            response = makeRequest(request);
-        } catch (Exception e) {
-            throw new SbExtractsException("Could not send file", e, userEmail, initiatorSlackId);
+        FilesUploadResponse filesUploadResponse;
+        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+            filesUploadResponse = wrapper.getClient().filesUpload(FilesUploadRequest.builder().channels(List.of(conversationId))
+                    .initialComment("Please *keep* this invoice for the next *three years*").file(file).build()).get();
         }
-        log.info("file upload response: {}", response.getResponseBody());
+        if (filesUploadResponse.getError() != null) {
+            throw new SbExtractsException("Could not send file", userEmail, initiatorSlackId);
+        }
+        log.info("file upload is: {}", filesUploadResponse.isOk() ? "done" : "failed");
         log.info("file {} deleted {}", file.getName(), file.delete());
-    }
-
-    private Response makeRequest(Request request) throws Exception {
-        Future<Response> responseFuture;
-        AsyncHttpClient client = null;
-        try {
-            client = getHttpClient();
-            responseFuture = client.executeRequest(request);
-            return responseFuture.get();
-        } finally {
-            returnHttpClientToPool(client);
-        }
     }
 
     @Override
@@ -500,9 +486,15 @@ public class SlackResponderService implements ResponderService {
         return new RequestBuilder(httpMethod).addHeader("Authorization", "Bearer " + token);
     }
 
+    @SneakyThrows
     @Override
     @SbExceptionHandler
     public void downloadFile(String fileName, com.slack.api.model.File slackFile) {
+
+//        FileUtils.copyInputStreamToFile(
+//                slackApiClient.getFile(
+//                        URI.create(slackFile.getUrlPrivateDownload())).body().asInputStream(), new File(fileName));
+//
         Request request = getBuilder("GET").setUrl(slackFile.getUrlPrivateDownload())
                 .build();
         AsyncHttpClient client = null;
@@ -519,7 +511,7 @@ public class SlackResponderService implements ResponderService {
                         }
 
                         @Override
-                        public FileOutputStream onCompleted(Response response) {
+                        public FileOutputStream onCompleted(org.asynchttpclient.Response response) {
                             return stream;
                         }
                     });
