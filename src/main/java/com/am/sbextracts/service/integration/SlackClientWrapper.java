@@ -1,7 +1,7 @@
 package com.am.sbextracts.service.integration;
 
 import com.am.sbextracts.pool.SlackClientPool;
-import com.slack.api.methods.AsyncMethodsClient;
+import com.slack.api.methods.MethodsClient;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import java.io.Closeable;
 public class SlackClientWrapper implements Closeable {
 
     private final SlackClientPool slackClientPool;
-    private final AsyncMethodsClient client;
+    private final MethodsClient client;
 
     @SneakyThrows
     public SlackClientWrapper(SlackClientPool slackClientPool){

@@ -13,14 +13,12 @@ import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.methods.request.chat.ChatUpdateRequest;
 import com.slack.api.methods.request.conversations.ConversationsOpenRequest;
 import com.slack.api.methods.request.files.FilesInfoRequest;
-import com.slack.api.methods.request.files.FilesUploadRequest;
 import com.slack.api.methods.request.users.UsersLookupByEmailRequest;
 import com.slack.api.methods.request.views.ViewsOpenRequest;
 import com.slack.api.methods.response.chat.ChatPostMessageResponse;
 import com.slack.api.methods.response.chat.ChatUpdateResponse;
 import com.slack.api.methods.response.conversations.ConversationsOpenResponse;
 import com.slack.api.methods.response.files.FilesInfoResponse;
-import com.slack.api.methods.response.files.FilesUploadResponse;
 import com.slack.api.methods.response.users.UsersLookupByEmailResponse;
 import com.slack.api.methods.response.views.ViewsOpenResponse;
 import com.slack.api.model.ErrorResponseMetadata;
@@ -44,6 +42,8 @@ import org.asynchttpclient.HttpResponseBodyPart;
 import org.asynchttpclient.ListenableFuture;
 import org.asynchttpclient.Request;
 import org.asynchttpclient.RequestBuilder;
+import org.asynchttpclient.Response;
+import org.asynchttpclient.request.body.multipart.FilePart;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
@@ -54,7 +54,7 @@ import java.io.FileOutputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 @Slf4j
@@ -95,9 +95,9 @@ public class SlackResponderService implements ResponderService {
     public void sendMessage(ChatPostMessageRequest request, String userEmail, String initiatorSlackId) {
         log.info("Message sending {}...", request.getChannel());
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            CompletableFuture<ChatPostMessageResponse> response =
+            ChatPostMessageResponse response =
                     wrapper.getClient().chatPostMessage(request);
-            handleError(response.get(), userEmail, initiatorSlackId);
+            handleError(response, userEmail, initiatorSlackId);
         }
     }
 
@@ -106,8 +106,8 @@ public class SlackResponderService implements ResponderService {
     @SbExceptionHandler
     public ChatPostMessageResponse sendMessage(ChatPostMessageRequest request, String initiatorSlackId) {
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            CompletableFuture<ChatPostMessageResponse> response = wrapper.getClient().chatPostMessage(request);
-            return handleError(response.get(), initiatorSlackId);
+            ChatPostMessageResponse response = wrapper.getClient().chatPostMessage(request);
+            return handleError(response, initiatorSlackId);
         }
     }
 
@@ -148,7 +148,7 @@ public class SlackResponderService implements ResponderService {
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                    .view(view).build()).get(), slackInteractiveEvent.getUserId());
+                    .view(view).build()), slackInteractiveEvent.getUserId());
         }
     }
 
@@ -211,7 +211,7 @@ public class SlackResponderService implements ResponderService {
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                    .view(view).build()).get(), slackInteractiveEvent.getTriggerId());
+                    .view(view).build()), slackInteractiveEvent.getTriggerId());
         }
     }
 
@@ -247,7 +247,7 @@ public class SlackResponderService implements ResponderService {
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                    .view(view).build()).get(), slackInteractiveEvent.getTriggerId());
+                    .view(view).build()), slackInteractiveEvent.getTriggerId());
         }
     }
 
@@ -282,7 +282,7 @@ public class SlackResponderService implements ResponderService {
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                    .view(view).build()).get(), slackInteractiveEvent.getTriggerId());
+                    .view(view).build()), slackInteractiveEvent.getTriggerId());
         }
     }
 
@@ -318,7 +318,7 @@ public class SlackResponderService implements ResponderService {
                         .build();
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                    .view(view).build()).get(), slackInteractiveEvent.getTriggerId());
+                    .view(view).build()), slackInteractiveEvent.getTriggerId());
         }
     }
 
@@ -334,7 +334,7 @@ public class SlackResponderService implements ResponderService {
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             usersInfoResponse = wrapper.getClient().usersLookupByEmail(UsersLookupByEmailRequest.builder()
                     .email(userEmail)
-                    .build()).get();
+                    .build());
             if (usersInfoResponse.getError() != null) {
                 throw new SbExtractsException(String.format("Couldn't get userInfo from slack: %s", usersInfoResponse.getError()),
                         userEmail, initiatorSlackId);
@@ -393,7 +393,7 @@ public class SlackResponderService implements ResponderService {
                             .text(MarkdownTextObject.builder()
                                     .text(text).build()).build()))
                     .ts(initialMessage.getTs())
-                    .build()).get(), initiatorSlackId);
+                    .build()), initiatorSlackId);
         }
     }
 
@@ -401,7 +401,7 @@ public class SlackResponderService implements ResponderService {
     public void updateMessage(ChatUpdateRequest.ChatUpdateRequestBuilder builder, String initiatorSlackId) {
         try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             handleError(wrapper.getClient().chatUpdate(builder
-                    .build()).get(), initiatorSlackId);
+                    .build()), initiatorSlackId);
         }
     }
 
@@ -432,7 +432,7 @@ public class SlackResponderService implements ResponderService {
         try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             ConversationsOpenResponse conversation = wrapper.getClient().conversationsOpen(
                     ConversationsOpenRequest.builder()
-                            .users(List.of(userId)).returnIm(true).build()).get();
+                            .users(List.of(userId)).returnIm(true).build());
             if (conversation.getError() != null) {
                 throw new SbExtractsException(String.format("Could not get opened conversation id: %s", conversation.getError()),
                         userEmail, initiatorSlackId);
@@ -457,25 +457,40 @@ public class SlackResponderService implements ResponderService {
             && !StringUtils.equals(input, "0.0")
             && !StringUtils.equals(input, "0.00");
 
-    @SneakyThrows
     private void postFile(String fileName, String conversationId, String userEmail, String initiatorSlackId) {
         File file = new File(fileName);
-        FilesUploadResponse filesUploadResponse;
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            filesUploadResponse = wrapper.getClient().filesUpload(FilesUploadRequest.builder().channels(List.of(conversationId))
-                    .initialComment("Please *keep* this invoice for the next *three years*").file(file).build()).get();
+        Request request = getBuilder("POST").setUrl("https://slack.com/api/files.upload")
+                .addQueryParam("channels", conversationId)
+                .addQueryParam("initial_comment",
+                        "Please *keep* this invoice for the next *three years*")
+                .addBodyPart(new FilePart("file", file))
+                .build();
+
+        Response response;
+        try {
+            response = makeRequest(request);
+        } catch (Exception e) {
+            throw new SbExtractsException("Could not send file", e, userEmail, initiatorSlackId);
         }
-        if (filesUploadResponse.getError() != null) {
-            throw new SbExtractsException("Could not send file", userEmail, initiatorSlackId);
-        }
-        log.info("file upload is: {}", filesUploadResponse.isOk() ? "done" : "failed");
+        log.info("file upload response: {}", response.getResponseBody());
         log.info("file {} deleted {}", file.getName(), file.delete());
+    }
+
+    private Response makeRequest(Request request) throws Exception {
+        Future<Response> responseFuture;
+        AsyncHttpClient client = null;
+        try {
+            client = getHttpClient();
+            responseFuture = client.executeRequest(request);
+            return responseFuture.get();
+        } finally {
+            returnHttpClientToPool(client);
+        }
     }
 
     @Override
     public com.slack.api.model.File getFile(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception {
-        FilesInfoResponse fileInfo = new SlackClientWrapper(slackClientPool).getClient().filesInfo(FilesInfoRequest.builder().file(fileMetaInfo.getId()).build())
-                .get();
+        FilesInfoResponse fileInfo = new SlackClientWrapper(slackClientPool).getClient().filesInfo(FilesInfoRequest.builder().file(fileMetaInfo.getId()).build());
         if (fileInfo.getError() != null) {
             throw new SbExtractsException("Could not get fileInfo", fileMetaInfo.getAuthor());
         }

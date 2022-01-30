@@ -1,6 +1,6 @@
 package com.am.sbextracts.pool;
 
-import com.slack.api.methods.AsyncMethodsClient;
+import com.slack.api.methods.MethodsClient;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -9,14 +9,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SlackClientPool extends GenericObjectPool<AsyncMethodsClient> {
+public class SlackClientPool extends GenericObjectPool<MethodsClient> {
 
     @Autowired
-    public SlackClientPool(PooledObjectFactory<AsyncMethodsClient> factory,
+    public SlackClientPool(PooledObjectFactory<MethodsClient> factory,
                            @Value("${pool.max-total}") Integer maxTotal,
                            @Value("${pool.max-idle}") Integer maxIdle) {
         super(factory);
-        GenericObjectPoolConfig<AsyncMethodsClient> poolConfigSlack = new GenericObjectPoolConfig<>();
+        GenericObjectPoolConfig<MethodsClient> poolConfigSlack = new GenericObjectPoolConfig<>();
         poolConfigSlack.setMaxIdle(maxIdle);
         poolConfigSlack.setJmxEnabled(true);
         poolConfigSlack.setJmxNamePrefix("slack-client-pool");
@@ -24,7 +24,7 @@ public class SlackClientPool extends GenericObjectPool<AsyncMethodsClient> {
         this.setConfig(poolConfigSlack);
     }
 
-    public SlackClientPool(PooledObjectFactory<AsyncMethodsClient> factory, GenericObjectPoolConfig<AsyncMethodsClient> config) {
+    public SlackClientPool(PooledObjectFactory<MethodsClient> factory, GenericObjectPoolConfig<MethodsClient> config) {
         super(factory, config);
     }
 
