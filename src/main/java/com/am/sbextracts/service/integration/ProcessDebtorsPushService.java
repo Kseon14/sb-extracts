@@ -6,11 +6,10 @@ import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
-import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
-import com.hubspot.slack.client.models.blocks.Section;
-import com.hubspot.slack.client.models.blocks.objects.Text;
-import com.hubspot.slack.client.models.blocks.objects.TextType;
-import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
+import com.slack.api.methods.request.chat.ChatPostMessageRequest;
+import com.slack.api.model.block.LayoutBlock;
+import com.slack.api.model.block.SectionBlock;
+import com.slack.api.model.block.composition.MarkdownTextObject;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +17,7 @@ import org.htmlcleaner.TagNode;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,13 +39,11 @@ public class ProcessDebtorsPushService implements Process {
     @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
 
-        ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
+        com.slack.api.methods.response.chat.ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
                 slackEventResponse.getInitiatorUserId(),
-                ChatPostMessageParams.builder()
-                        .setText("Starting....")
-                        .addBlocks(Section.of(
-                                Text.of(TextType.MARKDOWN, "Starting...")))
-        );
+                getPostMessage("Starting....", List.of(SectionBlock.builder()
+                        .text(MarkdownTextObject.builder()
+                                .text("Starting...").build()).build())));
         feign.Response response;
         try {
             response = bambooHrSignedFile
@@ -81,16 +79,15 @@ public class ProcessDebtorsPushService implements Process {
                 String conversationIdWithUser = slackResponderService.getConversationIdByEmail(userEmail,
                         slackEventResponse.getInitiatorUserId());
                 slackResponderService.sendMessage(
-                        ChatPostMessageParams.builder()
-                                .setText("Unsigned akt")
-                                .setChannelId(conversationIdWithUser)
-                                .addBlocks(Section.of(
-                                        Text.of(TextType.MARKDOWN,
+                        getPostMessage("Unsigned akt", List.of(SectionBlock.builder()
+                                .text(MarkdownTextObject.builder()
+                                        .text(
                                                 ":alert:\n" +
                                                         "Hi, Please take a moment to sign Acts of acceptance with coworking. \n" +
                                                         "If you have any questions regarding the documents," +
-                                                        " you can contact Marina Stankevich via slack or email"))
-                                ).build(), userEmail, slackEventResponse.getInitiatorUserId());
+                                                        " you can contact Marina Stankevich via slack or email").build()).build()))
+                                .channel(conversationIdWithUser)
+                                .build(), userEmail, slackEventResponse.getInitiatorUserId());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", userEmail));
             } catch (Exception ex) {
                 log.error("Error during debtor push for {} and inn {}", userEmail, inn, ex);
@@ -100,6 +97,12 @@ public class ProcessDebtorsPushService implements Process {
 
         log.info("DONE");
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
+    }
+
+    private ChatPostMessageRequest.ChatPostMessageRequestBuilder getPostMessage(String headerText, List<LayoutBlock> layoutBlocks) {
+        return ChatPostMessageRequest.builder()
+                .text(headerText)
+                .blocks(layoutBlocks);
     }
 
 }

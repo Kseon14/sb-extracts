@@ -14,7 +14,7 @@ public class SlackResponse {
     }
     public SlackResponse(){}
 
-    @JsonProperty("text")
+    //@JsonProperty("text")
     @Getter @Setter private String text;
 
     @JsonProperty("response_type")

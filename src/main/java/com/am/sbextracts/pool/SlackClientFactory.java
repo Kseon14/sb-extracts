@@ -1,36 +1,28 @@
 package com.am.sbextracts.pool;
 
-import com.hubspot.slack.client.SlackClient;
-import com.hubspot.slack.client.SlackClientRuntimeConfig;
+import com.slack.api.Slack;
+import com.slack.api.methods.MethodsClient;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 @Component
-public class SlackClientFactory extends BasePooledObjectFactory<SlackClient> {
+public class SlackClientFactory extends BasePooledObjectFactory<MethodsClient> {
 
     @Value("${slack.token}")
     private String token;
 
     @Override
-    public SlackClient create() {
-        SlackClientRuntimeConfig runtimeConfig = SlackClientRuntimeConfig.builder()
-                .setTokenSupplier(() -> token)
-                .build();
-        return com.hubspot.slack.client.SlackClientFactory.defaultFactory().build(runtimeConfig);
+    public MethodsClient create() {
+        Slack slack = Slack.getInstance();
+        return slack.methods(token);
     }
 
     @Override
-    public PooledObject<SlackClient> wrap(SlackClient slackClient) {
+    public PooledObject<MethodsClient> wrap(MethodsClient slackClient) {
         return new DefaultPooledObject<>(slackClient);
     }
 
-    @Override
-    public void destroyObject(final PooledObject<SlackClient> slackClientPooledObject) throws IOException {
-        slackClientPooledObject.getObject().close();
-    }
 }

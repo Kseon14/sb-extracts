@@ -1,25 +1,36 @@
 package com.am.sbextracts.vo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import java.util.List;
-
 public class SlackInteractiveEvent {
-    @Getter @Setter private Type type;
-    @Getter @Setter  private String trigger_id;
-    @Getter @Setter  private String user_id;
+    @Getter
+    @Setter
+    private Type type;
+    @Getter
+    @Setter
+    private String triggerId;
+    @Getter
+    @Setter
+    private String userId;
 
-    @Getter @Setter private Action action;
+    @Getter
+    @Setter
+    private Action action;
 
-    @Getter @Setter private String token;
-    @Getter @Setter private View view;
+    @Getter
+    @Setter
+    private String token;
+    @Getter
+    @Setter
+    private View view;
 
-    @Getter @Setter private User user;
+    @Getter
+    @Setter
+    private User user;
 
 
     @Data

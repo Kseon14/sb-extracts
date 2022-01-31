@@ -1,29 +1,27 @@
 package com.am.sbextracts.service;
 
 import com.am.sbextracts.vo.SlackEvent;
-import com.am.sbextracts.vo.SlackFileInfo;
 import com.am.sbextracts.vo.SlackInteractiveEvent;
-import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
-import com.hubspot.slack.client.methods.params.chat.ChatUpdateMessageParams;
-import com.hubspot.slack.client.models.response.chat.ChatPostMessageResponse;
+import com.slack.api.methods.request.chat.ChatPostMessageRequest;
+import com.slack.api.methods.request.chat.ChatUpdateRequest;
 
 public interface ResponderService {
 
-    ChatPostMessageResponse sendMessage(ChatPostMessageParams params, String userEmail, String initiatorSlackId);
+    void sendMessage(ChatPostMessageRequest params, String userEmail, String initiatorSlackId);
 
     String getConversationIdByEmail(String userEmail, String initiatorSlackId);
 
     void sendMessageToInitiator(String initiatorSlackId, String userFullName, String userEmail);
 
-    ChatPostMessageResponse sendMessageToInitiator(String initiatorSlackId, ChatPostMessageParams.Builder builder);
+    com.slack.api.methods.response.chat.ChatPostMessageResponse sendMessageToInitiator(String initiatorSlackId, ChatPostMessageRequest.ChatPostMessageRequestBuilder builder);
 
-    ChatPostMessageResponse log(String initiatorSlackId, String text);
+    void log(String initiatorSlackId, String text);
 
     void sendFile(String fileName, String userEmail, String initiatorSlackId);
 
-    SlackFileInfo getFileInfo(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception;
+    com.slack.api.model.File getFile(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception;
 
-    void downloadFile(String fileName, SlackFileInfo slackFile);
+    void downloadFile(String fileName, com.slack.api.model.File slackFile);
 
     void sendErrorMessageToInitiator(String userSlackId, String shortText, String text);
 
@@ -39,9 +37,9 @@ public interface ResponderService {
 
     void pushDebtors(SlackInteractiveEvent slackInteractiveEvent);
 
-    void updateMessage(ChatPostMessageResponse initialMessage, String text, String initiatorSlackId);
+    void updateMessage(com.slack.api.methods.response.chat.ChatPostMessageResponse initialMessage, String text, String initiatorSlackId);
 
-    void updateMessage(ChatUpdateMessageParams.Builder builder, String initiatorSlackId);
+    void updateMessage(ChatUpdateRequest.ChatUpdateRequestBuilder builder, String initiatorSlackId);
 
-    ChatPostMessageResponse sendMessage(ChatPostMessageParams params, String initiatorSlackId);
+    com.slack.api.methods.response.chat.ChatPostMessageResponse sendMessage(ChatPostMessageRequest params, String initiatorSlackId);
 }

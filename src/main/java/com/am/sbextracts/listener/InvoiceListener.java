@@ -48,15 +48,14 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
     @Override
     public void onApplicationEvent(Invoice invoice) {
         Document document = null;
-        FileOutputStream fileOutputStream = null;
+        PdfWriter writer = null;
         String fileName = String.format("ML-%s_%s.pdf",
                 invoice.getFullNameEng().replaceAll(" ", "").trim(),
                 LocalDate.now().format(formatterMonthFullYear));
         try {
             document = new Document();
-            fileOutputStream = new FileOutputStream(fileName);
             try {
-                PdfWriter.getInstance(document, fileOutputStream);
+                writer = PdfWriter.getInstance(document, new FileOutputStream(fileName));
             } catch (DocumentException e) {
                 log.error("Error during document instance obtaining", e);
                 return;
@@ -195,12 +194,8 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
             if (document != null) {
                 document.close();
             }
-            if (fileOutputStream != null) {
-                try {
-                    fileOutputStream.close();
-                } catch (IOException e) {
-                    log.error("Error during document closing", e);
-                }
+            if (writer != null) {
+                writer.close();
             }
         }
 

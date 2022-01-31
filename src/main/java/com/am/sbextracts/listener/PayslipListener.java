@@ -3,13 +3,11 @@ package com.am.sbextracts.listener;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.SlackResponderService;
 import com.am.sbextracts.vo.Payslip;
-import com.hubspot.slack.client.methods.params.chat.ChatPostMessageParams;
-import com.hubspot.slack.client.models.Attachment;
-import com.hubspot.slack.client.models.Field;
-import com.hubspot.slack.client.models.blocks.Divider;
-import com.hubspot.slack.client.models.blocks.Section;
-import com.hubspot.slack.client.models.blocks.objects.Text;
-import com.hubspot.slack.client.models.blocks.objects.TextType;
+import com.slack.api.methods.request.chat.ChatPostMessageRequest;
+import com.slack.api.model.Field;
+import com.slack.api.model.block.DividerBlock;
+import com.slack.api.model.block.SectionBlock;
+import com.slack.api.model.block.composition.MarkdownTextObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -37,7 +35,7 @@ public class PayslipListener implements ApplicationListener<Payslip> {
         SlackResponderService.addIfNotNull(fieldList, "Social Tax", payslip.getSocialTax());
         SlackResponderService.addIfNotNull(fieldList, "Insurance", payslip.getInsurance());
         SlackResponderService.addIfNotNull(fieldList, "Currency Exchange Rate", payslip.getCurrencyRate());
-        if( payslip.getTotalGross() == null) {
+        if (payslip.getTotalGross() == null) {
             SlackResponderService.addIfNotNull(fieldList, "Total Net", payslip.getTotalNet());
         }
         if (payslip.getTotalGross() != null) {
@@ -47,19 +45,22 @@ public class PayslipListener implements ApplicationListener<Payslip> {
 
         String conversationIdWithUser = slackResponderService.getConversationIdByEmail(payslip.getUserEmail(), payslip.getAuthorSlackId());
         slackResponderService.sendMessage(
-                ChatPostMessageParams.builder()
-                        .setText(String.format("Payslip for %s", payslip.getFullName()))
-                        .setChannelId(conversationIdWithUser)
-                        .addBlocks(Section.of(
-                                Text.of(TextType.MARKDOWN, String.format(":wave: Hi, %s!\n"
-                                                + "Information about payment :dollar: for *%s* is below\n"
-                                                + "If you have any questions, please, contact <@%s> :paw_prints:",
-                                        payslip.getFullName(),
-                                        month,
-                                        payslip.getAuthorSlackId()))),
-                                Divider.builder().build()
-                        ).addAttachments(Attachment.builder().setFields(fieldList).setColor("#3655c7").build())
-                        .build(), payslip.getUserEmail(), payslip.getAuthorSlackId());
+                ChatPostMessageRequest.builder()
+                        .text(String.format("Payslip for %s", payslip.getFullName()))
+                        .channel(conversationIdWithUser)
+                        .blocks(List.of(SectionBlock.builder()
+                                        .text(MarkdownTextObject.builder()
+                                                .text(String.format(":wave: Hi, %s!\n"
+                                                                + "Information about payment :dollar: for *%s* is below\n"
+                                                                + "If you have any questions, please, contact <@%s> :paw_prints:",
+                                                        payslip.getFullName(),
+                                                        month,
+                                                        payslip.getAuthorSlackId())).build()).build(),
+                                DividerBlock.builder().build()))
+                        .attachments(List.of(com.slack.api.model.Attachment.builder()
+                                .fields(fieldList).color("#3655c7").build()))
+                        .build(),
+                payslip.getUserEmail(), payslip.getAuthorSlackId());
 
         slackResponderService.sendMessageToInitiator(payslip.getAuthorSlackId(), payslip.getFullName(), payslip.getUserEmail());
     }
