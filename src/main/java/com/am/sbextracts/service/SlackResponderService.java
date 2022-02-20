@@ -1,6 +1,5 @@
 package com.am.sbextracts.service;
 
-import com.am.sbextracts.client.SlackApiClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.pool.HttpClientPool;
@@ -51,6 +50,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -62,17 +63,28 @@ import java.util.function.Predicate;
 @RequiredArgsConstructor
 public class SlackResponderService implements ResponderService {
 
-    private final static String FIELD = "field";
-    private final static String PLAIN_TEXT = "plain_text";
-    private final static String MODAL = "modal";
+    private static final String FIELD = "field";
+    private static final String PLAIN_TEXT = "plain_text";
+    private static final String MODAL = "modal";
+
+    private static final Predicate<String> isNotEmptyOrZero = input ->
+            StringUtils.isNotBlank(input)
+                    && !StringUtils.equals(input, "0")
+                    && !StringUtils.equals(input, "0.0")
+                    && !StringUtils.equals(input, "0.00");
+    public static final String START = "Start";
+    public static final String SESSION_ID = "sessionId";
+    public static final String SECTION_ID = "sectionId";
+    public static final String BAMBOO_FOLDER_ID = "Bamboo FolderID";
+    public static final String PICK_A_DATE_FOR_ACTS = "Pick a date for Acts";
+    public static final String SELECT_A_DATE = "Select a date";
+    public static final String DATE_PATTERN = "yyyy-MM-dd";
 
     private final HttpClientPool httpClientPool;
     private final SlackClientPool slackClientPool;
 
     @Lazy
     private final SlackResponderService slackService;
-
-    private final SlackApiClient slackApiClient;
 
     @Value("${slack.token}")
     private final String token;
@@ -120,15 +132,15 @@ public class SlackResponderService implements ResponderService {
                         .type(MODAL)
                         .callbackId(View.ModalActionType.MARKUP.name())
                         .title(ViewTitle.builder().type(PLAIN_TEXT).text("Markup and Send for Sign").build())
-                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text("Start").build())
+                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
                         .blocks(List.of(InputBlock.builder()
-                                        .blockId("sessionId")
+                                        .blockId(SESSION_ID)
                                         .label(PlainTextObject.builder().text("SessionID").build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 InputBlock.builder()
-                                        .blockId("sectionId")
-                                        .label(PlainTextObject.builder().text("Bamboo FolderID").build())
+                                        .blockId(SECTION_ID)
+                                        .label(PlainTextObject.builder().text(BAMBOO_FOLDER_ID).build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 InputBlock.builder()
@@ -138,11 +150,11 @@ public class SlackResponderService implements ResponderService {
                                         .build(),
                                 SectionBlock.builder()
                                         .blockId("date")
-                                        .text(MarkdownTextObject.builder().text("Pick a date for Acts").build())
+                                        .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
                                         .accessory(DatePickerElement.builder()
                                                 .actionId(FIELD)
-                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                                                .placeholder(PlainTextObject.builder().text("Select a date").build())
+                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
+                                                .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
                                                 .build())
                                         .build()))
                         .build();
@@ -190,22 +202,22 @@ public class SlackResponderService implements ResponderService {
                         .type(MODAL)
                         .callbackId(View.ModalActionType.DEBTORS.name())
                         .title(ViewTitle.builder().type(PLAIN_TEXT).text("Get Debtor List").build())
-                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text("Start").build())
-                        .blocks(List.of(InputBlock.builder().blockId("sessionId")
+                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
+                        .blocks(List.of(InputBlock.builder().blockId(SESSION_ID)
                                         .label(PlainTextObject.builder().text("SessionID").build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
-                                InputBlock.builder().blockId("sectionId")
-                                        .label(PlainTextObject.builder().text("Bamboo FolderID").build())
+                                InputBlock.builder().blockId(SECTION_ID)
+                                        .label(PlainTextObject.builder().text(BAMBOO_FOLDER_ID).build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 SectionBlock.builder()
                                         .blockId("date")
-                                        .text(MarkdownTextObject.builder().text("Pick a date for Acts").build())
+                                        .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
                                         .accessory(DatePickerElement.builder()
                                                 .actionId(FIELD)
-                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                                                .placeholder(PlainTextObject.builder().text("Select a date").build())
+                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
+                                                .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
                                                 .build())
                                         .build()))
                         .build();
@@ -224,24 +236,24 @@ public class SlackResponderService implements ResponderService {
                         .type(MODAL)
                         .callbackId(View.ModalActionType.PUSH_DEBTORS.name())
                         .title(ViewTitle.builder().type(PLAIN_TEXT).text("Push debtors").build())
-                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text("Start").build())
+                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
                         .blocks(List.of(InputBlock.builder()
-                                        .blockId("sessionId")
+                                        .blockId(SESSION_ID)
                                         .label(PlainTextObject.builder().text("SessionID").build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 InputBlock.builder()
-                                        .blockId("sectionId")
-                                        .label(PlainTextObject.builder().text("Bamboo FolderID").build())
+                                        .blockId(SECTION_ID)
+                                        .label(PlainTextObject.builder().text(BAMBOO_FOLDER_ID).build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 SectionBlock.builder()
                                         .blockId("date")
-                                        .text(MarkdownTextObject.builder().text("Pick a date for Acts").build())
+                                        .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
                                         .accessory(DatePickerElement.builder()
                                                 .actionId(FIELD)
-                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                                                .placeholder(PlainTextObject.builder().text("Select a date").build())
+                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
+                                                .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
                                                 .build())
                                         .build()))
                         .build();
@@ -260,8 +272,8 @@ public class SlackResponderService implements ResponderService {
                         .type(MODAL)
                         .callbackId(View.ModalActionType.SIGNED.name())
                         .title(ViewTitle.builder().type(PLAIN_TEXT).text("Download Signed files").build())
-                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text("Start").build())
-                        .blocks(List.of(InputBlock.builder().blockId("sessionId")
+                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
+                        .blocks(List.of(InputBlock.builder().blockId(SESSION_ID)
                                         .label(PlainTextObject.builder().text("SessionID").build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
@@ -272,11 +284,11 @@ public class SlackResponderService implements ResponderService {
                                         .build(),
                                 SectionBlock.builder()
                                         .blockId("date")
-                                        .text(MarkdownTextObject.builder().text("Pick a date for Acts").build())
+                                        .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
                                         .accessory(DatePickerElement.builder()
                                                 .actionId(FIELD)
-                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                                                .placeholder(PlainTextObject.builder().text("Select a date").build())
+                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
+                                                .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
                                                 .build())
                                         .build()))
                         .build();
@@ -295,24 +307,24 @@ public class SlackResponderService implements ResponderService {
                         .type(MODAL)
                         .callbackId(View.ModalActionType.INVOICE_DOWNLOAD.name())
                         .title(ViewTitle.builder().type(PLAIN_TEXT).text("Download Invoice files").build())
-                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text("Start").build())
+                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
                         .blocks(
                                 List.of(InputBlock.builder()
-                                                .blockId("sessionId")
+                                                .blockId(SESSION_ID)
                                                 .label(PlainTextObject.builder().text("NS SessionID").build())
                                                 .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                                 .build(),
-                                        InputBlock.builder().blockId("sectionId")
+                                        InputBlock.builder().blockId(SECTION_ID)
                                                 .label(PlainTextObject.builder().text("NS FolderID").build())
                                                 .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                                 .build(),
                                         SectionBlock.builder()
                                                 .blockId("date")
-                                                .text(MarkdownTextObject.builder().text("Pick a date for Acts").build())
+                                                .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
                                                 .accessory(DatePickerElement.builder()
                                                         .actionId(FIELD)
-                                                        .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                                                        .placeholder(PlainTextObject.builder().text("Select a date").build())
+                                                        .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
+                                                        .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
                                                         .build())
                                                 .build()))
                         .build();
@@ -346,7 +358,7 @@ public class SlackResponderService implements ResponderService {
     @Override
     @SbExceptionHandler
     @Cacheable(value = "conversationIds", key = "#userSlackId",
-            condition="#userSlackId!=null", unless = "#result== null")
+            condition = "#userSlackId!=null", unless = "#result== null")
     public String getConversationIdBySlackId(String userSlackId, String initiatorSlackId) {
         log.debug("getting conversationId by slackId...");
         if (userSlackId == null) {
@@ -429,7 +441,7 @@ public class SlackResponderService implements ResponderService {
         }
         log.info("Getting conversation ID for {}", userId);
 
-        try(SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
             ConversationsOpenResponse conversation = wrapper.getClient().conversationsOpen(
                     ConversationsOpenRequest.builder()
                             .users(List.of(userId)).returnIm(true).build());
@@ -451,12 +463,7 @@ public class SlackResponderService implements ResponderService {
         }
     }
 
-    private final static Predicate<String> isNotEmptyOrZero = input ->
-            StringUtils.isNotBlank(input)
-            && !StringUtils.equals(input, "0")
-            && !StringUtils.equals(input, "0.0")
-            && !StringUtils.equals(input, "0.00");
-
+    @SneakyThrows
     private void postFile(String fileName, String conversationId, String userEmail, String initiatorSlackId) {
         File file = new File(fileName);
         Request request = getBuilder("POST").setUrl("https://slack.com/api/files.upload")
@@ -473,7 +480,8 @@ public class SlackResponderService implements ResponderService {
             throw new SbExtractsException("Could not send file", e, userEmail, initiatorSlackId);
         }
         log.info("file upload response: {}", response.getResponseBody());
-        log.info("file {} deleted {}", file.getName(), file.delete());
+        Files.delete(Path.of(fileName));
+        log.info("file {} deleted", file.getName());
     }
 
     private Response makeRequest(Request request) throws Exception {
@@ -506,10 +514,6 @@ public class SlackResponderService implements ResponderService {
     @SbExceptionHandler
     public void downloadFile(String fileName, com.slack.api.model.File slackFile) {
 
-//        FileUtils.copyInputStreamToFile(
-//                slackApiClient.getFile(
-//                        URI.create(slackFile.getUrlPrivateDownload())).body().asInputStream(), new File(fileName));
-//
         Request request = getBuilder("GET").setUrl(slackFile.getUrlPrivateDownload())
                 .build();
         AsyncHttpClient client = null;

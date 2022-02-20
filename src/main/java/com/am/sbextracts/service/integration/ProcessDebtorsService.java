@@ -38,7 +38,7 @@ import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequire
 @RequiredArgsConstructor
 public class ProcessDebtorsService implements Process {
 
-    private final static int DEFAULT_DELAY = 1;
+    private static final int DEFAULT_DELAY = 1;
 
     private final BambooHrSignedFileClient bambooHrSignedFile;
     private final HeaderService headerService;
@@ -67,8 +67,6 @@ public class ProcessDebtorsService implements Process {
         } catch (RetryableException ex) {
             throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
         }
-        TagNode tagNode = getTagNode(response.body());
-
         String text = "Processing..";
         slackResponderService.updateMessage(
                 initialMessage, text, slackEventResponse.getInitiatorUserId());
@@ -78,6 +76,7 @@ public class ProcessDebtorsService implements Process {
         slackResponderService.updateMessage(
                 initialMessage, text, slackEventResponse.getInitiatorUserId());
 
+        TagNode tagNode = getTagNode(response.body());
         Set<String> notSignedFiles = Arrays
                 .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
                         true, false))

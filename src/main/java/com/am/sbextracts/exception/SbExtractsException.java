@@ -2,10 +2,12 @@ package com.am.sbextracts.exception;
 
 import lombok.Getter;
 
-public class SbExtractsException extends RuntimeException{
+public class SbExtractsException extends RuntimeException {
 
-    @Getter private final String sendTo;
-    @Getter private String affectedUserEmail;
+    @Getter
+    private final String sendTo;
+    @Getter
+    private String affectedUserEmail;
 
     public SbExtractsException(String message, String affectedUserEmail, String sendTo) {
         super(message);

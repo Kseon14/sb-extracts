@@ -16,7 +16,7 @@ public class SlackClientWrapper implements Closeable {
     private final MethodsClient client;
 
     @SneakyThrows
-    public SlackClientWrapper(SlackClientPool slackClientPool){
+    public SlackClientWrapper(SlackClientPool slackClientPool) {
         this.slackClientPool = slackClientPool;
         client = this.slackClientPool.borrowObject();
         log.debug("slack Client {}", client);

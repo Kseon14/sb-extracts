@@ -4,6 +4,8 @@ import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.methods.request.chat.ChatUpdateRequest;
+import com.slack.api.methods.response.chat.ChatPostMessageResponse;
+import com.slack.api.model.File;
 
 public interface ResponderService {
 
@@ -13,15 +15,15 @@ public interface ResponderService {
 
     void sendMessageToInitiator(String initiatorSlackId, String userFullName, String userEmail);
 
-    com.slack.api.methods.response.chat.ChatPostMessageResponse sendMessageToInitiator(String initiatorSlackId, ChatPostMessageRequest.ChatPostMessageRequestBuilder builder);
+    ChatPostMessageResponse sendMessageToInitiator(String initiatorSlackId, ChatPostMessageRequest.ChatPostMessageRequestBuilder builder);
 
     void log(String initiatorSlackId, String text);
 
     void sendFile(String fileName, String userEmail, String initiatorSlackId);
 
-    com.slack.api.model.File getFile(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception;
+    File getFile(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception;
 
-    void downloadFile(String fileName, com.slack.api.model.File slackFile);
+    void downloadFile(String fileName, File slackFile);
 
     void sendErrorMessageToInitiator(String userSlackId, String shortText, String text);
 
@@ -37,9 +39,9 @@ public interface ResponderService {
 
     void pushDebtors(SlackInteractiveEvent slackInteractiveEvent);
 
-    void updateMessage(com.slack.api.methods.response.chat.ChatPostMessageResponse initialMessage, String text, String initiatorSlackId);
+    void updateMessage(ChatPostMessageResponse initialMessage, String text, String initiatorSlackId);
 
     void updateMessage(ChatUpdateRequest.ChatUpdateRequestBuilder builder, String initiatorSlackId);
 
-    com.slack.api.methods.response.chat.ChatPostMessageResponse sendMessage(ChatPostMessageRequest params, String initiatorSlackId);
+    ChatPostMessageResponse sendMessage(ChatPostMessageRequest params, String initiatorSlackId);
 }

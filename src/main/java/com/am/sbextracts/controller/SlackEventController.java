@@ -31,10 +31,10 @@ import static com.am.sbextracts.vo.SlackEvent.Type.URL_VERIFICATION;
 @RequiredArgsConstructor
 public class SlackEventController {
 
-    private final static Predicate<SlackEvent> isEventCallback = event -> EVENT_CALLBACK == event.getType();
-    private final static Predicate<SlackEvent> isFileShare = event -> MESSAGE == event.getEvent().getType() && FILE_SHARE == event.getEvent().getSubtype();
-    private final static Predicate<SlackEvent> isXlsx = event -> "xlsx".equals(event.getEvent().getFileMetaInfos().get(0).getFileType());
-    private final static Set<String> processedFiles = ConcurrentHashMap.newKeySet();
+    private static final Predicate<SlackEvent> isEventCallback = event -> EVENT_CALLBACK == event.getType();
+    private static final Predicate<SlackEvent> isFileShare = event -> MESSAGE == event.getEvent().getType() && FILE_SHARE == event.getEvent().getSubtype();
+    private static final Predicate<SlackEvent> isXlsx = event -> "xlsx".equals(event.getEvent().getFileMetaInfos().get(0).getFileType());
+    private static final Set<String> processedFiles = ConcurrentHashMap.newKeySet();
 
     private final FileDownloader downloader;
     @Value("${slack.verification.token}")
