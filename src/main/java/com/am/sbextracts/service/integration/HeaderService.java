@@ -16,9 +16,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class HeaderService {
 
-    private final static String CSRF_HEADER = "X-CSRF-Token";
-    private final static String COOKIE = "Cookie";
-    private final static String AUTHORIZATION = "Authorization";
+    private static final String CSRF_HEADER = "X-CSRF-Token";
+    private static final String COOKIE = "Cookie";
+    private static final String AUTHORIZATION = "Authorization";
 
     private final BambooHrAuthClient bambooHrAuthClient;
 

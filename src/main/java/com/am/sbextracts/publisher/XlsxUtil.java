@@ -22,6 +22,8 @@ import java.util.Locale;
 
 public final class XlsxUtil {
 
+    public static final String ERROR_MSG = "in [%s%s] cell is Empty";
+
     private XlsxUtil() {
     }
 
@@ -38,6 +40,8 @@ public final class XlsxUtil {
                     return getFormattedNumericCell(cell);
                 case STRING:
                     return String.valueOf(cell.getStringCellValue());
+                default:
+                    throw new UnsupportedOperationException();
             }
         } else {
             switch (cell.getCellType()) {
@@ -45,11 +49,12 @@ public final class XlsxUtil {
                     return cell.getStringCellValue();
                 case NUMERIC:
                     return getFormattedNumericCell(cell);
+                default:
+                    throw new UnsupportedOperationException(String.format("in [%s], cell type not supported %s",
+                            cell.getAddress(),
+                            cell.getCellStyle().getDataFormatString()));
             }
         }
-        throw new UnsupportedOperationException(String.format("in [%s], cell type not supported %s",
-                cell.getAddress(),
-                cell.getCellStyle().getDataFormatString()));
     }
 
     private static String getFormattedNumericCell(Cell cell) {
@@ -107,23 +112,21 @@ public final class XlsxUtil {
                 if (row.getRowNum() == 0) {
                     continue;
                 }
-                if (CollectionUtils.isNotEmpty(configCell)) {
-                    if (getCell(row, configCell.get(0), evaluator) != null) {
-                        for (String column : configCell) {
-                            if (StringUtils.isBlank(getCell(row, column, evaluator))) {
-                                throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
-                                        column, row.getRowNum() + 1));
-                            }
+                if (CollectionUtils.isNotEmpty(configCell) &&
+                        getCell(row, configCell.get(0), evaluator) != null) {
+                    for (String column : configCell) {
+                        if (StringUtils.isBlank(getCell(row, column, evaluator))) {
+                            throw new UnsupportedOperationException(String.format(ERROR_MSG,
+                                    column, row.getRowNum() + 1));
                         }
                     }
                 }
-                if (CollectionUtils.isNotEmpty(dateCell)) {
-                    if (getDateFromCell(row, dateCell.get(0)) != null) {
-                        for (String column : dateCell) {
-                            if (getDateFromCell(row, column) == null) {
-                                throw new UnsupportedOperationException(String.format("in [%s%s] cell is Empty",
-                                        column, row.getRowNum() + 1));
-                            }
+                if (CollectionUtils.isNotEmpty(dateCell) &&
+                        getDateFromCell(row, dateCell.get(0)) != null) {
+                    for (String column : dateCell) {
+                        if (getDateFromCell(row, column) == null) {
+                            throw new UnsupportedOperationException(String.format(ERROR_MSG,
+                                    column, row.getRowNum() + 1));
                         }
                     }
                 }

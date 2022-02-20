@@ -13,7 +13,7 @@ import org.springframework.jmx.support.RegistrationPolicy;
 @EnableCaching
 public class SbExtractsApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(SbExtractsApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(SbExtractsApplication.class, args);
+    }
 }

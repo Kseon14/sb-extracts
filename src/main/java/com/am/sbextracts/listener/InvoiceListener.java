@@ -50,7 +50,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
         Document document = null;
         PdfWriter writer = null;
         String fileName = String.format("ML-%s_%s.pdf",
-                invoice.getFullNameEng().replaceAll(" ", "").trim(),
+                invoice.getFullNameEng().replace(" ", "").trim(),
                 LocalDate.now().format(formatterMonthFullYear));
         try {
             document = new Document();
@@ -93,10 +93,10 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
             table1.addCell(getParagraphWithBoldAndRegularText("Individual Tax Number - ", invoice.getIpn()));
             table1.addCell(getParagraphWithBoldAndRegularText("ІПН - ", invoice.getIpn()));
 
-            table1.addCell(getParagraphWithBoldAndRegularText("Customer: ","Mustard Labs, LLC \n" +
+            table1.addCell(getParagraphWithBoldAndRegularText("Customer: ", "Mustard Labs, LLC \n" +
                     "Address: 1151 Eagle Dr #178, Loveland, CO 80537 \n" +
                     "Represented by CEO Elias Parker"));
-            table1.addCell(getParagraphWithBoldAndRegularText("Замовник: ",  "Mustard Labs, LLC \n" +
+            table1.addCell(getParagraphWithBoldAndRegularText("Замовник: ", "Mustard Labs, LLC \n" +
                     "Адреса: 1151 Ігл Др. №178, Ловленд, КО 80537 \n" +
                     "в особі Виконавчого Директора Еліаса Паркера"));
 
@@ -108,7 +108,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
             table1.addCell(getParagraphWithBoldAndRegularText("Період надання послуги: ",
                     LocalDate.now().format(formatterMonthFullYearUkr)));
 
-            table1.addCell(getParagraphWithBoldAndRegularText("Currency: ","USD"));
+            table1.addCell(getParagraphWithBoldAndRegularText("Currency: ", "USD"));
             table1.addCell(getParagraphWithBoldAndRegularText("Валюта: ", "Долар США"));
 
             table1.addCell(getParagraphWithBoldAndRegularText("Price (amount) of the works/services: ", invoice.getPrice()));
@@ -120,23 +120,23 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
 
             table1.addCell(getParagraphWithBoldAndRegularText("Customer Bank information:\n",
                     "Beneficiary: Mustard Labs, LLC \n" +
-                    "Account #: 7100005029 \n" +
-                    "Beneficiary’s bank: Wells Fargo Bank \n" +
-                    "Bank Address: 1102 Lincoln Avenue, Fort Collins, CO 80524, USA \n" +
-                    "SWIFT code: WFBIUS6WFFX"));
-            table1.addCell(getParagraphWithBoldAndRegularText("Supplier Bank information:\n" ,
+                            "Account #: 7100005029 \n" +
+                            "Beneficiary’s bank: Wells Fargo Bank \n" +
+                            "Bank Address: 1102 Lincoln Avenue, Fort Collins, CO 80524, USA \n" +
+                            "SWIFT code: WFBIUS6WFFX"));
+            table1.addCell(getParagraphWithBoldAndRegularText("Supplier Bank information:\n",
                     String.format(
                             "Beneficiary: %s \n" +
-                            "Account #: %s \n" +
-                            "Beneficiary’s bank: %s \n" +
-                            "Bank Address: %s \n" +
-                            "SWIFT code: %s",
-                    invoice.getFullNameEng(),
-                    invoice.getAccountNumberUsd(),
-                    invoice.getBankNameEng(),
-                    invoice.getBankAddress(),
-                    invoice.getSwiftNumber()
-            )));
+                                    "Account #: %s \n" +
+                                    "Beneficiary’s bank: %s \n" +
+                                    "Bank Address: %s \n" +
+                                    "SWIFT code: %s",
+                            invoice.getFullNameEng(),
+                            invoice.getAccountNumberUsd(),
+                            invoice.getBankNameEng(),
+                            invoice.getBankAddress(),
+                            invoice.getSwiftNumber()
+                    )));
 
             table1.addCell(getParagraphBold("This Invoice/offer is the primary document"));
             table1.addCell(getParagraphBold("Цей Рахунок-оферта є первинним документом"));
@@ -199,7 +199,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
             }
         }
 
-        slackResponderService.sendFile( fileName, invoice.getUserEmail(), invoice.getAuthorSlackId());
+        slackResponderService.sendFile(fileName, invoice.getUserEmail(), invoice.getAuthorSlackId());
         slackResponderService.sendMessageToInitiator(invoice.getAuthorSlackId(), invoice.getFullNameEng(),
                 invoice.getUserEmail());
     }

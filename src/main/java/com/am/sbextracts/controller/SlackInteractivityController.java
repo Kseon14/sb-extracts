@@ -56,15 +56,15 @@ public class SlackInteractivityController {
         if (isTokenValid.test(slackInteractiveEvent.getToken())) {
             throw new IllegalArgumentException();
         }
-        if(isValidEvent.negate().test(slackInteractiveEvent)){
+        if (isValidEvent.negate().test(slackInteractiveEvent)) {
             throw new IllegalArgumentException();
         }
 
-        if(slackInteractiveEvent.getType() == VIEW_SUBMISSION) {
+        if (slackInteractiveEvent.getType() == VIEW_SUBMISSION) {
             processingFactory.startProcessing(slackInteractiveEvent);
         }
 
-        return  ResponseEntity.ok().build();
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping(value = "process/markup", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)

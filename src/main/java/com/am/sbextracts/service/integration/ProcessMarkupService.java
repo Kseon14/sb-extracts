@@ -44,12 +44,12 @@ import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequire
 @RequiredArgsConstructor
 public class ProcessMarkupService implements Process {
 
-    private final static int ATTEMPTS_LIMIT = 8;
-    private final static int ATTEMPTS_DELAY = 4;
-    private final static int DEFAULT_DELAY = 2;
-    private final static String PROPERTIES_FILE = "signature-markup.properties";
-    private final static String PROCESSED_ID_FILE_NAME = "processedId.log";
-    private final static String PROCESSED_ID_FILE_NAME_PREFIX = "markup";
+    private static final int ATTEMPTS_LIMIT = 8;
+    private static final int ATTEMPTS_DELAY = 4;
+    private static final int DEFAULT_DELAY = 2;
+    private static final String PROPERTIES_FILE = "signature-markup.properties";
+    private static final String PROCESSED_ID_FILE_NAME = "processedId.log";
+    private static final String PROCESSED_ID_FILE_NAME_PREFIX = "markup";
 
     @Value("${app.perRequestProcessingFilesCount}")
     private final int perRequestProcessingFilesCount;

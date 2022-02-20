@@ -44,8 +44,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ProcessingInvoiceService implements Process {
-    private final static String PROCESSED_ID_FILE_NAME_PREFIX = "invoice";
-    private final static String PROCESSED_ID_FILE_NAME = "processedId.log";
+    private static final String PROCESSED_ID_FILE_NAME_PREFIX = "invoice";
+    private static final String PROCESSED_ID_FILE_NAME = "processedId.log";
 
     @Value("${app.reportGFolderId}")
     private final String reportGFolderId;
@@ -112,7 +112,7 @@ public class ProcessingInvoiceService implements Process {
                 log.info("Document uploaded [{}/{}]: {}", i + 1, Math.min(perRequestProcessingFilesCount, fileInfos.size()), fileInfo.getFileName());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(),
                         String.format("Document uploaded [%s/%s]: %s", i + 1, Math.min(perRequestProcessingFilesCount, fileInfos.size()), fileInfo.getFileName()));
-                FileUtils.writeStringToFile(file, String.format("%s,%s\r\n", fileInfo.getId(), fileInfo.getFileName()), StandardCharsets.UTF_8.toString(), true);
+                FileUtils.writeStringToFile(file, String.format("%s,%s%n", fileInfo.getId(), fileInfo.getFileName()), StandardCharsets.UTF_8.toString(), true);
             }
         } catch (Throwable ex) {
             log.error("Error during download of invoices", ex);

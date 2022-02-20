@@ -43,7 +43,7 @@ public class PublisherFactory {
         PAYSLIP("ps"),
         BROADCAST_MESSAGE("bm");
 
-        public static Type getByFileName(String fileName){
+        public static Type getByFileName(String fileName) {
             String suffix = fileName.split("-")[0];
             return Arrays.stream(Type.values())
                     .filter(t -> StringUtils.equalsIgnoreCase(suffix, t.suffix))
@@ -58,7 +58,7 @@ public class PublisherFactory {
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return new ToStringBuilder(this, ToStringStyle.NO_CLASS_NAME_STYLE)
                     .append("name", this.name())
                     .append("suffix", this.suffix)

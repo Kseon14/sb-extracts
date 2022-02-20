@@ -40,8 +40,8 @@ import static com.am.sbextracts.service.integration.utils.ParsingUtils.isAktAndD
 @RequiredArgsConstructor
 public class ProcessSignedService implements Process {
 
-    private final static String PROCESSED_ID_FILE_NAME = "processedId.log";
-    private final static String PROCESSED_ID_FILE_NAME_PREFIX = "signed";
+    private static final String PROCESSED_ID_FILE_NAME = "processedId.log";
+    private static final String PROCESSED_ID_FILE_NAME_PREFIX = "signed";
 
     @Value("${app.perRequestProcessingFilesCount}")
     private final int perRequestProcessingFilesCount;
