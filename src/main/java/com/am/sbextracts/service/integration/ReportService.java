@@ -22,16 +22,16 @@ public class ReportService {
     private final BambooHrApiClient bambooHrApiClient;
     private final HeaderService headerService;
 
-    public Map<String, String> getEmployees() {
-        Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(), reportId);
+    public Map<String, String> getEmployees(String initiatorSlackId) {
+        Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(initiatorSlackId), reportId);
         if (CollectionUtils.isEmpty(report.getEmployees())) {
             throw new IllegalArgumentException("employee list is empty");
         }
         return report.getEmployees().stream().collect(Collectors.toMap(Employee::getInn, Employee::getId));
     }
 
-    public Map<String, String> getEmployeesEmails() {
-        Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(), reportId);
+    public Map<String, String> getEmployeesEmails(String initiatorSlackId) {
+        Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(initiatorSlackId), reportId);
         if (CollectionUtils.isEmpty(report.getEmployees())) {
             throw new IllegalArgumentException("employee list is empty");
         }

@@ -66,7 +66,7 @@ public class ProcessingInvoiceService implements Process {
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
         gDriveService.validateFolderExistence(reportGFolderId, slackEventResponse.getInitiatorUserId());
-        Map<String, String> employees = reportService.getEmployees();
+        Map<String, String> employees = reportService.getEmployees(slackEventResponse.getInitiatorUserId());
         File file = null;
         long dateOfModification = -1;
         String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,
@@ -100,7 +100,7 @@ public class ProcessingInvoiceService implements Process {
                         getAttributes(fileInfo.getHref()));
 
                 try {
-                    bambooHrApiClient.uploadFile(headerService.getHeaderForBchApi(), getEmployeeId(fileInfo, employees),
+                    bambooHrApiClient.uploadFile(headerService.getHeaderForBchApi(slackEventResponse.getInitiatorUserId()), getEmployeeId(fileInfo, employees),
                             Map.of("file", prepareFile(pdf, fileInfo.getFileName()), "fileName", fileInfo.getFileName(),
                                     "share", "yes", "category", 16));
                 } catch (FeignException.Forbidden ex) {

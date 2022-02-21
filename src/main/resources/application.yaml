@@ -26,7 +26,7 @@ spring:
       spec: expireAfterAccess=600s
 
 bamboo:
-  apiKey: ${API_KEY}
+  apiKeys: ${API_KEY}
   reportId: 1207
 google:
   authJsons: ${G_AUTH_JSON}
