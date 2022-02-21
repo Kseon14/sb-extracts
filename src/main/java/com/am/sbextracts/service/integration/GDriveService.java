@@ -28,6 +28,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -81,7 +82,7 @@ public class GDriveService {
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static final String APPLICATION_NAME = "BCH-Upload";
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-    private static final String pattern = "%s/%s-%s";
+    private static final String PATTERN = "%s/%s-%s";
 
     @Getter
     private static final Map<String, String> codeVerifier = new HashMap<>();
@@ -245,7 +246,7 @@ public class GDriveService {
 
     @SneakyThrows
     private static void removeToken(String initiatorSlackId) {
-        String fileName = String.format(pattern, TOKENS_DIRECTORY_PATH,
+        String fileName = String.format(PATTERN, TOKENS_DIRECTORY_PATH,
                 initiatorSlackId, GoogleCredential.class.getSimpleName());
         log.info("removing invalid credentials");
         Files.delete(Path.of(fileName));
@@ -264,7 +265,7 @@ public class GDriveService {
                 .setFields("files(id, name)")
                 .execute().getFiles();
 
-        if (result.size() == 0) {
+        if (CollectionUtils.isEmpty(result)) {
             return new java.io.File(fileName);
         }
         if (result.size() > 1) {
@@ -325,7 +326,7 @@ public class GDriveService {
 
     public static void serialize(GoogleCredential googleCredential, String initiatorSlackId) throws IOException {
         Files.createDirectories(Paths.get(TOKENS_DIRECTORY_PATH));
-        try (FileOutputStream fos = new FileOutputStream(String.format(pattern, TOKENS_DIRECTORY_PATH,
+        try (FileOutputStream fos = new FileOutputStream(String.format(PATTERN, TOKENS_DIRECTORY_PATH,
                 initiatorSlackId, GoogleCredential.class.getSimpleName()));
              ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             oos.writeObject(new StoredCredential(googleCredential));
@@ -333,7 +334,7 @@ public class GDriveService {
     }
 
     public GoogleCredential deserialize(String initiatorSlackId) {
-        String fileName = String.format(pattern, TOKENS_DIRECTORY_PATH,
+        String fileName = String.format(PATTERN, TOKENS_DIRECTORY_PATH,
                 initiatorSlackId, GoogleCredential.class.getSimpleName());
         if (new java.io.File(fileName).exists()) {
             try (FileInputStream fin = new FileInputStream(fileName);

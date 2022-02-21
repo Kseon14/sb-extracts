@@ -58,7 +58,7 @@ public class ProcessDebtorsPushService implements Process {
         slackResponderService.updateMessage(
                 initialMessage, text, slackEventResponse.getInitiatorUserId());
 
-        Map<String, String> employeesEmails = reportService.getEmployeesEmails();
+        Map<String, String> employeesEmails = reportService.getEmployeesEmails(slackEventResponse.getInitiatorUserId());
         text = text + "..";
         slackResponderService.updateMessage(
                 initialMessage, text, slackEventResponse.getInitiatorUserId());
