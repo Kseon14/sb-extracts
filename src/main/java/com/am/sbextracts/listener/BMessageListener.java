@@ -6,11 +6,15 @@ import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 
 @Component
 @RequiredArgsConstructor
@@ -19,8 +23,9 @@ public class BMessageListener implements ApplicationListener<BMessage> {
     private final ResponderService slackResponderService;
 
     @Override
+    @SneakyThrows
     public void onApplicationEvent(BMessage message) {
-
+        TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
         String conversationIdWithUser = slackResponderService.getConversationIdByEmail(message.getUserEmail(),
                 message.getAuthorSlackId());
 

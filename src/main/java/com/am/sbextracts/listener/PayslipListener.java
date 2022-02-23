@@ -9,6 +9,7 @@ import com.slack.api.model.block.DividerBlock;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +28,9 @@ public class PayslipListener implements ApplicationListener<Payslip> {
     private final ResponderService slackResponderService;
 
     @Override
+    @SneakyThrows
     public void onApplicationEvent(Payslip payslip) {
+        TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
         Calendar cal = Calendar.getInstance();
         String month = new SimpleDateFormat("MMM").format(cal.getTime());
 

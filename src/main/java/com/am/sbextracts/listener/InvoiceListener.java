@@ -13,6 +13,7 @@ import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -24,6 +25,9 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+
+import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 
 @Slf4j
 @Component
@@ -46,7 +50,9 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
     }
 
     @Override
+    @SneakyThrows
     public void onApplicationEvent(Invoice invoice) {
+        TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
         Document document = null;
         PdfWriter writer = null;
         String fileName = String.format("ML-%s_%s.pdf",
