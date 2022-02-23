@@ -8,6 +8,7 @@ import com.slack.api.model.Field;
 import com.slack.api.model.block.DividerBlock;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,9 @@ import org.springframework.stereotype.Component;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 
 @Component
 public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
@@ -27,7 +31,9 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
     }
 
     @Override
+    @SneakyThrows
     public void onApplicationEvent(TaxPayment taxPayment) {
+        TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
 
         String conversationIdWithUser = slackResponderService.getConversationIdByEmail(taxPayment.getUserEmail(),
                 taxPayment.getAuthorSlackId());
