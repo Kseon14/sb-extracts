@@ -8,13 +8,13 @@ import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
 import com.jayway.jsonpath.JsonPath;
 import feign.RetryableException;
+import feign.Util;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.TagNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -92,16 +92,18 @@ public class ProcessSignedService implements Process {
                 String id = ids.get(i);
                 feign.Response report = bambooHrSignedFile
                         .getSignatureReport(bchHeaders, id);
-                TagNode reportTag = getTagNode(report.body());
-
-                Optional<? extends TagNode> tagNodeOptional = Arrays
-                        .stream(reportTag.getElementsByAttValue("id", "js-signatureReportData", true, false)).findFirst();
-
-                String jsonData = tagNodeOptional.map(t -> ((ContentNode) t.getAllChildren().get(0)).getContent())
-                        .orElseThrow(() -> new IllegalArgumentException("not found content for js-signatureReportData"));
-
+                String jsonData = Util.toString(report.body().asReader(StandardCharsets.UTF_8));
                 String fileId = ((JSONArray) JsonPath.parse(jsonData).read("$..['most_recent_employee_file_data_id']"))
                         .get(0).toString();
+//                TagNode reportTag = getTagNode(report.body());
+//                Optional<? extends TagNode> tagNodeOptional = Arrays
+//                        .stream(reportTag.getElementsByAttValue("id", "js-signatureReportData", true, false)).findFirst();
+//
+//                String jsonData = tagNodeOptional.map(t -> ((ContentNode) t.getAllChildren().get(0)).getContent())
+//                        .orElseThrow(() -> new IllegalArgumentException("not found content for js-signatureReportData"));
+//
+//                String fileId = ((JSONArray) JsonPath.parse(jsonData).read("$..['most_recent_employee_file_data_id']"))
+//                        .get(0).toString();
 
                 byte[] pdf = bambooHrSignedFile.getPdf(bchHeaders, fileId);
                 String fileName = ((JSONArray) JsonPath.parse(jsonData).read("$..['original_file_name']")).get(0)
