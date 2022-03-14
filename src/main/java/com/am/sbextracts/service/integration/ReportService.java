@@ -4,6 +4,7 @@ import com.am.sbextracts.client.BambooHrApiClient;
 import com.am.sbextracts.model.Employee;
 import com.am.sbextracts.model.Report;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReportService {
@@ -27,6 +29,7 @@ public class ReportService {
         if (CollectionUtils.isEmpty(report.getEmployees())) {
             throw new IllegalArgumentException("employee list is empty");
         }
+
         return report.getEmployees().stream().collect(Collectors.toMap(Employee::getInn, Employee::getId));
     }
 

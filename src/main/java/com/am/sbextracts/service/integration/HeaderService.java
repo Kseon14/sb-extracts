@@ -3,9 +3,9 @@ package com.am.sbextracts.service.integration;
 import com.am.sbextracts.client.BambooHrAuthClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -58,8 +58,12 @@ public class HeaderService {
         return Map.of(AUTHORIZATION, "Basic " + new String(Base64Utils.encode((getApiKey(initiatorSlackId) + ":").getBytes())));
     }
 
-    @SneakyThrows
+    @SbExceptionHandler
     private String getApiKey(String initiatorSlackId) {
-        return objectMapper.readValue(apiKeys, HashMap.class).get(initiatorSlackId).toString();
+        try {
+            return objectMapper.readValue(apiKeys, HashMap.class).get(initiatorSlackId).toString();
+        } catch (JsonProcessingException e) {
+            throw new SbExtractsException("Error during parsing api key", initiatorSlackId);
+        }
     }
 }
