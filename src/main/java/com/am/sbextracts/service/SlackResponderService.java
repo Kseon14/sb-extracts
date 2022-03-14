@@ -404,6 +404,7 @@ public class SlackResponderService implements ResponderService {
                     .blocks(List.of(SectionBlock.builder()
                             .text(MarkdownTextObject.builder()
                                     .text(text).build()).build()))
+                    .text("Updates...")
                     .ts(initialMessage.getTs())
                     .build()), initiatorSlackId);
         }
