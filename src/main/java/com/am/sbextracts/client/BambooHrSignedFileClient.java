@@ -17,7 +17,7 @@ public interface BambooHrSignedFileClient {
     @GetMapping(value = "reports/?view=signedDocuments")
     feign.Response getSignedDocumentList(@RequestHeader Map<String, String> headerMap);
 
-    @GetMapping(value = "reports/esignatures/?id={id}")
+    @GetMapping(value = "reports/esignatures/{id}")
     feign.Response getSignatureReport(@RequestHeader Map<String, String> headerMap, @PathVariable String id);
 
     @GetMapping(value = "ajax/fetcher.php?doc={docId}&format=pdf&employee=true",
