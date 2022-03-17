@@ -49,8 +49,6 @@ public class ProcessingInvoiceService implements Process {
 
     @Value("${app.reportGFolderId}")
     private final String reportGFolderId;
-    @Value("${app.perRequestProcessingFilesCount}")
-    private final int perRequestProcessingFilesCount;
 
     private static final String SEPARATOR = ",";
 
@@ -94,7 +92,7 @@ public class ProcessingInvoiceService implements Process {
             slackResponderService.log(slackEventResponse.getInitiatorUserId(),
                     String.format("Documents for download: %s", fileInfos.size()));
 
-            for (int i = 0; i < Math.min(perRequestProcessingFilesCount, fileInfos.size()); i++) {
+            for (int i = 0; i < fileInfos.size(); i++) {
                 FileInfo fileInfo = fileInfos.get(i);
                 byte[] pdf = netSuiteFileClient.getPdf(HeaderService.getNsHeaders(slackEventResponse.getSessionId()),
                         getAttributes(fileInfo.getHref()));
@@ -109,9 +107,9 @@ public class ProcessingInvoiceService implements Process {
                             String.format("Do not have permission for upload: %s", fileInfo.getFileName()));
                     continue;
                 }
-                log.info("Document uploaded [{}/{}]: {}", i + 1, Math.min(perRequestProcessingFilesCount, fileInfos.size()), fileInfo.getFileName());
+                log.info("Document uploaded [{}/{}]: {}", i + 1, fileInfos.size(), fileInfo.getFileName());
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(),
-                        String.format("Document uploaded [%s/%s]: %s", i + 1, Math.min(perRequestProcessingFilesCount, fileInfos.size()), fileInfo.getFileName()));
+                        String.format("Document uploaded [%s/%s]: %s", i + 1, fileInfos.size(), fileInfo.getFileName()));
                 FileUtils.writeStringToFile(file, String.format("%s,%s%n", fileInfo.getId(), fileInfo.getFileName()), StandardCharsets.UTF_8.toString(), true);
             }
         } catch (Throwable ex) {
@@ -133,7 +131,7 @@ public class ProcessingInvoiceService implements Process {
                 .stream()
                 .filter(el -> CollectionUtils
                         .containsAny(
-                                el.getAllChildren().stream().filter(cn -> cn instanceof ContentNode)
+                                el.getAllChildren().stream().filter(ContentNode.class::isInstance)
                                         .map(cn -> ((ContentNode) cn).getContent()).collect(Collectors.toList()),
                                 "Download"))
                 .findFirst().map(el -> el.getAttributeByName("href")).orElse(null);
