@@ -40,6 +40,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.am.sbextracts.service.integration.ProcessDebtorsService.getPostMessage;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -64,6 +66,11 @@ public class ProcessingInvoiceService implements Process {
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
         String initiatorUserId = slackEventResponse.getInitiatorUserId();
+
+        slackResponderService.sendMessageToInitiator(
+                slackEventResponse.getInitiatorUserId(),
+                getPostMessage("Starting....", "Starting..."));
+
         gDriveService.validateFolderExistence(reportGFolderId, initiatorUserId);
         Map<String, String> employees = reportService.getEmployees(initiatorUserId);
         File file = null;

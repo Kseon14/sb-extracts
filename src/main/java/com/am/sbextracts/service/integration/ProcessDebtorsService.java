@@ -152,7 +152,7 @@ public class ProcessDebtorsService implements Process {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
     }
 
-    private ChatPostMessageRequest.ChatPostMessageRequestBuilder getPostMessage(String headerText, String text) {
+    public static ChatPostMessageRequest.ChatPostMessageRequestBuilder getPostMessage(String headerText, String text) {
         return ChatPostMessageRequest.builder()
                 .text(headerText)
                 .blocks(List.of(SectionBlock.builder()
