@@ -40,6 +40,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.am.sbextracts.service.integration.ProcessDebtorsService.getPostMessage;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -49,8 +51,6 @@ public class ProcessingInvoiceService implements Process {
 
     @Value("${app.reportGFolderId}")
     private final String reportGFolderId;
-    @Value("${app.perRequestProcessingFilesCount}")
-    private final int perRequestProcessingFilesCount;
 
     private static final String SEPARATOR = ",";
 
@@ -65,8 +65,14 @@ public class ProcessingInvoiceService implements Process {
     @SneakyThrows
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
-        gDriveService.validateFolderExistence(reportGFolderId, slackEventResponse.getInitiatorUserId());
-        Map<String, String> employees = reportService.getEmployees(slackEventResponse.getInitiatorUserId());
+        String initiatorUserId = slackEventResponse.getInitiatorUserId();
+
+        slackResponderService.sendMessageToInitiator(
+                slackEventResponse.getInitiatorUserId(),
+                getPostMessage("Starting....", "Starting..."));
+
+        gDriveService.validateFolderExistence(reportGFolderId, initiatorUserId);
+        Map<String, String> employees = reportService.getEmployees(initiatorUserId);
         File file = null;
         long dateOfModification = -1;
         String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,
@@ -74,13 +80,13 @@ public class ProcessingInvoiceService implements Process {
         final Map<String, String> processedIds = new HashMap<>();
         try {
 
-            file = gDriveService.getFile(logFileName, slackEventResponse.getInitiatorUserId());
+            file = gDriveService.getFile(logFileName, initiatorUserId);
 
             if (file.exists()) {
                 processedIds.putAll(parseLogFile(Files.readAllLines(Paths.get(file.getPath()))));
             }
             dateOfModification = file.lastModified();
-            feign.Response response = netSuiteFileClient.getInvoices(HeaderService.getNsHeaders(slackEventResponse.getSessionId()),
+            feign.Response response = netSuiteFileClient.getInvoices(headerService.getNsHeaders(slackEventResponse.getSessionId(), initiatorUserId),
                     NetSuiteFileClient.FolderParams.of(slackEventResponse.getFolderId()));
             TagNode tagNode = ParsingUtils.getTagNode(response.body());
 
@@ -91,34 +97,34 @@ public class ProcessingInvoiceService implements Process {
                     .filter(fileInfo -> getEmployeeId(fileInfo, employees) != null)
                     .collect(Collectors.toList());
             log.info("Documents for download: {}", fileInfos.size());
-            slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+            slackResponderService.log(initiatorUserId,
                     String.format("Documents for download: %s", fileInfos.size()));
 
-            for (int i = 0; i < Math.min(perRequestProcessingFilesCount, fileInfos.size()); i++) {
+            for (int i = 0; i < fileInfos.size(); i++) {
                 FileInfo fileInfo = fileInfos.get(i);
-                byte[] pdf = netSuiteFileClient.getPdf(HeaderService.getNsHeaders(slackEventResponse.getSessionId()),
+                byte[] pdf = netSuiteFileClient.getPdf(headerService.getNsHeaders(slackEventResponse.getSessionId(), initiatorUserId),
                         getAttributes(fileInfo.getHref()));
 
                 try {
-                    bambooHrApiClient.uploadFile(headerService.getHeaderForBchApi(slackEventResponse.getInitiatorUserId()), getEmployeeId(fileInfo, employees),
+                    bambooHrApiClient.uploadFile(headerService.getHeaderForBchApi(initiatorUserId), getEmployeeId(fileInfo, employees),
                             Map.of("file", prepareFile(pdf, fileInfo.getFileName()), "fileName", fileInfo.getFileName(),
                                     "share", "yes", "category", 16));
                 } catch (FeignException.Forbidden ex) {
                     log.error("Do not have permission for upload:{}", fileInfo.getFileName(), ex);
-                    slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                    slackResponderService.log(initiatorUserId,
                             String.format("Do not have permission for upload: %s", fileInfo.getFileName()));
                     continue;
                 }
-                log.info("Document uploaded [{}/{}]: {}", i + 1, Math.min(perRequestProcessingFilesCount, fileInfos.size()), fileInfo.getFileName());
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(),
-                        String.format("Document uploaded [%s/%s]: %s", i + 1, Math.min(perRequestProcessingFilesCount, fileInfos.size()), fileInfo.getFileName()));
+                log.info("Document uploaded [{}/{}]: {}", i + 1, fileInfos.size(), fileInfo.getFileName());
+                slackResponderService.log(initiatorUserId,
+                        String.format("Document uploaded [%s/%s]: %s", i + 1, fileInfos.size(), fileInfo.getFileName()));
                 FileUtils.writeStringToFile(file, String.format("%s,%s%n", fileInfo.getId(), fileInfo.getFileName()), StandardCharsets.UTF_8.toString(), true);
             }
         } catch (Throwable ex) {
             log.error("Error during download of invoices", ex);
-            throw new SbExtractsException("Error during download of invoices", ex, slackEventResponse.getInitiatorUserId());
+            throw new SbExtractsException("Error during download of invoices", ex, initiatorUserId);
         } finally {
-            gDriveService.saveFile(file, dateOfModification, logFileName, slackEventResponse.getInitiatorUserId(), reportGFolderId);
+            gDriveService.saveFile(file, dateOfModification, logFileName, initiatorUserId, reportGFolderId);
         }
 
     }
@@ -133,7 +139,7 @@ public class ProcessingInvoiceService implements Process {
                 .stream()
                 .filter(el -> CollectionUtils
                         .containsAny(
-                                el.getAllChildren().stream().filter(cn -> cn instanceof ContentNode)
+                                el.getAllChildren().stream().filter(ContentNode.class::isInstance)
                                         .map(cn -> ((ContentNode) cn).getContent()).collect(Collectors.toList()),
                                 "Download"))
                 .findFirst().map(el -> el.getAttributeByName("href")).orElse(null);
