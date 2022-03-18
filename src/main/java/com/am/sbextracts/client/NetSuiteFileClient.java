@@ -6,6 +6,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.Map;
@@ -22,8 +23,19 @@ public interface NetSuiteFileClient {
             consumes = MediaType.APPLICATION_PDF_VALUE)
     byte[] getPdf(@RequestHeader Map<String, String> headerMap, @SpringQueryMap Map<String, String> request);
 
+    @GetMapping(value = "session-status.json?_={timeStamp}",
+            consumes = "application/json")
+    SessionInfo getSessionInfo(@RequestHeader Map<String, String> headerMap, @PathVariable long timeStamp);
+
     @Value(staticConstructor = "of")
     class FolderParams {
         int folder;
+    }
+
+    @Value
+    class SessionInfo {
+        String at;
+        String ct;
+        String it;
     }
 }
