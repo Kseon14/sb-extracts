@@ -13,6 +13,14 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+
+import static com.am.sbextracts.publisher.PublisherFactory.Type.TAX_PAYMENT_WITH_EMAL;
+import static com.am.sbextracts.publisher.PublisherFactory.Type.getByFileName;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -24,6 +32,9 @@ public class TaxPaymentPublisher implements Publisher {
     public void produce(XSSFWorkbook workbook, SlackEvent.FileMetaInfo fileMetaInfo) {
         XSSFSheet sheet = workbook.getSheetAt(0);
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+
+        PublisherFactory.Type type = getByFileName(fileMetaInfo.getName());
+
         try {
             XlsxUtil.validateFile(PublisherFactory.Type.TAX_PAYMENT, workbook);
             for (Row row : sheet) {
@@ -45,6 +56,10 @@ public class TaxPaymentPublisher implements Publisher {
                     taxPayment.setDueDate(XlsxUtil.getDateFromCell(row, "I"));
                     taxPayment.setTaxType(XlsxUtil.getCell(row, "J", evaluator));
                     taxPayment.setAuthorSlackId(fileMetaInfo.getAuthor());
+                    taxPayment.setWithEmail(TAX_PAYMENT_WITH_EMAL.equals(type));
+                    if (taxPayment.isWithEmail()) {
+                        taxPayment.setAdditionalUserEmail(getEmails("K", evaluator, row));
+                    }
                     log.info("Tax payment: {}", taxPayment);
                     applicationEventPublisher.publishEvent(taxPayment);
                 }
@@ -53,5 +68,13 @@ public class TaxPaymentPublisher implements Publisher {
             throw new SbExtractsException("Error during processing", e, fileMetaInfo.getAuthor());
         }
 
+    }
+
+    private static Set<String> getEmails(String columnName, FormulaEvaluator evaluator, Row row) {
+        return Optional.ofNullable(XlsxUtil.getCell(row, columnName, evaluator))
+                .map(columnContent -> columnContent.split(";"))
+                .map(Arrays::asList)
+                .map(HashSet::new)
+                .orElse(new HashSet<>());
     }
 }

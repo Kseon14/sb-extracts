@@ -6,6 +6,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.springframework.context.ApplicationEvent;
 
 import java.util.Date;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -19,9 +20,11 @@ public class TaxPayment extends ApplicationEvent {
     private String code;
     private String purposeOfPayment;
     private String userEmail;
+    private Set<String> additionalUserEmail;
     private Date dueDate;
     private String taxType;
     private String authorSlackId;
+    private boolean withEmail;
 
     public TaxPayment(Object source) {
         super(source);
@@ -38,6 +41,8 @@ public class TaxPayment extends ApplicationEvent {
                 .append("dueDate", dueDate)
                 .append("taxType", taxType)
                 .append("authorSlackId", authorSlackId)
+                .append("additionalUserEmail", additionalUserEmail)
+                .append("withEmail", withEmail)
                 .toString();
     }
 }
