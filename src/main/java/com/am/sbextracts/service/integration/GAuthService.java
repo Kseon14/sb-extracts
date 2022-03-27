@@ -189,8 +189,7 @@ public class GAuthService {
                 DriveScopes.DRIVE,
                 withMail ? " " + GmailScopes.GMAIL_SEND : "");
 
-        //slackResponderService.log(initiatorSlackId, redirectUrl);
-        log.debug(redirectUrl);
+        slackResponderService.log(initiatorSlackId, redirectUrl);
 
         waitToken();
 

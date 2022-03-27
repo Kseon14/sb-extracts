@@ -82,7 +82,8 @@ public class GDriveService {
     }
 
     private Drive getService(String initiatorSlackId) {
-        return new Drive.Builder(GAuthService.getNetHttpTransport(), JSON_FACTORY, gAuthService.getCredentials(initiatorSlackId, false))
+        return new Drive.Builder(GAuthService.getNetHttpTransport(), JSON_FACTORY,
+                gAuthService.getCredentials(initiatorSlackId, false))
                 .setApplicationName(APPLICATION_NAME).build();
     }
 
