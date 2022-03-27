@@ -2,33 +2,37 @@ package com.am.sbextracts.listener;
 
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.SlackResponderService;
+import com.am.sbextracts.service.integration.GmailService;
 import com.am.sbextracts.vo.TaxPayment;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.model.Field;
 import com.slack.api.model.block.DividerBlock;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 
 @Component
+@RequiredArgsConstructor
 public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
 
-    private final ResponderService slackResponderService;
+    @Value("${app.fromMail}")
+    String from;
 
-    @Autowired
-    public TaxPaymentListener(ResponderService slackResponderService) {
-        this.slackResponderService = slackResponderService;
-    }
+    private final ResponderService slackResponderService;
+    private final GmailService gmailService;
 
     @Override
     @SneakyThrows
@@ -65,7 +69,80 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
                                         .fields(fieldList).color("#36a64f").build()))
                         .build(), taxPayment.getUserEmail(), taxPayment.getAuthorSlackId());
 
-        slackResponderService.sendMessageToInitiator(taxPayment.getAuthorSlackId(), taxPayment.getFullName(), taxPayment.getUserEmail());
+        if (taxPayment.isWithEmail()) {
+            Set<String> emails = new HashSet<>(taxPayment.getAdditionalUserEmail());
+            emails.add(taxPayment.getUserEmail());
+            gmailService.sendMessage(emails,
+                    String.format("Дані для оплати %s, сплата до %s", taxPayment.getTaxType(),
+                            new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate())),
+                    getMailBody(String.format("Привіт, %s!<br>"
+                                            + "Дані для оплати <b>%s</b> нижче <br>"
+                                            + "Термін сплати до <b>%s</b> <br>"
+                                            + "У випадку виникнення питань, зверніться до <a href = \"mailto: %s\">мене</a><br> ",
+                                    taxPayment.getFullName(),
+                                    taxPayment.getTaxType(),
+                                    new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate()),
+                                    from),
+                            taxPayment.getAmount(),
+                            taxPayment.getReceiver(),
+                            taxPayment.getAccount(),
+                            taxPayment.getCode(),
+                            taxPayment.getPurposeOfPayment()
+                    ),
+                    taxPayment.getAuthorSlackId());
+        }
 
+        slackResponderService.sendMessageToInitiator(taxPayment.getAuthorSlackId(), taxPayment.getFullName(),
+                taxPayment.getUserEmail());
+
+    }
+
+    private static String getMailBody(String messageHeader,
+                                      String amount,
+                                      String receiver,
+                                      String account,
+                                      String code,
+                                      String purposeOfPayment) {
+        return String.format("<p>%s</p>" +
+                        "<head> <style>\n" +
+                        "        .vertical {\n" +
+                        "            border-left: 5px solid black;\n" +
+                        "            height: 100%%;\n" +
+                        "            border-color: green;\n" +
+                        "        }\n" +
+                        "    </style>\n" +
+                        "</head>\n" +
+                        "<table style=\"height:200px;border-collapse: collapse; border-style: none;\" border=\"0\">\n" +
+                        "<tbody>\n" +
+                        "<tr style=\"height:20px;padding: 3px;\">\n" +
+                        "<td style=\"width:10px;height: 100%%;\" rowspan=\"5\">\n" +
+                        "<div class= \"vertical\">&nbsp;</div></td>\n" +
+                        "<td >\n" +
+                        "<b>Сума:</b><br> %s\n" +
+                        "</td>\n" +
+                        "</tr>\n" +
+                        "<tr style=\"height:20px;padding: 5px;\">\n" +
+                        "<td >\n" +
+                        "<b>Отримувач:</b><br> %s\n" +
+                        "</td>\n" +
+                        "</tr>\n" +
+                        "<tr style=\"height:20px;padding:5px;\">\n" +
+                        "<td >\n" +
+                        "<b>Розрахунковий рахунок:</b><br> %s\n" +
+                        "</td>\n" +
+                        "</tr>\n" +
+                        "<tr style=\"height:20px;padding: 5px;\">\n" +
+                        "<td >\n" +
+                        "<b>ЄДРПОУ:</b><br> %s\n" +
+                        "</td>\n" +
+                        "</tr>\n" +
+                        "<tr style=\"height:20px;padding: 5px;\">\n" +
+                        "<td>\n" +
+                        "<b>Призначення платежу:</b><br> %s\n" +
+                        "</td>\n" +
+                        "</tr>\n" +
+                        "</tbody>\n" +
+                        "</table>",
+                messageHeader, amount, receiver, account, code, purposeOfPayment);
     }
 }

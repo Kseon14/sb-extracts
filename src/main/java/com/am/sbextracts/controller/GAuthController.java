@@ -1,7 +1,7 @@
 package com.am.sbextracts.controller;
 
 import com.am.sbextracts.client.GoogleAuthClient;
-import com.am.sbextracts.service.integration.GDriveService;
+import com.am.sbextracts.service.integration.GAuthService;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
@@ -27,7 +27,7 @@ public class GAuthController {
 
     private final GoogleAuthClient googleAuthClient;
     @Lazy
-    private final GDriveService gDriveService;
+    private final GAuthService gAuthService;
     private final ObjectMapper objectMapper;
 
     @SneakyThrows
@@ -36,17 +36,17 @@ public class GAuthController {
     public ResponseEntity getAuthCode(@RequestParam(name = "code") String code,
                                       @PathVariable(name = "slackId") String initiatorSlackId) {
         objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
-        GoogleClientSecrets.Details details = gDriveService.getCredFromLocalSource(initiatorSlackId);
+        GoogleClientSecrets.Details details = gAuthService.getCredFromLocalSource(initiatorSlackId);
         String tokenResponse = googleAuthClient.getToken(
                 Map.of("code", code,
                         "client_id", details.getClientId(),
                         "client_secret", details.getClientSecret(),
-                        "code_verifier", GDriveService.getCodeVerifier().get(initiatorSlackId),
+                        "code_verifier", GAuthService.getCodeVerifier().get(initiatorSlackId),
                         "grant_type", "authorization_code",
-                        "redirect_uri", gDriveService.getRedirectURI(initiatorSlackId))
+                        "redirect_uri", gAuthService.getRedirectURI(initiatorSlackId))
         );
         GoogleTokenResponse googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
-        gDriveService.setToken(googleTokenResponse);
+        gAuthService.setToken(googleTokenResponse);
 
         return new ResponseEntity("<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +

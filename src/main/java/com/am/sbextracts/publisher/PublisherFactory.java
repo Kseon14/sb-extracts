@@ -27,6 +27,7 @@ public class PublisherFactory {
         publisherMap = Map.of(
                 Type.INVOICE, invoicePublisher,
                 Type.TAX_PAYMENT, taxPaymentPublisher,
+                Type.TAX_PAYMENT_WITH_EMAL, taxPaymentPublisher,
                 Type.PAYSLIP, payslipPublisher,
                 Type.BROADCAST_MESSAGE, bMessagePublisher
         );
@@ -39,6 +40,7 @@ public class PublisherFactory {
 
     public enum Type {
         TAX_PAYMENT("tp"),
+        TAX_PAYMENT_WITH_EMAL("tpwe"),
         INVOICE("in"),
         PAYSLIP("ps"),
         BROADCAST_MESSAGE("bm");

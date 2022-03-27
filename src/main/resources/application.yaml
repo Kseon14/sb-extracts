@@ -34,6 +34,7 @@ app:
   reportGFolderId: ${G_REPORT_FOLDER_ID}
   perRequestProcessingFilesCount: 400
   url: ${APP_URL}
+  fromMail: ${FROM_MAIL}
   company:
     name: ${COMPANY_NAME}
     nsUrl: ${NS_URL}
