@@ -12,6 +12,7 @@ import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.htmlcleaner.TagNode;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNode;
@@ -29,12 +31,14 @@ import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNod
 @RequiredArgsConstructor
 public class ProcessDebtorsPushService implements Process {
 
+    private static final int DEFAULT_DELAY = 2;
+
     private final BambooHrSignedFileClient bambooHrSignedFile;
     private final HeaderService headerService;
     private final ReportService reportService;
     private final ResponderService slackResponderService;
 
-
+    @SneakyThrows
     @Override
     @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
@@ -73,7 +77,10 @@ public class ProcessDebtorsPushService implements Process {
                 .collect(Collectors.toSet());
 
         log.info("Count of user for notification {}", notSignedFilesInn.size());
+        slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                "Count of user for notification" + notSignedFilesInn.size());
         for (String inn : notSignedFilesInn) {
+            TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
             String userEmail = employeesEmails.get(inn);
             try {
                 String conversationIdWithUser = slackResponderService.getConversationIdByEmail(userEmail,
