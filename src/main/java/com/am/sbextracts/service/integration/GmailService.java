@@ -36,11 +36,12 @@ public class GmailService {
     public void sendMessage(Set<String> toEmails, String subject, String text, String initiatorSlackId)
             throws IOException, MessagingException {
         Gmail service = getService(initiatorSlackId);
+        log.info("Starting to send emails...");
         for (String to : toEmails) {
             Message message = createMessageWithEmail(createEmail(to, from, subject, text));
             service.users().messages().send("me", message).execute();
             log.info("Message sent to: {}", to);
-            slackResponderService.log(initiatorSlackId, "Message sent to:" + to);
+            slackResponderService.log(initiatorSlackId, "*Message sent to*: " + to);
         }
     }
 
