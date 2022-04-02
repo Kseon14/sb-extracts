@@ -189,7 +189,8 @@ public class GAuthService {
                 DriveScopes.DRIVE,
                 withMail ? " " + GmailScopes.GMAIL_SEND : "");
 
-        slackResponderService.log(initiatorSlackId, redirectUrl);
+        slackResponderService.log(initiatorSlackId,
+                String.format("<%s|Please approve access to Google Drive>", redirectUrl));
 
         waitToken();
 
