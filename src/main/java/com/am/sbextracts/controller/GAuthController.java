@@ -10,8 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,10 +30,10 @@ public class GAuthController {
     private final ObjectMapper objectMapper;
 
     @SneakyThrows
-    @GetMapping("api/gauth/{slackId}")
+    @GetMapping(value = "api/gauth/{slackId}", produces = MediaType.TEXT_HTML_VALUE)
     @ResponseBody
-    public ResponseEntity getAuthCode(@RequestParam(name = "code") String code,
-                                      @PathVariable(name = "slackId") String initiatorSlackId) {
+    public String getAuthCode(@RequestParam(name = "code") String code,
+                              @PathVariable(name = "slackId") String initiatorSlackId) {
         objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
         GoogleClientSecrets.Details details = gAuthService.getCredFromLocalSource(initiatorSlackId);
         String tokenResponse = googleAuthClient.getToken(
@@ -48,19 +47,21 @@ public class GAuthController {
         GoogleTokenResponse googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
         gAuthService.setToken(googleTokenResponse);
 
-        return new ResponseEntity("<!DOCTYPE html>\n" +
+        return
                 "<html lang=\"en\">\n" +
-                "<head>\n" +
-                "    <meta charset=\"UTF-8\">\n" +
-                "    <title>Title</title>\n" +
-                "    <script type=\"text/javascript\">\n" +
-                "        window.close() ;\n" +
-                "    </script>\n" +
-                "</head>\n" +
-                "<body>\n" +
-                "Now you can close this page\n" +
-                "</body>\n" +
-                "</html>", HttpStatus.OK);
+                        "<head>\n" +
+                        "    <meta charset=\"UTF-8\">\n" +
+                        "    <title>Close this Tab</title>\n" +
+                        "</head>\n" +
+                        "<body onload=\"setTimeout(closeWin, 1000)\">\n" +
+                        "<script>\n" +
+                        "  function closeWin(){\n" +
+                        "    window.close();\n" +
+                        "  }\n" +
+                        "</script>" +
+                        "Now you can close this page\n" +
+                        "</body>\n" +
+                        "</html>";
     }
 
 }
