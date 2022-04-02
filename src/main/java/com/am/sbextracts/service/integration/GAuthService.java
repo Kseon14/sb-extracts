@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -121,7 +122,13 @@ public class GAuthService {
 
     @SneakyThrows
     public GoogleClientSecrets.Details getCredFromLocalSource(String initiatorSlackId) {
-        return objectMapper.readValue(authJsons, TYPE_REF).get(initiatorSlackId);
+        GoogleClientSecrets.Details details = objectMapper.readValue(authJsons, TYPE_REF)
+                .get(initiatorSlackId);
+        details.setAuthUri("https://accounts.google.com/o/oauth2/auth");
+        details.setTokenUri("https://oauth2.googleapis.com/token");
+        details.setRedirectUris(Collections.singletonList(
+                String.format("%s/%s", url, initiatorSlackId)));
+        return details;
     }
 
     public static void serialize(GoogleCredential googleCredential, String initiatorSlackId) throws IOException {
