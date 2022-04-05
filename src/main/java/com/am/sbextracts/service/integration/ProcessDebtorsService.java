@@ -14,7 +14,6 @@ import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.htmlcleaner.HtmlCleaner;
@@ -48,12 +47,12 @@ public class ProcessDebtorsService implements Process {
 
     @Override
     @SbExceptionHandler
-    @SneakyThrows
     public void process(InternalSlackEventResponse slackEventResponse) {
 
         ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
                 slackEventResponse.getInitiatorUserId(),
                 getPostMessage("Starting....", "Starting..."));
+        log.debug("Starting...");
         feign.Response response;
         Map<String, String> bchHeaders;
         try {
@@ -75,7 +74,7 @@ public class ProcessDebtorsService implements Process {
         text = text + "..";
         slackResponderService.updateMessage(
                 initialMessage, text, slackEventResponse.getInitiatorUserId());
-
+        log.debug("Start parsing documents");
         TagNode tagNode = getTagNode(response.body());
         Set<String> notSignedFiles = Arrays
                 .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
@@ -123,7 +122,7 @@ public class ProcessDebtorsService implements Process {
                                 .text(MarkdownTextObject.builder().text("*Not Signed (" + notSignedFiles.size() + ")*\n").build()).build())),
                 slackEventResponse.getInitiatorUserId());
 
-        if (notSignedFiles.size() > 0) {
+        if (!notSignedFiles.isEmpty()) {
             int currentPosition = 0;
             do {
                 int newPosition = currentPosition + 40;
@@ -131,13 +130,18 @@ public class ProcessDebtorsService implements Process {
                         getPostMessage("Not Signed", String.join("\n", new ArrayList<>(notSignedFiles).subList(currentPosition,
                                 Math.min(notSignedFiles.size(), newPosition)))));
                 currentPosition = newPosition;
-                TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                try {
+                    TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                } catch (InterruptedException e) {
+                    log.error("sleep was interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
             } while (notSignedFiles.size() > currentPosition);
         }
 
         slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
                 getPostMessage("Not Sent", "*Not Sent (" + notSentFiles.size() + ")*\n"));
-        if (notSentFiles.size() > 0) {
+        if (!notSentFiles.isEmpty()) {
             int currentPosition = 0;
             do {
                 int newPosition = currentPosition + 40;
@@ -145,7 +149,12 @@ public class ProcessDebtorsService implements Process {
                         getPostMessage("Not Sent", String.join("\n", notSentFiles.subList(currentPosition,
                                 Math.min(notSentFiles.size(), newPosition)))));
                 currentPosition = newPosition;
-                TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                try {
+                    TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                } catch (InterruptedException e) {
+                    log.error("sleep was interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
             } while (notSentFiles.size() > currentPosition);
         }
         log.info("DONE");

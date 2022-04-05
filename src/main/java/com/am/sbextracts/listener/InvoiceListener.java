@@ -13,7 +13,6 @@ import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -50,9 +49,13 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
     }
 
     @Override
-    @SneakyThrows
     public void onApplicationEvent(Invoice invoice) {
-        TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+        try {
+            TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+        } catch (InterruptedException e) {
+            log.error("sleep was interrupted", e);
+            Thread.currentThread().interrupt();
+        }
         Document document = null;
         PdfWriter writer = null;
         String fileName = String.format("ML-%s_%s.pdf",

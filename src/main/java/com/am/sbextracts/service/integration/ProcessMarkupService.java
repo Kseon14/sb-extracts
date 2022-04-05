@@ -54,7 +54,7 @@ public class ProcessMarkupService implements Process {
     @Value("${app.perRequestProcessingFilesCount}")
     private final int perRequestProcessingFilesCount;
 
-    private final static Properties prop = new Properties();
+    private static final Properties prop = new Properties();
 
     private final ObjectMapper mapper;
     private final ReportService reportService;
@@ -145,7 +145,6 @@ public class ProcessMarkupService implements Process {
         }
     }
 
-    @SneakyThrows
     private void processDocuments(String employeeInternalId, DocumentInfo info,
                                   InternalSlackEventResponse slackEventResponse, File file, Map<String, String> bchHeaders) {
 
@@ -153,39 +152,65 @@ public class ProcessMarkupService implements Process {
                 bambooHrSignClient.createTemplate(bchHeaders,
                         new BambooHrSignClient.CrtRequest(true, info.getTemplateFileId())));
         log.info("updateTemplateResponse {}", updateTemplateResponse.isSuccess());
+        String initiatorUserId = slackEventResponse.getInitiatorUserId();
         if (updateTemplateResponse.isSuccess()) {
             Response isReady;
             int attempts = 0;
             do {
                 isReady = bambooHrSignClient.isReady(bchHeaders,
                         BambooHrSignClient.CompleteParams.of(info.getFileId()));
-                TimeUnit.SECONDS.sleep(ATTEMPTS_DELAY);
+                try {
+                    TimeUnit.SECONDS.sleep(ATTEMPTS_DELAY);
+                } catch (InterruptedException e) {
+                    log.error("sleep was interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
                 attempts++;
             } while (!isReady.isSuccess() && attempts <= ATTEMPTS_LIMIT);
 
             log.info("isReady {}", isReady.isSuccess());
             if (isReady.isSuccess()) {
-                TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                try {
+                    TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                } catch (InterruptedException e) {
+                    log.error("sleep was interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
                 Response completed = bambooHrSignClient.getCompleted(bchHeaders,
                         BambooHrSignClient.CompleteParams.of(info.getFileId()));
                 log.info("updateTemplateResponse {}", completed.isSuccess());
                 if (completed.isSuccess()) {
-                    TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
-                    int pagesCount = getPdfPagesCount(info.getTemplateFileId(), bchHeaders);
+                    try {
+                        TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                    } catch (InterruptedException e) {
+                        log.error("sleep was interrupted", e);
+                        Thread.currentThread().interrupt();
+                    }
+                    int pagesCount = getPdfPagesCount(info.getTemplateFileId(), bchHeaders, initiatorUserId);
                     if (pagesCount == 0) {
                         log.error("File download problem for inn {}", info.getInn());
-                        slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                        slackResponderService.log(initiatorUserId,
                                 String.format("File download problem for inn %s", info.getInn()));
                         return;
                     }
-                    String markUp = getMarkUp(pagesCount);
+                    String markUp;
+                    try {
+                        markUp = getMarkUp(pagesCount);
+                    } catch (IOException e) {
+                        throw new SbExtractsException("Error during prop retrieving", e, initiatorUserId);
+                    }
                     if (StringUtils.isBlank(markUp)) {
                         log.error("markup source file read problem");
-                        slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                        slackResponderService.log(initiatorUserId,
                                 String.format("markup source file read problem for inn %s", info.getInn()));
                         return;
                     }
-                    TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                    try {
+                        TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                    } catch (InterruptedException e) {
+                        log.error("sleep was interrupted", e);
+                        Thread.currentThread().interrupt();
+                    }
                     Response update =
                             convert(bambooHrSignClient.updateTemplate(bchHeaders,
                                     new BambooHrSignClient.UpdateRequest(true,
@@ -195,21 +220,30 @@ public class ProcessMarkupService implements Process {
 
                     Map<String, Object> signParams = Map.of("allIds", "off", "message",
                             "Please take a moment to sign this document", "employeeIds[]", employeeInternalId);
-                    TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                    try {
+                        TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+                    } catch (InterruptedException e) {
+                        log.error("sleep was interrupted", e);
+                        Thread.currentThread().interrupt();
+                    }
                     Response signatureRequest = convert(bambooHrSignClient.signatureRequest(
                             bchHeaders,
                             signParams, update.getWorkflowId()));
                     log.info("Document for inn: {}, error:{}, success: {}", info.getInn(), signatureRequest.getError(),
                             signatureRequest.isSuccess());
-                    slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                    slackResponderService.log(initiatorUserId,
                             String.format("Document for inn: %s, %s, success: %s", info.getInn(), signatureRequest.getError(),
                                     signatureRequest.isSuccess()));
-                    FileUtils.writeStringToFile(file, info.getFileId() + "\r\n", StandardCharsets.UTF_8.toString(), true);
+                    try {
+                        FileUtils.writeStringToFile(file, info.getFileId() + "\r\n", StandardCharsets.UTF_8.toString(), true);
+                    } catch (IOException e) {
+                        throw new SbExtractsException("Error during writing to file", e, initiatorUserId);
+                    }
 
                 }
             }
         } else {
-            slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+            slackResponderService.log(initiatorUserId,
                     String.format("Update Template action is failed for inn %s skipping...", info.getInn()));
         }
     }
@@ -219,8 +253,7 @@ public class ProcessMarkupService implements Process {
         return mapper.readValue(response.body().asInputStream(), Response.class);
     }
 
-    @SneakyThrows
-    private int getPdfPagesCount(int templateFileId, Map<String, String> bchHeaders) {
+    private int getPdfPagesCount(int templateFileId, Map<String, String> bchHeaders, String initiatorSlackId) {
         byte[] pdf = bambooHrSignClient.getPdf(bchHeaders, templateFileId);
         if (pdf.length == 0) {
             return 0;
@@ -228,6 +261,8 @@ public class ProcessMarkupService implements Process {
         try (PDDocument doc = PDDocument.load(pdf)) {
             doc.getPage(0);
             return doc.getNumberOfPages();
+        } catch (IOException e) {
+            throw new SbExtractsException("PDF doc is not readable", e, initiatorSlackId);
         }
     }
 

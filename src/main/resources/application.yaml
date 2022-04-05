@@ -3,12 +3,14 @@ event:
     threads: ${THREAD_COUNT}
 logging:
   file:
-    max-history: 4
-    max-size: 10MB
     name: logs/sb-extracts.log
   level:
     org.springframework.web: ERROR
-    com.am.sbextracts: INFO
+    com.am.sbextracts: DEBUG
+  logback:
+    rollingpolicy:
+      max-history: 4
+      max-file-size: 10MB
 pool:
   max-idle: 2
   max-total: 6
