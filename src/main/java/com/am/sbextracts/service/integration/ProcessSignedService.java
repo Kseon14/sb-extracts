@@ -10,7 +10,6 @@ import com.jayway.jsonpath.JsonPath;
 import feign.RetryableException;
 import feign.Util;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
 import org.apache.commons.collections4.CollectionUtils;
@@ -52,7 +51,6 @@ public class ProcessSignedService implements Process {
     private final ResponderService slackResponderService;
 
     @Override
-    @SneakyThrows
     @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Start processing ....");

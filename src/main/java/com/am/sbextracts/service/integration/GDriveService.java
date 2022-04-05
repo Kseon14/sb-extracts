@@ -56,9 +56,6 @@ public class GDriveService {
         }
     }
 
-
-
-    @SneakyThrows
     @SbExceptionHandler
     public void validateFolderExistence(String fileId, String initiatorSlackId) {
         int attempt = 1;
@@ -87,7 +84,6 @@ public class GDriveService {
                 .setApplicationName(APPLICATION_NAME).build();
     }
 
-    @SneakyThrows
     private static int circuitBreaker(int attempt, BiConsumer<String, String> consumer, String fileId, String initiatorSlackId) {
         try {
             if (attempt <= MAX_RETRY) {
@@ -135,7 +131,7 @@ public class GDriveService {
         saveFile(file, dateOfModification, logFileName, slackEventResponse.getInitiatorUserId(), slackEventResponse.getGFolderId());
     }
 
-    @SneakyThrows
+
     @SbExceptionHandler
     public void saveFile(java.io.File file, long dateOfModification, String logFileName, String initiatorUserId, String gFolderId) {
         if (dateOfModification >= 0 && file.lastModified() > 0 && dateOfModification < file.lastModified()) {

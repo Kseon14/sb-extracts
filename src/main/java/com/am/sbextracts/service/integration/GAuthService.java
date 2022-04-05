@@ -1,8 +1,11 @@
 package com.am.sbextracts.service.integration;
 
 import com.am.sbextracts.client.GoogleAuthClient;
+import com.am.sbextracts.exception.SbExceptionHandler;
+import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.LockIndicator;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,7 +48,8 @@ import java.util.Map;
 @Service
 public class GAuthService {
 
-    private static final TypeReference<HashMap<String, GoogleClientSecrets.Details>> TYPE_REF = new TypeReference<>() {
+    private static final TypeReference<HashMap<String, GoogleClientSecrets.Details>> TYPE_REF
+            = new TypeReference<>() {
     };
     private GoogleTokenResponse token;
     private final GoogleAuthClient googleAuthClient;
@@ -88,6 +92,7 @@ public class GAuthService {
 
     @SneakyThrows
     public String getCodeChallenge(final String initiatorSlackId) {
+        log.debug("Generate code challenge...");
         codeVerifier.put(initiatorSlackId, RandomStringUtils
                 .random(43, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"));
         return Base64.getUrlEncoder()
@@ -97,9 +102,11 @@ public class GAuthService {
     }
 
     public GoogleCredential deserialize(String initiatorSlackId) {
+        log.debug("Starting deserialize credentials...");
         String fileName = String.format(PATTERN, TOKENS_DIRECTORY_PATH,
                 initiatorSlackId, GoogleCredential.class.getSimpleName());
         if (new java.io.File(fileName).exists()) {
+            log.debug("Credentials file exists ...");
             try (FileInputStream fin = new FileInputStream(fileName);
                  ObjectInputStream ois = new ObjectInputStream(fin)) {
                 StoredCredential storedCredential = (StoredCredential) ois.readObject();
@@ -116,12 +123,14 @@ public class GAuthService {
                 return null;
             }
         } else {
+            log.debug("Credentials file not exists ...");
             return null;
         }
     }
 
     @SneakyThrows
     public GoogleClientSecrets.Details getCredFromLocalSource(String initiatorSlackId) {
+        log.debug("Getting credentials from local source");
         GoogleClientSecrets.Details details = objectMapper.readValue(authJsons, TYPE_REF)
                 .get(initiatorSlackId);
         details.setAuthUri("https://accounts.google.com/o/oauth2/auth");
@@ -131,16 +140,22 @@ public class GAuthService {
         return details;
     }
 
-    public static void serialize(GoogleCredential googleCredential, String initiatorSlackId) throws IOException {
-        Files.createDirectories(Paths.get(TOKENS_DIRECTORY_PATH));
-        try (FileOutputStream fos = new FileOutputStream(String.format(PATTERN, TOKENS_DIRECTORY_PATH,
-                initiatorSlackId, GoogleCredential.class.getSimpleName()));
-             ObjectOutputStream oos = new ObjectOutputStream(fos)) {
-            oos.writeObject(new StoredCredential(googleCredential));
+    @SbExceptionHandler
+    public static void serialize(GoogleCredential googleCredential, String initiatorSlackId) {
+        log.debug("Starting serialization...");
+        try {
+            Files.createDirectories(Paths.get(TOKENS_DIRECTORY_PATH));
+            try (FileOutputStream fos = new FileOutputStream(String.format(PATTERN, TOKENS_DIRECTORY_PATH,
+                    initiatorSlackId, GoogleCredential.class.getSimpleName()));
+                 ObjectOutputStream oos = new ObjectOutputStream(fos)) {
+                oos.writeObject(new StoredCredential(googleCredential));
+            }
+        } catch (IOException ex) {
+            throw new SbExtractsException("Error during serilization", ex, initiatorSlackId);
         }
     }
 
-    @SneakyThrows
+
     void reAuth(String initiatorSlackId) {
         log.info("reauth for google");
         GoogleCredential googleCredential = deserialize(initiatorSlackId);
@@ -159,21 +174,30 @@ public class GAuthService {
                         "client_secret", details.getClientSecret(),
                         "grant_type", "refresh_token")
         );
-        GoogleTokenResponse googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
+        GoogleTokenResponse googleTokenResponse;
+        try {
+            googleTokenResponse = objectMapper.readValue(tokenResponse, GoogleTokenResponse.class);
+        } catch (JsonProcessingException e) {
+            throw new SbExtractsException("Values could not be parsed", e, initiatorSlackId);
+        }
         googleCredential.setAccessToken(googleTokenResponse.getAccessToken());
         serialize(googleCredential, initiatorSlackId);
     }
 
-    @SneakyThrows
+
     static void removeToken(String initiatorSlackId) {
         String fileName = String.format(PATTERN, TOKENS_DIRECTORY_PATH,
                 initiatorSlackId, GoogleCredential.class.getSimpleName());
         log.info("removing invalid credentials");
-        Files.delete(Path.of(fileName));
+        try {
+            Files.delete(Path.of(fileName));
+        } catch (IOException e) {
+            throw new SbExtractsException("Token could not be deleted", e, initiatorSlackId);
+        }
     }
 
-    @SneakyThrows
     public Credential getCredentials(String initiatorSlackId, boolean withMail) {
+        log.debug("Getting credentials from google...");
         GoogleCredential googleCredential = deserialize(initiatorSlackId);
         if (googleCredential != null) {
             return googleCredential;
@@ -200,7 +224,7 @@ public class GAuthService {
                 String.format("<%s|Please approve access to Google Drive>", redirectUrl));
 
         waitToken();
-
+        log.debug("Credentials from google. received..");
         googleCredential = new GoogleCredential.Builder()
                 .setTransport(getNetHttpTransport())
                 .setJsonFactory(JSON_FACTORY)

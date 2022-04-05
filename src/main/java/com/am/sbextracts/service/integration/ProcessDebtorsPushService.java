@@ -12,7 +12,6 @@ import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.htmlcleaner.TagNode;
 import org.springframework.stereotype.Service;
@@ -38,7 +37,6 @@ public class ProcessDebtorsPushService implements Process {
     private final ReportService reportService;
     private final ResponderService slackResponderService;
 
-    @SneakyThrows
     @Override
     @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
@@ -80,7 +78,12 @@ public class ProcessDebtorsPushService implements Process {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(),
                 "Count of user for notification" + notSignedFilesInn.size());
         for (String inn : notSignedFilesInn) {
-            TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+            try {
+                TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+            } catch (InterruptedException e) {
+                log.error("sleep was interrupted", e);
+                Thread.currentThread().interrupt();
+            }
             String userEmail = employeesEmails.get(inn);
             try {
                 String conversationIdWithUser = slackResponderService.getConversationIdByEmail(userEmail,

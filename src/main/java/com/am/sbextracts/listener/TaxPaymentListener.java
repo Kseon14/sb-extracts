@@ -1,5 +1,7 @@
 package com.am.sbextracts.listener;
 
+import com.am.sbextracts.exception.SbExceptionHandler;
+import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.SlackResponderService;
 import com.am.sbextracts.service.integration.GmailService;
@@ -10,11 +12,13 @@ import com.slack.api.model.block.DividerBlock;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
+import javax.mail.MessagingException;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -24,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
@@ -35,12 +40,18 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
     private final GmailService gmailService;
 
     @Override
-    @SneakyThrows
+    @SbExceptionHandler
     public void onApplicationEvent(TaxPayment taxPayment) {
-        TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+        try {
+            TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
+        } catch (InterruptedException e) {
+            log.error("sleep was interrupted", e);
+            Thread.currentThread().interrupt();
+        }
 
+        String authorSlackId = taxPayment.getAuthorSlackId();
         String conversationIdWithUser = slackResponderService.getConversationIdByEmail(taxPayment.getUserEmail(),
-                taxPayment.getAuthorSlackId());
+                authorSlackId);
 
         List<Field> fieldList = new ArrayList<>();
         SlackResponderService.addIfNotNull(fieldList, "Сума", taxPayment.getAmount());
@@ -62,37 +73,41 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
                                                         taxPayment.getFullName(),
                                                         taxPayment.getTaxType(),
                                                         new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate()),
-                                                        taxPayment.getAuthorSlackId())).build()).build(),
+                                                        authorSlackId)).build()).build(),
                                 DividerBlock.builder().build()))
                         .attachments(List.of(
                                 com.slack.api.model.Attachment.builder()
                                         .fields(fieldList).color("#36a64f").build()))
-                        .build(), taxPayment.getUserEmail(), taxPayment.getAuthorSlackId());
+                        .build(), taxPayment.getUserEmail(), authorSlackId);
 
         if (taxPayment.isWithEmail()) {
             Set<String> emails = new HashSet<>(taxPayment.getAdditionalUserEmail());
             emails.add(taxPayment.getUserEmail());
-            gmailService.sendMessage(emails,
-                    String.format("Дані для оплати %s, сплата до %s", taxPayment.getTaxType(),
-                            new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate())),
-                    getMailBody(String.format("Привіт, %s!<br>"
-                                            + "Дані для оплати <b>%s</b> нижче <br>"
-                                            + "Термін сплати до <b>%s</b> <br>"
-                                            + "У випадку виникнення питань, зверніться до <a href = \"mailto: %s\">мене</a><br> ",
-                                    taxPayment.getFullName(),
-                                    taxPayment.getTaxType(),
-                                    new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate()),
-                                    from),
-                            taxPayment.getAmount(),
-                            taxPayment.getReceiver(),
-                            taxPayment.getAccount(),
-                            taxPayment.getCode(),
-                            taxPayment.getPurposeOfPayment()
-                    ),
-                    taxPayment.getAuthorSlackId());
+            try {
+                gmailService.sendMessage(emails,
+                        String.format("Дані для оплати %s, сплата до %s", taxPayment.getTaxType(),
+                                new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate())),
+                        getMailBody(String.format("Привіт, %s!<br>"
+                                                + "Дані для оплати <b>%s</b> нижче <br>"
+                                                + "Термін сплати до <b>%s</b> <br>"
+                                                + "У випадку виникнення питань, зверніться до <a href = \"mailto: %s\">мене</a><br> ",
+                                        taxPayment.getFullName(),
+                                        taxPayment.getTaxType(),
+                                        new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate()),
+                                        from),
+                                taxPayment.getAmount(),
+                                taxPayment.getReceiver(),
+                                taxPayment.getAccount(),
+                                taxPayment.getCode(),
+                                taxPayment.getPurposeOfPayment()
+                        ),
+                        authorSlackId);
+            } catch (IOException | MessagingException e) {
+                throw new SbExtractsException("Email could not be sent", e, authorSlackId);
+            }
         }
 
-        slackResponderService.sendMessageToInitiator(taxPayment.getAuthorSlackId(), taxPayment.getFullName(),
+        slackResponderService.sendMessageToInitiator(authorSlackId, taxPayment.getFullName(),
                 taxPayment.getUserEmail());
 
     }

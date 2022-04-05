@@ -10,7 +10,6 @@ import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.fileupload.FileItem;
@@ -28,6 +27,7 @@ import org.springframework.web.multipart.commons.CommonsMultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -62,7 +62,6 @@ public class ProcessingInvoiceService implements Process {
     private final ResponderService slackResponderService;
 
     @SbExceptionHandler
-    @SneakyThrows
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
         String initiatorUserId = slackEventResponse.getInitiatorUserId();
@@ -107,7 +106,7 @@ public class ProcessingInvoiceService implements Process {
 
                 try {
                     bambooHrApiClient.uploadFile(headerService.getHeaderForBchApi(initiatorUserId), getEmployeeId(fileInfo, employees),
-                            Map.of("file", prepareFile(pdf, fileInfo.getFileName()), "fileName", fileInfo.getFileName(),
+                            Map.of("file", prepareFile(pdf, fileInfo.getFileName(), initiatorUserId), "fileName", fileInfo.getFileName(),
                                     "share", "yes", "category", 16));
                 } catch (FeignException.Forbidden ex) {
                     log.error("Do not have permission for upload:{}", fileInfo.getFileName(), ex);
@@ -156,12 +155,13 @@ public class ProcessingInvoiceService implements Process {
         return attr;
     }
 
-    @SneakyThrows
-    private static MultipartFile prepareFile(byte[] pdf, String fileName) {
+    private static MultipartFile prepareFile(byte[] pdf, String fileName, String initiatorSlackId) {
         FileItem fileItem = new DiskFileItemFactory().createItem("file", MediaType.APPLICATION_PDF_VALUE, true,
                 fileName);
         try (InputStream input = new ByteArrayInputStream(pdf); OutputStream os = fileItem.getOutputStream()) {
             IOUtils.copy(input, os);
+        } catch (IOException e) {
+            throw new SbExtractsException("File could not be prepared", e, initiatorSlackId);
         }
         return new CommonsMultipartFile(fileItem);
     }

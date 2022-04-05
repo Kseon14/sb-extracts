@@ -35,6 +35,7 @@ public class HeaderService {
 
     @SbExceptionHandler
     public Map<String, String> getBchHeaders(String sessionId, String initiatorSlackId) {
+        log.debug("Getting bch headers...");
         String phpSessionId = String.format("%s=%s", "PHPSESSID", sessionId);
         BambooHrAuthClient.SessionInfo sessionInfo;
         try {
@@ -55,6 +56,7 @@ public class HeaderService {
 
     @SbExceptionHandler
     public Map<String, String> getNsHeaders(String sessionId, String initiatorSlackId) {
+        log.debug("Getting NS headers...");
         String jsessionid = String.format("%s=%s", "JSESSIONID", sessionId);
         Map<String, String> cookie = Map.of(COOKIE, jsessionid);
         Map<String, String> cookieForSessionRequest = new HashMap<>(cookie);
