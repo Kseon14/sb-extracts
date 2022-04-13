@@ -76,7 +76,7 @@ public class GAuthService {
         synchronized (lock) {
             this.token = token;
             lock.setLocked(false);
-            lock.notify();
+            lock.notifyAll();
         }
     }
 
@@ -197,43 +197,53 @@ public class GAuthService {
     }
 
     public Credential getCredentials(String initiatorSlackId, boolean withMail) {
-        log.debug("Getting credentials from google...");
-        GoogleCredential googleCredential = deserialize(initiatorSlackId);
-        if (googleCredential != null) {
+        synchronized (lock) {
+            while (lock.isLocked()) {
+                try {
+                    lock.wait();
+                } catch (InterruptedException e) {
+                    log.error("waiting was interrupted", e);
+                    Thread.currentThread().interrupt();
+                }
+            }
+            log.debug("Getting credentials from google...");
+            GoogleCredential googleCredential = deserialize(initiatorSlackId);
+            if (googleCredential != null) {
+                return googleCredential;
+            }
+
+            GoogleClientSecrets.Details details =
+                    getCredFromLocalSource(initiatorSlackId);
+            String redirectUrl = String.format("https://accounts.google.com/o/oauth2/v2/auth?" +
+                            "access_type=offline" +
+                            "&client_id=%s" +
+                            "&redirect_uri=%s" +
+                            "&response_type=code" +
+                            "&code_challenge=%s" +
+                            "&code_challenge_method=S256" +
+                            "&scope=%s%s" +
+                            "&prompt=consent",
+                    details.getClientId(),
+                    getRedirectURI(initiatorSlackId),
+                    getCodeChallenge(initiatorSlackId),
+                    DriveScopes.DRIVE,
+                    withMail ? " " + GmailScopes.GMAIL_SEND : "");
+
+            slackResponderService.log(initiatorSlackId,
+                    String.format("<%s|Please approve access to Google Drive>", redirectUrl));
+
+            waitToken();
+            log.debug("Credentials from google. received..");
+            googleCredential = new GoogleCredential.Builder()
+                    .setTransport(getNetHttpTransport())
+                    .setJsonFactory(JSON_FACTORY)
+                    .setClientSecrets(new GoogleClientSecrets().setInstalled(details))
+                    .build()
+                    .setFromTokenResponse(token);
+
+            serialize(googleCredential, initiatorSlackId);
             return googleCredential;
         }
-
-        GoogleClientSecrets.Details details =
-                getCredFromLocalSource(initiatorSlackId);
-        String redirectUrl = String.format("https://accounts.google.com/o/oauth2/v2/auth?" +
-                        "access_type=offline" +
-                        "&client_id=%s" +
-                        "&redirect_uri=%s" +
-                        "&response_type=code" +
-                        "&code_challenge=%s" +
-                        "&code_challenge_method=S256" +
-                        "&scope=%s%s" +
-                        "&prompt=consent",
-                details.getClientId(),
-                getRedirectURI(initiatorSlackId),
-                getCodeChallenge(initiatorSlackId),
-                DriveScopes.DRIVE,
-                withMail ? " " + GmailScopes.GMAIL_SEND : "");
-
-        slackResponderService.log(initiatorSlackId,
-                String.format("<%s|Please approve access to Google Drive>", redirectUrl));
-
-        waitToken();
-        log.debug("Credentials from google. received..");
-        googleCredential = new GoogleCredential.Builder()
-                .setTransport(getNetHttpTransport())
-                .setJsonFactory(JSON_FACTORY)
-                .setClientSecrets(new GoogleClientSecrets().setInstalled(details))
-                .build()
-                .setFromTokenResponse(token);
-
-        serialize(googleCredential, initiatorSlackId);
-        return googleCredential;
     }
 
     @SneakyThrows
@@ -242,6 +252,6 @@ public class GAuthService {
     }
 
     public String getRedirectURI(String slackId) {
-        return url + "/api/gauth/" + slackId;
+        return String.format("%s/api/gauth/%s", url, slackId);
     }
 }

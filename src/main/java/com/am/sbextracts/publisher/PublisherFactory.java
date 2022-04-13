@@ -29,7 +29,8 @@ public class PublisherFactory {
                 Type.TAX_PAYMENT, taxPaymentPublisher,
                 Type.TAX_PAYMENT_WITH_EMAL, taxPaymentPublisher,
                 Type.PAYSLIP, payslipPublisher,
-                Type.BROADCAST_MESSAGE, bMessagePublisher
+                Type.BROADCAST_MESSAGE, bMessagePublisher,
+                Type.BROADCAST_MESSAGE_WITH_EMAIL, bMessagePublisher
         );
     }
 
@@ -43,7 +44,8 @@ public class PublisherFactory {
         TAX_PAYMENT_WITH_EMAL("tpwe"),
         INVOICE("in"),
         PAYSLIP("ps"),
-        BROADCAST_MESSAGE("bm");
+        BROADCAST_MESSAGE("bm"),
+        BROADCAST_MESSAGE_WITH_EMAIL("bmwe");
 
         public static Type getByFileName(String fileName) {
             String suffix = fileName.split("-")[0];
