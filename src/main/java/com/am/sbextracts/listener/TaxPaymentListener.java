@@ -80,36 +80,39 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
                                         .fields(fieldList).color("#36a64f").build()))
                         .build(), taxPayment.getUserEmail(), authorSlackId);
 
-        if (taxPayment.isWithEmail()) {
-            Set<String> emails = new HashSet<>(taxPayment.getAdditionalUserEmail());
-            emails.add(taxPayment.getUserEmail());
-            try {
-                gmailService.sendMessage(emails,
-                        String.format("Дані для оплати %s, сплата до %s", taxPayment.getTaxType(),
-                                new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate())),
-                        getMailBody(String.format("Привіт, %s!<br>"
-                                                + "Дані для оплати <b>%s</b> нижче <br>"
-                                                + "Термін сплати до <b>%s</b> <br>"
-                                                + "У випадку виникнення питань, зверніться до <a href = \"mailto: %s\">мене</a><br> ",
-                                        taxPayment.getFullName(),
-                                        taxPayment.getTaxType(),
-                                        new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate()),
-                                        from),
-                                taxPayment.getAmount(),
-                                taxPayment.getReceiver(),
-                                taxPayment.getAccount(),
-                                taxPayment.getCode(),
-                                taxPayment.getPurposeOfPayment()
-                        ),
-                        authorSlackId);
-            } catch (IOException | MessagingException e) {
-                throw new SbExtractsException("Email could not be sent", e, authorSlackId);
-            }
-        }
-
+        sendMail(taxPayment, authorSlackId);
         slackResponderService.sendMessageToInitiator(authorSlackId, taxPayment.getFullName(),
                 taxPayment.getUserEmail());
+    }
 
+    private void sendMail(TaxPayment taxPayment, String authorSlackId) {
+        if (!taxPayment.isWithEmail()) {
+            return;
+        }
+        Set<String> emails = new HashSet<>(taxPayment.getAdditionalUserEmail());
+        emails.add(taxPayment.getUserEmail());
+        try {
+            gmailService.sendMessage(emails,
+                    String.format("Дані для оплати %s, сплата до %s", taxPayment.getTaxType(),
+                            new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate())),
+                    getMailBody(String.format("Привіт, %s!<br>"
+                                            + "Дані для оплати <b>%s</b> нижче <br>"
+                                            + "Термін сплати до <b>%s</b> <br>"
+                                            + "У випадку виникнення питань, зверніться до <a href = \"mailto: %s\">мене</a><br> ",
+                                    taxPayment.getFullName(),
+                                    taxPayment.getTaxType(),
+                                    new SimpleDateFormat("dd MMM").format(taxPayment.getDueDate()),
+                                    from),
+                            taxPayment.getAmount(),
+                            taxPayment.getReceiver(),
+                            taxPayment.getAccount(),
+                            taxPayment.getCode(),
+                            taxPayment.getPurposeOfPayment()
+                    ),
+                    authorSlackId);
+        } catch (IOException | MessagingException e) {
+            throw new SbExtractsException("Email could not be sent", e, authorSlackId);
+        }
     }
 
     private static String getMailBody(String messageHeader,

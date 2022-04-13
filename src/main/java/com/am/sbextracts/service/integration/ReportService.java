@@ -25,7 +25,7 @@ public class ReportService {
     private final HeaderService headerService;
 
     public Map<String, String> getEmployees(String initiatorSlackId) {
-        log.debug("Getting employs...");
+        log.debug("Getting employees...");
         Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(initiatorSlackId), reportId);
         if (CollectionUtils.isEmpty(report.getEmployees()) || report.getEmployees().size() == 1) {
             throw new IllegalArgumentException("employee list is empty or not valid");

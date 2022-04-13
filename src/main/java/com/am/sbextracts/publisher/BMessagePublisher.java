@@ -17,6 +17,10 @@ import org.springframework.stereotype.Component;
 import java.util.Date;
 import java.util.Objects;
 
+import static com.am.sbextracts.listener.ListenerUtils.getEmails;
+import static com.am.sbextracts.publisher.PublisherFactory.Type.BROADCAST_MESSAGE_WITH_EMAIL;
+import static com.am.sbextracts.publisher.PublisherFactory.Type.getByFileName;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -32,6 +36,7 @@ public class BMessagePublisher implements Publisher {
         Date date = null;
         String text = null;
         try {
+            PublisherFactory.Type type = getByFileName(fileMetaInfo.getName());
             for (Row row : sheet) {
                 if (row.getRowNum() == 0) {
                     continue;
@@ -51,7 +56,10 @@ public class BMessagePublisher implements Publisher {
                     message.setUserEmail(XlsxUtil.getCell(row, "B", evaluator));
                     message.setDueDate(date);
                     message.setText(text);
-
+                    message.setWithEmail(BROADCAST_MESSAGE_WITH_EMAIL.equals(type));
+                    if (message.isWithEmail()) {
+                        message.setAdditionalUserEmail(getEmails("E", evaluator, row));
+                    }
                     message.setAuthorSlackId(fileMetaInfo.getAuthor());
                     log.info("Broadcast message: {}", message);
                     applicationEventPublisher.publishEvent(message);
