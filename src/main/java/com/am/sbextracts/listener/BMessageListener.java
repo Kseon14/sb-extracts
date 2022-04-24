@@ -1,17 +1,24 @@
 package com.am.sbextracts.listener;
 
+import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.service.ResponderService;
+import com.am.sbextracts.service.integration.GmailService;
 import com.am.sbextracts.vo.BMessage;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
+import javax.mail.MessagingException;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
@@ -22,6 +29,9 @@ import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 public class BMessageListener implements ApplicationListener<BMessage> {
 
     private final ResponderService slackResponderService;
+    private final GmailService gmailService;
+    @Value("${app.fromMail}")
+    String from;
 
     @Override
     public void onApplicationEvent(BMessage message) {
@@ -31,8 +41,9 @@ public class BMessageListener implements ApplicationListener<BMessage> {
             log.error("sleep was interrupted", e);
             Thread.currentThread().interrupt();
         }
+        String authorSlackId = message.getAuthorSlackId();
         String conversationIdWithUser = slackResponderService.getConversationIdByEmail(message.getUserEmail(),
-                message.getAuthorSlackId());
+                authorSlackId);
 
         slackResponderService.sendMessage(
                 ChatPostMessageRequest.builder()
@@ -46,11 +57,34 @@ public class BMessageListener implements ApplicationListener<BMessage> {
                                                         + ":date: Будь ласка, зроби це раніше *%s*",
                                                 message.getFullName(),
                                                 message.getText(),
-                                                message.getAuthorSlackId(),
+                                                authorSlackId,
                                                 new SimpleDateFormat("dd MMM").format(message.getDueDate()))).build()).build())
-                        ).build(), message.getUserEmail(), message.getAuthorSlackId());
+                        ).build(), message.getUserEmail(), authorSlackId);
 
-        slackResponderService.sendMessageToInitiator(message.getAuthorSlackId(), message.getFullName(), message.getUserEmail());
+        sendMail(message, authorSlackId);
+        slackResponderService.sendMessageToInitiator(authorSlackId, message.getFullName(), message.getUserEmail());
+    }
 
+    private void sendMail(BMessage message, String authorSlackId) {
+        if (!message.isWithEmail()) {
+            return;
+        }
+        Set<String> emails = new HashSet<>(message.getAdditionalUserEmail());
+        emails.add(message.getUserEmail());
+        try {
+            gmailService.sendMessage(emails,
+                    "Потрiбна инфа з твого боку...",
+                    String.format("Привіт, %s!<br>"
+                                    + "%s <br>"
+                                    + "Це все потрібно надіслати  <a href = \"mailto: %s\">мені</a><br>"
+                                    + "Будь ласка, зроби це раніше <b>%s</b>",
+                            message.getFullName(),
+                            message.getText(),
+                            from,
+                            new SimpleDateFormat("dd MMM").format(message.getDueDate())),
+                    authorSlackId);
+        } catch (IOException | MessagingException e) {
+            throw new SbExtractsException("Email could not be sent", e, authorSlackId);
+        }
     }
 }

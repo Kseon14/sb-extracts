@@ -6,6 +6,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.springframework.context.ApplicationEvent;
 
 import java.util.Date;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -16,6 +17,8 @@ public class BMessage extends ApplicationEvent {
     private String text;
     private String userEmail;
     private String authorSlackId;
+    private boolean withEmail;
+    private Set<String> additionalUserEmail;
 
 
     public BMessage(Object source) {
@@ -30,6 +33,7 @@ public class BMessage extends ApplicationEvent {
                 .append("text", text)
                 .append("userEmail", userEmail)
                 .append("authorSlackId", authorSlackId)
+                .append("withEmail", withEmail)
                 .toString();
     }
 }
