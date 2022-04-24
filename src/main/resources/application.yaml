@@ -34,7 +34,7 @@ google:
   authJsons: ${G_AUTH_JSON}
 app:
   reportGFolderId: ${G_REPORT_FOLDER_ID}
-  perRequestProcessingFilesCount: 400
+  perRequestProcessingFilesCount: 700
   url: ${APP_URL}
   fromMail: ${FROM_MAIL}
   company:
