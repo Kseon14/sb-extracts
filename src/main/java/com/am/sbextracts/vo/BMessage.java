@@ -2,7 +2,7 @@ package com.am.sbextracts.vo;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import lombok.ToString;
 import org.springframework.context.ApplicationEvent;
 
 import java.util.Date;
@@ -10,6 +10,7 @@ import java.util.Set;
 
 @Getter
 @Setter
+@ToString
 public class BMessage extends ApplicationEvent {
 
     private String fullName;
@@ -20,20 +21,8 @@ public class BMessage extends ApplicationEvent {
     private boolean withEmail;
     private Set<String> additionalUserEmail;
 
-
     public BMessage(Object source) {
         super(source);
     }
 
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this)
-                .append("name", fullName)
-                .append("date", dueDate)
-                .append("text", text)
-                .append("userEmail", userEmail)
-                .append("authorSlackId", authorSlackId)
-                .append("withEmail", withEmail)
-                .toString();
-    }
 }

@@ -3,9 +3,13 @@ package com.am.sbextracts.vo;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@NoArgsConstructor
+@ToString
 public class SlackResponse {
 
     public SlackResponse(String text) {
@@ -13,10 +17,6 @@ public class SlackResponse {
         this.text = text;
     }
 
-    public SlackResponse() {
-    }
-
-    //@JsonProperty("text")
     @Getter
     @Setter
     private String text;

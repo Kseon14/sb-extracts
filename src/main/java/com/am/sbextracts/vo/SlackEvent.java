@@ -1,84 +1,31 @@
 package com.am.sbextracts.vo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import lombok.ToString;
 
-import java.util.List;
-
+@Getter
+@Setter
+@ToString
 public class SlackEvent {
-    @Getter @Setter private Type type;
-    @Getter @Setter private Event event;
-    @Getter @Setter private String challenge;
-    @Getter @Setter private String token;
+    private Type type;
+    private Event event;
+    private String challenge;
+    @ToString.Exclude
+    private String token;
 
     public enum Type {
         URL_VERIFICATION("url_verification"),
         EVENT_CALLBACK("event_callback");
 
-        @Getter @JsonValue private final String value;
+        @Getter
+        @JsonValue
+        private final String value;
 
         Type(String value) {
             this.value = value;
         }
     }
 
-    public static class Event {
-        @Getter @Setter private Type type;
-        @Getter @Setter private Type subtype;
-        @Getter @Setter @JsonProperty("channel") private String channelId;
-        @Getter @Setter private String user;
-        @Getter @Setter @JsonProperty("files") private List<FileMetaInfo> fileMetaInfos;
-
-        public enum Type {
-            FILE_SHARE("file_share"),
-            FILE_SHARED("file_shared"),
-            MESSAGE_CHANGED("message_changed"),
-            MESSAGE("message");
-
-            @Getter @JsonValue private final String value;
-
-            Type(String value) {
-                this.value = value;
-            }
-        }
-
-        @Override public String toString() {
-            return new ToStringBuilder(this)
-                    .append("type", type)
-                    .append("subtype", subtype)
-                    .append("channelId", channelId)
-                    .append("user", user)
-                    .append("fileInfos", fileMetaInfos)
-                    .toString();
-        }
-    }
-
-    public static class FileMetaInfo {
-        @Getter @Setter private String id;
-        @Getter @Setter private long timestamp;
-        @Getter @Setter private @JsonProperty("user") String author;
-        @Getter @Setter @JsonProperty("filetype") private String fileType;
-        @Getter @Setter @JsonProperty("url_private") private String urlPrivate;
-        @Getter @Setter private String name;
-
-        @Override public String toString() {
-            return new ToStringBuilder(this)
-                    .append("id", id)
-                    .append("timestamp", timestamp)
-                    .append("author", author)
-                    .append("fileType", fileType)
-                    .toString();
-        }
-    }
-
-    @Override public String toString() {
-        return new ToStringBuilder(this)
-                .append("type", type)
-                .append("event", event)
-                .append("challenge", challenge)
-                .toString();
-    }
 }

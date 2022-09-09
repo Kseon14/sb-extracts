@@ -110,10 +110,13 @@ public class ProcessSignedService implements Process {
                 com.google.api.services.drive.model.File pdfFile = new com.google.api.services.drive.model.File();
                 pdfFile.setName(fileName);
                 pdfFile.setParents(Collections.singletonList(slackEventResponse.getGFolderId()));
-                gDriveService.uploadFile(pdfFile, pdf, MediaType.APPLICATION_PDF_VALUE, slackEventResponse.getInitiatorUserId());
-                log.info("Document uploaded [{}/{}]: {}", i + 1, Math.min(perRequestProcessingFilesCount, ids.size()), fileName);
+                gDriveService.uploadFile(pdfFile, pdf, MediaType.APPLICATION_PDF_VALUE,
+                        slackEventResponse.getInitiatorUserId());
+                log.info("Document uploaded [{}/{}]: {}", i + 1, Math.min(perRequestProcessingFilesCount, ids.size()),
+                        fileName);
                 slackResponderService.log(slackEventResponse.getInitiatorUserId(),
-                        String.format("Document uploaded [%s/%s]: %s", i + 1, Math.min(perRequestProcessingFilesCount, ids.size()), fileName));
+                        String.format("Document uploaded [%s/%s]: %s", i + 1, Math.min(perRequestProcessingFilesCount,
+                                ids.size()), fileName));
 
                 FileUtils.writeStringToFile(file, id + "\r\n", StandardCharsets.UTF_8.toString(), true);
             }
@@ -127,7 +130,8 @@ public class ProcessSignedService implements Process {
 
     private static String getId(TagNode tagNode) {
         Optional<String> href = Arrays
-                .stream(tagNode.getElementsByAttValue("class", "ReportsTable__reportNameText", true, false)).findFirst()
+                .stream(tagNode.getElementsByAttValue("class", "ReportsTable__reportNameText",
+                        true, false)).findFirst()
                 .map(at -> at.getAttributeByName("href"));
 
         String[] splitResult = href.map(t -> t.split("="))

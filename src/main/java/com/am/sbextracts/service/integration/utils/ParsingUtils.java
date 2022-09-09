@@ -1,7 +1,6 @@
 package com.am.sbextracts.service.integration.utils;
 
 import feign.Response;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -9,6 +8,7 @@ import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,9 +56,13 @@ public final class ParsingUtils {
         return getItem(tag, 0);
     }
 
-    @SneakyThrows
+
     public static TagNode getTagNode(Response.Body body) {
-        return new HtmlCleaner().clean(body.asInputStream());
+        try {
+            return new HtmlCleaner().clean(body.asInputStream());
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
 

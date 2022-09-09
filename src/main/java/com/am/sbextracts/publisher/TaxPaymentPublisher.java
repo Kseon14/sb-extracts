@@ -2,7 +2,7 @@ package com.am.sbextracts.publisher;
 
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
-import com.am.sbextracts.vo.SlackEvent;
+import com.am.sbextracts.vo.FileMetaInfo;
 import com.am.sbextracts.vo.TaxPayment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,11 +13,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-
+import static com.am.sbextracts.listener.ListenerUtils.getEmails;
 import static com.am.sbextracts.publisher.PublisherFactory.Type.TAX_PAYMENT_WITH_EMAL;
 import static com.am.sbextracts.publisher.PublisherFactory.Type.getByFileName;
 
@@ -29,7 +25,7 @@ public class TaxPaymentPublisher implements Publisher {
 
     @Override
     @SbExceptionHandler
-    public void produce(XSSFWorkbook workbook, SlackEvent.FileMetaInfo fileMetaInfo) {
+    public void produce(XSSFWorkbook workbook, FileMetaInfo fileMetaInfo) {
         XSSFSheet sheet = workbook.getSheetAt(0);
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
 
@@ -67,14 +63,5 @@ public class TaxPaymentPublisher implements Publisher {
         } catch (UnsupportedOperationException e) {
             throw new SbExtractsException("Error during processing", e, fileMetaInfo.getAuthor());
         }
-
-    }
-
-    private static Set<String> getEmails(String columnName, FormulaEvaluator evaluator, Row row) {
-        return Optional.ofNullable(XlsxUtil.getCell(row, columnName, evaluator))
-                .map(columnContent -> columnContent.split(";"))
-                .map(Arrays::asList)
-                .map(HashSet::new)
-                .orElse(new HashSet<>());
     }
 }

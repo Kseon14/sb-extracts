@@ -119,7 +119,8 @@ public class ProcessDebtorsService implements Process {
                         .ts(initialMessage.getTs())
                         .channel(initialMessage.getChannel())
                         .blocks(List.of(SectionBlock.builder()
-                                .text(MarkdownTextObject.builder().text("*Not Signed (" + notSignedFiles.size() + ")*\n").build()).build())),
+                                .text(MarkdownTextObject.builder()
+                                        .text("*Not Signed (" + notSignedFiles.size() + ")*\n").build()).build())),
                 slackEventResponse.getInitiatorUserId());
 
         if (!notSignedFiles.isEmpty()) {
@@ -127,8 +128,9 @@ public class ProcessDebtorsService implements Process {
             do {
                 int newPosition = currentPosition + 40;
                 slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
-                        getPostMessage("Not Signed", String.join("\n", new ArrayList<>(notSignedFiles).subList(currentPosition,
-                                Math.min(notSignedFiles.size(), newPosition)))));
+                        getPostMessage("Not Signed", String.join("\n",
+                                new ArrayList<>(notSignedFiles).subList(currentPosition,
+                                        Math.min(notSignedFiles.size(), newPosition)))));
                 currentPosition = newPosition;
                 try {
                     TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
