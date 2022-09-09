@@ -31,7 +31,6 @@ import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNod
 public class ProcessDebtorsPushService implements Process {
 
     private static final int DEFAULT_DELAY = 2;
-
     private final BambooHrSignedFileClient bambooHrSignedFile;
     private final HeaderService headerService;
     private final ReportService reportService;
@@ -41,11 +40,11 @@ public class ProcessDebtorsPushService implements Process {
     @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
 
-        com.slack.api.methods.response.chat.ChatPostMessageResponse initialMessage = slackResponderService.sendMessageToInitiator(
-                slackEventResponse.getInitiatorUserId(),
-                getPostMessage("Starting....", List.of(SectionBlock.builder()
-                        .text(MarkdownTextObject.builder()
-                                .text("Starting...").build()).build())));
+        com.slack.api.methods.response.chat.ChatPostMessageResponse initialMessage =
+                slackResponderService.sendMessageToInitiator(slackEventResponse.getInitiatorUserId(),
+                        getPostMessage("Starting....", List.of(SectionBlock.builder()
+                                .text(MarkdownTextObject.builder()
+                                        .text("Starting...").build()).build())));
         feign.Response response;
         try {
             response = bambooHrSignedFile
@@ -98,10 +97,12 @@ public class ProcessDebtorsPushService implements Process {
                                                         " you can contact Marina Stankevich via slack or email").build()).build()))
                                 .channel(conversationIdWithUser)
                                 .build(), userEmail, slackEventResponse.getInitiatorUserId());
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("User: %s received a notification", userEmail));
+                slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                        String.format("User: %s received a notification", userEmail));
             } catch (Exception ex) {
                 log.error("Error during debtor push for {} and inn {}", userEmail, inn, ex);
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(), String.format("Error for inn %s: %s ", inn, ex.getMessage()));
+                slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                        String.format("Error for inn %s: %s ", inn, ex.getMessage()));
             }
         }
 
@@ -109,7 +110,8 @@ public class ProcessDebtorsPushService implements Process {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Done");
     }
 
-    private ChatPostMessageRequest.ChatPostMessageRequestBuilder getPostMessage(String headerText, List<LayoutBlock> layoutBlocks) {
+    private ChatPostMessageRequest.ChatPostMessageRequestBuilder getPostMessage(String headerText,
+                                                                                List<LayoutBlock> layoutBlocks) {
         return ChatPostMessageRequest.builder()
                 .text(headerText)
                 .blocks(layoutBlocks);

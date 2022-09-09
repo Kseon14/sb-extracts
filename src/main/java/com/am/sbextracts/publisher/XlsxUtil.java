@@ -1,6 +1,5 @@
 package com.am.sbextracts.publisher;
 
-import lombok.SneakyThrows;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.format.CellGeneralFormatter;
@@ -14,6 +13,7 @@ import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
 import java.util.DuplicateFormatFlagsException;
@@ -97,7 +97,7 @@ public final class XlsxUtil {
         }
     }
 
-    @SneakyThrows
+
     public static void validateFile(PublisherFactory.Type type, XSSFWorkbook workbook) {
         try (InputStream inputStream = XlsxUtil.class.getClassLoader().getResourceAsStream("column-config/"
                 + getFileName(type) + ".yaml")) {
@@ -131,6 +131,8 @@ public final class XlsxUtil {
                     }
                 }
             }
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
         }
     }
 

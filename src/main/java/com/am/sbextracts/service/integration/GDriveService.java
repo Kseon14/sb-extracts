@@ -10,7 +10,6 @@ import com.google.api.client.http.FileContent;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
@@ -39,8 +38,6 @@ public class GDriveService {
     private final GAuthService gAuthService;
 
     private final ResponderService slackResponderService;
-
-    @SneakyThrows
     public void uploadFile(File fileMetadata, byte[] fileBody, String type, String initiatorSlackId) {
         ByteArrayContent mediaContent = new ByteArrayContent(type, fileBody);
         File file;
@@ -52,7 +49,9 @@ public class GDriveService {
                 gAuthService.reAuth(initiatorSlackId);
                 uploadFile(fileMetadata, fileBody, type, initiatorSlackId);
             }
-            throw new Exception(ex);
+            throw new IllegalStateException(ex);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
         }
     }
 
@@ -96,19 +95,22 @@ public class GDriveService {
         }
     }
 
-
-    @SneakyThrows
     public java.io.File getFile(String fileName, String initiatorSlackId) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         Drive service = getService(initiatorSlackId);
-        List<File> result = service
-                .files()
-                .list()
-                .setSpaces("drive")
-                .setPageSize(20)
-                .setQ("name = '" + fileName + "' and trashed = false")
-                .setFields("files(id, name)")
-                .execute().getFiles();
+        List<File> result;
+        try {
+            result = service
+                    .files()
+                    .list()
+                    .setSpaces("drive")
+                    .setPageSize(20)
+                    .setQ("name = '" + fileName + "' and trashed = false")
+                    .setFields("files(id, name)")
+                    .execute().getFiles();
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
 
         if (CollectionUtils.isEmpty(result)) {
             return new java.io.File(fileName);
@@ -123,6 +125,8 @@ public class GDriveService {
             service.files().get(intName)
                     .executeMediaAndDownloadTo(byteArrayOutputStream);
             byteArrayOutputStream.writeTo(outputStream);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
         }
         return file;
     }
@@ -130,7 +134,6 @@ public class GDriveService {
     public void saveFile(java.io.File file, long dateOfModification, String logFileName, InternalSlackEventResponse slackEventResponse) {
         saveFile(file, dateOfModification, logFileName, slackEventResponse.getInitiatorUserId(), slackEventResponse.getGFolderId());
     }
-
 
     @SbExceptionHandler
     public void saveFile(java.io.File file, long dateOfModification, String logFileName, String initiatorUserId, String gFolderId) {
@@ -161,10 +164,14 @@ public class GDriveService {
         }
     }
 
-    @SneakyThrows
     public void updateFile(String fileId, File file, FileContent fileContent, String initiatorSlackId) {
         log.info("{} will be uploaded", fileId);
-        File updated = getService(initiatorSlackId).files().update(fileId, file, fileContent).execute();
+        File updated = null;
+        try {
+            updated = getService(initiatorSlackId).files().update(fileId, file, fileContent).execute();
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
         log.info("{} uploaded", updated.getId());
     }
 

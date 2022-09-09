@@ -1,7 +1,7 @@
 package com.am.sbextracts.service;
 
 import com.am.sbextracts.DeleteOnCloseFileInputStream;
-import com.am.sbextracts.vo.SlackEvent;
+import com.am.sbextracts.vo.FileMetaInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -24,13 +24,13 @@ public class SlackFileDownloader implements FileDownloader {
     private final SlackResponderService slackResponderService;
 
     @Override
-    public void downloadFile(List<SlackEvent.FileMetaInfo> fileMetaInfos) {
+    public void downloadFile(List<FileMetaInfo> fileMetaInfos) {
         if (CollectionUtils.isEmpty(fileMetaInfos)) {
             log.info("fileInfos is empty");
             return;
         }
         executorService.execute(() -> {
-            for (SlackEvent.FileMetaInfo fileMetaInfo : fileMetaInfos) {
+            for (FileMetaInfo fileMetaInfo : fileMetaInfos) {
 
                 if (StringUtils.isEmpty(fileMetaInfo.getId())) {
                     log.info("fileInfo.getUrlPrivate() is empty");

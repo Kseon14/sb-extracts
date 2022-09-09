@@ -1,6 +1,6 @@
 package com.am.sbextracts.service;
 
-import com.am.sbextracts.vo.SlackEvent;
+import com.am.sbextracts.vo.FileMetaInfo;
 import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.methods.request.chat.ChatUpdateRequest;
@@ -21,7 +21,7 @@ public interface ResponderService {
 
     void sendFile(String fileName, String userEmail, String initiatorSlackId);
 
-    File getFile(SlackEvent.FileMetaInfo fileMetaInfo) throws Exception;
+    File getFile(FileMetaInfo fileMetaInfo) throws Exception;
 
     void downloadFile(String fileName, File slackFile);
 

@@ -3,7 +3,6 @@ package com.am.sbextracts.service.integration;
 import com.am.sbextracts.pool.SlackClientPool;
 import com.slack.api.methods.MethodsClient;
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
@@ -15,17 +14,20 @@ public class SlackClientWrapper implements Closeable {
     private final SlackClientPool slackClientPool;
     private final MethodsClient client;
 
-    @SneakyThrows
     public SlackClientWrapper(SlackClientPool slackClientPool) {
         this.slackClientPool = slackClientPool;
-        client = this.slackClientPool.borrowObject();
-        log.debug("slack Client {}", client);
+        try {
+            client = this.slackClientPool.borrowObject();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        log.trace("slack Client {}", client);
     }
 
     @Override
     public void close() {
         if (client != null) {
-            log.debug("returning slack Client {} into pool", client);
+            log.trace("returning slack Client {} into pool", client);
             slackClientPool.returnObject(client);
         }
     }

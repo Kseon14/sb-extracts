@@ -2,6 +2,7 @@ package com.am.sbextracts.controller;
 
 import com.am.sbextracts.publisher.PublisherFactory;
 import com.am.sbextracts.service.FileDownloader;
+import com.am.sbextracts.vo.FileMetaInfo;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import static com.am.sbextracts.vo.SlackEvent.Event.Type.FILE_SHARE;
-import static com.am.sbextracts.vo.SlackEvent.Event.Type.MESSAGE;
+import static com.am.sbextracts.vo.Event.Type.FILE_SHARE;
+import static com.am.sbextracts.vo.Event.Type.MESSAGE;
 import static com.am.sbextracts.vo.SlackEvent.Type.EVENT_CALLBACK;
 import static com.am.sbextracts.vo.SlackEvent.Type.URL_VERIFICATION;
 
@@ -31,9 +32,11 @@ import static com.am.sbextracts.vo.SlackEvent.Type.URL_VERIFICATION;
 @RequiredArgsConstructor
 public class SlackEventController {
 
-    private static final Predicate<SlackEvent> isEventCallback = event -> EVENT_CALLBACK == event.getType();
-    private static final Predicate<SlackEvent> isFileShare = event -> MESSAGE == event.getEvent().getType() && FILE_SHARE == event.getEvent().getSubtype();
-    private static final Predicate<SlackEvent> isXlsx = event -> "xlsx".equals(event.getEvent().getFileMetaInfos().get(0).getFileType());
+    private static final Predicate<SlackEvent> IS_EVENT_CALLBACK = event -> EVENT_CALLBACK == event.getType();
+    private static final Predicate<SlackEvent> IS_FILE_SHARE = event -> MESSAGE == event.getEvent().getType()
+            && FILE_SHARE == event.getEvent().getSubtype();
+    private static final Predicate<SlackEvent> IS_XLSX = event -> "xlsx".equals(event.getEvent()
+            .getFileMetaInfos().get(0).getFileType());
     private static final Set<String> processedFiles = ConcurrentHashMap.newKeySet();
 
     private final FileDownloader downloader;
@@ -52,18 +55,18 @@ public class SlackEventController {
         if (URL_VERIFICATION == slackEvent.getType()) {
             return slackEvent.getChallenge();
         }
-        if (isEventCallback.and(isFileShare).negate().test(slackEvent) ||
+        if (IS_EVENT_CALLBACK.and(IS_FILE_SHARE).negate().test(slackEvent) ||
                 CollectionUtils.isEmpty(slackEvent.getEvent().getFileMetaInfos()) ||
-                isXlsx.negate().test(slackEvent)) {
-            log.debug("{} skipping....", slackEvent);
+                IS_XLSX.negate().test(slackEvent)) {
+            log.trace("{} skipping....", slackEvent);
             return ResponseEntity.ok().build();
         }
 
         Consumer<SlackEvent> slackEventConsumer = event -> downloader.downloadFile(event.getEvent().getFileMetaInfos());
-        SlackEvent.FileMetaInfo fileMetaInfo = slackEvent.getEvent().getFileMetaInfos().get(0);
+        FileMetaInfo fileMetaInfo = slackEvent.getEvent().getFileMetaInfos().get(0);
         if (processedFiles.contains(fileMetaInfo.getId())){
             log.info("already processed file {}", fileMetaInfo);
-            return  ResponseEntity.ok().build();
+            return new SlackResponse("already processed file {}");
         }
         processedFiles.add(fileMetaInfo.getId());
         slackEventConsumer.accept(slackEvent);

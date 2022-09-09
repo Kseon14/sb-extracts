@@ -9,7 +9,6 @@ import com.slack.api.model.block.DividerBlock;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
@@ -30,7 +29,6 @@ public class PayslipListener implements ApplicationListener<Payslip> {
     private final ResponderService slackResponderService;
 
     @Override
-    @SneakyThrows
     public void onApplicationEvent(Payslip payslip) {
         try {
             TimeUnit.SECONDS.sleep(DEFAULT_DELAY);

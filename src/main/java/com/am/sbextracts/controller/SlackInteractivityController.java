@@ -6,9 +6,9 @@ import com.am.sbextracts.service.integration.ProcessingFactory;
 import com.am.sbextracts.vo.Payload;
 import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.am.sbextracts.vo.SlackResponse;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -30,7 +30,7 @@ import static com.am.sbextracts.vo.SlackInteractiveEvent.Type.VIEW_SUBMISSION;
 @RequiredArgsConstructor
 public class SlackInteractivityController {
 
-    private final static Predicate<SlackInteractiveEvent> isValidEvent =
+    private final static Predicate<SlackInteractiveEvent> IS_VALID_EVENT =
             event -> VIEW_SUBMISSION == event.getType() || BLOCK_ACTIONS == event.getType();
 
     private final ResponderService slackResponderService;
@@ -44,19 +44,22 @@ public class SlackInteractivityController {
     @Value("#{${slack.allowedUsers}}")
     private final List<String> allowedUsers;
 
-
-    @SneakyThrows
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public Object eventHandler(Payload payload) {
 
-        SlackInteractiveEvent slackInteractiveEvent = objectMapper.readValue(payload.getPayload(),
-                SlackInteractiveEvent.class);
+        SlackInteractiveEvent slackInteractiveEvent;
+        try {
+            slackInteractiveEvent = objectMapper.readValue(payload.getPayload(),
+                    SlackInteractiveEvent.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException(e);
+        }
 
         log.info("Request content {}", slackInteractiveEvent);
         if (isTokenValid.test(slackInteractiveEvent.getToken())) {
             throw new IllegalArgumentException();
         }
-        if (isValidEvent.negate().test(slackInteractiveEvent)) {
+        if (IS_VALID_EVENT.negate().test(slackInteractiveEvent)) {
             throw new IllegalArgumentException();
         }
 

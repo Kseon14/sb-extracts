@@ -1,6 +1,6 @@
 package com.am.sbextracts.publisher;
 
-import com.am.sbextracts.vo.SlackEvent;
+import com.am.sbextracts.vo.FileMetaInfo;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -34,7 +34,7 @@ public class PublisherFactory {
         );
     }
 
-    public Publisher getProducer(SlackEvent.FileMetaInfo fileMetaInfo) {
+    public Publisher getProducer(FileMetaInfo fileMetaInfo) {
         Type type = Type.getByFileName(fileMetaInfo.getName());
         return publisherMap.get(type);
     }

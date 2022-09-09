@@ -11,7 +11,6 @@ import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
@@ -65,7 +64,6 @@ public class ProcessMarkupService implements Process {
     private final SignClientCommon signClientCommon;
 
     @SbExceptionHandler
-    @SneakyThrows
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
         slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Starting....");
@@ -248,9 +246,13 @@ public class ProcessMarkupService implements Process {
         }
     }
 
-    @SneakyThrows
+
     private Response convert(feign.Response response) {
-        return mapper.readValue(response.body().asInputStream(), Response.class);
+        try {
+            return mapper.readValue(response.body().asInputStream(), Response.class);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private int getPdfPagesCount(int templateFileId, Map<String, String> bchHeaders, String initiatorSlackId) {

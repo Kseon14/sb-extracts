@@ -2,13 +2,14 @@ package com.am.sbextracts.vo;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import lombok.ToString;
 import org.springframework.context.ApplicationEvent;
 
 import java.util.Date;
 
 @Getter
 @Setter
+@ToString
 public class Invoice extends ApplicationEvent {
 
     private String agreementNumber;
@@ -17,13 +18,16 @@ public class Invoice extends ApplicationEvent {
     private String fullNameUkr;
     private String addressEng;
     private String addressUrk;
+    @ToString.Exclude
     private String ipn;
     private String serviceEng;
     private String serviceUkr;
+    @ToString.Exclude
     private String price;
     private String accountNumberUsd;
     private String bankNameEng;
     private String bankAddress;
+    @ToString.Exclude
     private String swiftNumber;
     private String userEmail;
     private String authorSlackId;
@@ -32,19 +36,4 @@ public class Invoice extends ApplicationEvent {
         super(source);
     }
 
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this)
-                .append("agreementNumber", agreementNumber)
-                .append("agreementIssueDate", agreementIssueDate)
-                .append("fullNameEng", fullNameEng)
-                .append("fullNameUkr", fullNameUkr)
-                .append("serviceEng", serviceEng)
-                .append("serviceUkr", serviceUkr)
-                .append("bankNameEng", bankNameEng)
-                .append("bankAddress", bankAddress)
-                .append("userEmail", userEmail)
-                .append("authorSlackId", authorSlackId)
-                .toString();
-    }
 }

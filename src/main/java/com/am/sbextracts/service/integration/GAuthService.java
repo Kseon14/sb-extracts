@@ -4,7 +4,6 @@ import com.am.sbextracts.client.GoogleAuthClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.service.ResponderService;
-import com.am.sbextracts.service.integration.utils.LockIndicator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -22,7 +21,6 @@ import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.gmail.GmailScopes;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,11 +35,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -51,9 +56,7 @@ public class GAuthService {
     private static final TypeReference<HashMap<String, GoogleClientSecrets.Details>> TYPE_REF
             = new TypeReference<>() {
     };
-    private GoogleTokenResponse token;
     private final GoogleAuthClient googleAuthClient;
-    private final LockIndicator lock = new LockIndicator();
     public static final String APPLICATION_NAME = "BCH-Upload";
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
     private static final String PATTERN = "%s/%s-%s";
@@ -66,39 +69,25 @@ public class GAuthService {
 
     public static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
+    public static final Map<String, String> CODE_VERIFIER = new ConcurrentHashMap<>();
+
     @Getter
-    private static final Map<String, String> codeVerifier = new HashMap<>();
+    CompletableFuture<GoogleTokenResponse> tokenFuture;
 
     private final ResponderService slackResponderService;
 
-
-    public void setToken(GoogleTokenResponse token) {
-        synchronized (lock) {
-            this.token = token;
-            lock.setLocked(false);
-            lock.notifyAll();
-        }
-    }
-
-    @SneakyThrows
-    private void waitToken() {
-        synchronized (lock) {
-            lock.setLocked(true);
-            while (lock.isLocked()) {
-                lock.wait();
-            }
-        }
-    }
-
-    @SneakyThrows
-    public String getCodeChallenge(final String initiatorSlackId) {
+    private String getCodeChallenge(final String initiatorSlackId) {
         log.debug("Generate code challenge...");
-        codeVerifier.put(initiatorSlackId, RandomStringUtils
+        CODE_VERIFIER.put(initiatorSlackId, RandomStringUtils
                 .random(43, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"));
-        return Base64.getUrlEncoder()
-                .withoutPadding()
-                .encodeToString(MessageDigest.getInstance("SHA-256")
-                        .digest(codeVerifier.get(initiatorSlackId).getBytes(StandardCharsets.US_ASCII)));
+        try {
+            return Base64.getUrlEncoder()
+                    .withoutPadding()
+                    .encodeToString(MessageDigest.getInstance("SHA-256")
+                            .digest(CODE_VERIFIER.get(initiatorSlackId).getBytes(StandardCharsets.US_ASCII)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public GoogleCredential deserialize(String initiatorSlackId) {
@@ -128,11 +117,15 @@ public class GAuthService {
         }
     }
 
-    @SneakyThrows
     public GoogleClientSecrets.Details getCredFromLocalSource(String initiatorSlackId) {
         log.debug("Getting credentials from local source");
-        GoogleClientSecrets.Details details = objectMapper.readValue(authJsons, TYPE_REF)
-                .get(initiatorSlackId);
+        GoogleClientSecrets.Details details;
+        try {
+            details = objectMapper.readValue(authJsons, TYPE_REF)
+                    .get(initiatorSlackId);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(e);
+        }
         details.setAuthUri("https://accounts.google.com/o/oauth2/auth");
         details.setTokenUri("https://oauth2.googleapis.com/token");
         details.setRedirectUris(Collections.singletonList(
@@ -196,59 +189,63 @@ public class GAuthService {
         }
     }
 
-    public Credential getCredentials(String initiatorSlackId, boolean withMail) {
-        synchronized (lock) {
-            while (lock.isLocked()) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException e) {
-                    log.error("waiting was interrupted", e);
-                    Thread.currentThread().interrupt();
-                }
-            }
-            log.debug("Getting credentials from google...");
-            GoogleCredential googleCredential = deserialize(initiatorSlackId);
-            if (googleCredential != null) {
-                return googleCredential;
-            }
+    public synchronized Credential getCredentials(String initiatorSlackId, boolean withMail) {
 
-            GoogleClientSecrets.Details details =
-                    getCredFromLocalSource(initiatorSlackId);
-            String redirectUrl = String.format("https://accounts.google.com/o/oauth2/v2/auth?" +
-                            "access_type=offline" +
-                            "&client_id=%s" +
-                            "&redirect_uri=%s" +
-                            "&response_type=code" +
-                            "&code_challenge=%s" +
-                            "&code_challenge_method=S256" +
-                            "&scope=%s%s" +
-                            "&prompt=consent",
-                    details.getClientId(),
-                    getRedirectURI(initiatorSlackId),
-                    getCodeChallenge(initiatorSlackId),
-                    DriveScopes.DRIVE,
-                    withMail ? " " + GmailScopes.GMAIL_SEND : "");
-
-            slackResponderService.log(initiatorSlackId,
-                    String.format("<%s|Please approve access to Google Drive>", redirectUrl));
-
-            waitToken();
-            log.debug("Credentials from google. received..");
-            googleCredential = new GoogleCredential.Builder()
-                    .setTransport(getNetHttpTransport())
-                    .setJsonFactory(JSON_FACTORY)
-                    .setClientSecrets(new GoogleClientSecrets().setInstalled(details))
-                    .build()
-                    .setFromTokenResponse(token);
-
-            serialize(googleCredential, initiatorSlackId);
+        final GoogleCredential googleCredential = deserialize(initiatorSlackId);
+        if (googleCredential != null) {
             return googleCredential;
+        }
+
+        log.debug("Getting credentials from google...");
+        GoogleClientSecrets.Details details =
+                getCredFromLocalSource(initiatorSlackId);
+        String redirectUrl = String.format("https://accounts.google.com/o/oauth2/v2/auth?" +
+                        "access_type=offline" +
+                        "&client_id=%s" +
+                        "&redirect_uri=%s" +
+                        "&response_type=code" +
+                        "&code_challenge=%s" +
+                        "&code_challenge_method=S256" +
+                        "&scope=%s%s" +
+                        "&prompt=consent",
+                details.getClientId(),
+                getRedirectURI(initiatorSlackId),
+                getCodeChallenge(initiatorSlackId),
+                DriveScopes.DRIVE,
+                withMail ? " " + GmailScopes.GMAIL_SEND : "");
+
+        slackResponderService.log(initiatorSlackId,
+                String.format("<%s|Please approve access to Google Drive %s>",
+                        redirectUrl, withMail ? "and Google Mail" : ""));
+
+        tokenFuture = new CompletableFuture<>();
+
+        try {
+            return tokenFuture.thenApply(token -> {
+                log.debug("Credentials from google. received..");
+                GoogleCredential googleCred = new GoogleCredential.Builder()
+                        .setTransport(getNetHttpTransport())
+                        .setJsonFactory(JSON_FACTORY)
+                        .setClientSecrets(new GoogleClientSecrets().setInstalled(details))
+                        .build()
+                        .setFromTokenResponse(token);
+
+                serialize(googleCred, initiatorSlackId);
+                return googleCred;
+            }).get(50, TimeUnit.SECONDS);
+        } catch (InterruptedException | TimeoutException | ExecutionException e) {
+            slackResponderService.log(initiatorSlackId, "Some problem with credential retrieving..");
+            throw new IllegalStateException(e);
         }
     }
 
-    @SneakyThrows
+
     public static NetHttpTransport getNetHttpTransport() {
-        return GoogleNetHttpTransport.newTrustedTransport();
+        try {
+            return GoogleNetHttpTransport.newTrustedTransport();
+        } catch (GeneralSecurityException | IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public String getRedirectURI(String slackId) {

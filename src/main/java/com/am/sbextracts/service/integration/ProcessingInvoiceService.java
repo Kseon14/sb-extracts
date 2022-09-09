@@ -85,7 +85,8 @@ public class ProcessingInvoiceService implements Process {
                 processedIds.putAll(parseLogFile(Files.readAllLines(Paths.get(file.getPath()))));
             }
             dateOfModification = file.lastModified();
-            feign.Response response = netSuiteFileClient.getInvoices(headerService.getNsHeaders(slackEventResponse.getSessionId(), initiatorUserId),
+            feign.Response response = netSuiteFileClient.getInvoices(
+                    headerService.getNsHeaders(slackEventResponse.getSessionId(), initiatorUserId),
                     NetSuiteFileClient.FolderParams.of(slackEventResponse.getFolderId()));
             TagNode tagNode = ParsingUtils.getTagNode(response.body());
 
@@ -105,8 +106,10 @@ public class ProcessingInvoiceService implements Process {
                         getAttributes(fileInfo.getHref()));
 
                 try {
-                    bambooHrApiClient.uploadFile(headerService.getHeaderForBchApi(initiatorUserId), getEmployeeId(fileInfo, employees),
-                            Map.of("file", prepareFile(pdf, fileInfo.getFileName(), initiatorUserId), "fileName", fileInfo.getFileName(),
+                    bambooHrApiClient.uploadFile(headerService.getHeaderForBchApi(initiatorUserId),
+                            getEmployeeId(fileInfo, employees),
+                            Map.of("file", prepareFile(pdf, fileInfo.getFileName(), initiatorUserId),
+                                    "fileName", fileInfo.getFileName(),
                                     "share", "yes", "category", 16));
                 } catch (FeignException.Forbidden ex) {
                     log.error("Do not have permission for upload:{}", fileInfo.getFileName(), ex);
@@ -117,7 +120,8 @@ public class ProcessingInvoiceService implements Process {
                 log.info("Document uploaded [{}/{}]: {}", i + 1, fileInfos.size(), fileInfo.getFileName());
                 slackResponderService.log(initiatorUserId,
                         String.format("Document uploaded [%s/%s]: %s", i + 1, fileInfos.size(), fileInfo.getFileName()));
-                FileUtils.writeStringToFile(file, String.format("%s,%s%n", fileInfo.getId(), fileInfo.getFileName()), StandardCharsets.UTF_8.toString(), true);
+                FileUtils.writeStringToFile(file, String.format("%s,%s%n", fileInfo.getId(), fileInfo.getFileName()),
+                        StandardCharsets.UTF_8.toString(), true);
             }
         } catch (Throwable ex) {
             log.error("Error during download of invoices", ex);
@@ -134,7 +138,8 @@ public class ProcessingInvoiceService implements Process {
     }
 
     private static FileInfo getFileInfo(TagNode tagNode) {
-        String href = tagNode.getParent().getParent().getElementListByAttValue("class", "dottedlink", true, false)
+        String href = tagNode.getParent().getParent().getElementListByAttValue("class", "dottedlink",
+                        true, false)
                 .stream()
                 .filter(el -> CollectionUtils
                         .containsAny(

@@ -1,7 +1,7 @@
 package com.am.sbextracts.controller;
 
 import com.am.sbextracts.service.ProcessorService;
-import com.am.sbextracts.vo.SlackEvent;
+import com.am.sbextracts.vo.FileMetaInfo;
 import com.am.sbextracts.vo.SlackResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class InputFileController {
             return new SlackResponse("file is null");
         }
         log.info("fileName : {}", file.getName());
-        processorService.process(file.getInputStream(), new SlackEvent.FileMetaInfo());
+        processorService.process(file.getInputStream(), new FileMetaInfo());
         return new SlackResponse("done");
     }
 }

@@ -9,6 +9,6 @@ import lombok.Setter;
 public class SlackFileInfo {
 
      @JsonProperty("file")
-     private SlackEvent.FileMetaInfo fileMetaInfo;
+     private FileMetaInfo fileMetaInfo;
 
 }

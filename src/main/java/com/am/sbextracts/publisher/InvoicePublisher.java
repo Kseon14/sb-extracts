@@ -2,8 +2,8 @@ package com.am.sbextracts.publisher;
 
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
+import com.am.sbextracts.vo.FileMetaInfo;
 import com.am.sbextracts.vo.Invoice;
-import com.am.sbextracts.vo.SlackEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
@@ -21,7 +21,7 @@ public class InvoicePublisher implements Publisher {
 
     @Override
     @SbExceptionHandler
-    public void produce(XSSFWorkbook workbook, SlackEvent.FileMetaInfo fileMetaInfo) {
+    public void produce(XSSFWorkbook workbook, FileMetaInfo fileMetaInfo) {
         XSSFSheet sheet = workbook.getSheetAt(0);
         FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
         try {
