@@ -18,7 +18,7 @@ import java.util.concurrent.Executors;
 @Service
 @RequiredArgsConstructor
 public class SlackFileDownloader implements FileDownloader {
-    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(2);
 
     private final ProcessorService processorService;
     private final SlackResponderService slackResponderService;

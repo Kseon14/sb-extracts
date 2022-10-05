@@ -5,9 +5,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
-
-import java.util.concurrent.Executors;
 
 @Configuration
 public class EventConfig {
@@ -17,8 +16,10 @@ public class EventConfig {
             @Value("${event.concurrent.threads}") Integer threadsCount) {
         SimpleApplicationEventMulticaster eventMulticaster = new SimpleApplicationEventMulticaster();
         ConcurrentTaskExecutor concurrentTaskExecutor = new ConcurrentTaskExecutor();
-        concurrentTaskExecutor.setConcurrentExecutor(Executors.newFixedThreadPool(threadsCount));
-        eventMulticaster.setTaskExecutor(concurrentTaskExecutor);
+//        concurrentTaskExecutor.setConcurrentExecutor(Executors.newFixedThreadPool(threadsCount));
+        SimpleAsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
+        taskExecutor.setConcurrencyLimit(threadsCount);
+        eventMulticaster.setTaskExecutor(taskExecutor);
         return eventMulticaster;
     }
 }

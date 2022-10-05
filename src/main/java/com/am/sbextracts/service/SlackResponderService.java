@@ -3,8 +3,7 @@ package com.am.sbextracts.service;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.pool.HttpClientPool;
-import com.am.sbextracts.pool.SlackClientPool;
-import com.am.sbextracts.service.integration.SlackClientWrapper;
+import com.am.sbextracts.pool.SlackClient;
 import com.am.sbextracts.vo.FileMetaInfo;
 import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.am.sbextracts.vo.View;
@@ -83,7 +82,9 @@ public class SlackResponderService implements ResponderService {
     public static final String DATE_PATTERN = "yyyy-MM-dd";
 
     private final HttpClientPool httpClientPool;
-    private final SlackClientPool slackClientPool;
+    //private final SlackClientPool slackClientPool;
+
+    private final SlackClient client;
 
     @Lazy
     private final SlackResponderService slackService;
@@ -107,9 +108,9 @@ public class SlackResponderService implements ResponderService {
     @SbExceptionHandler
     public void sendMessage(ChatPostMessageRequest request, String userEmail, String initiatorSlackId) {
         log.info("Message sending {}...", request.getChannel());
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
+        try {
             ChatPostMessageResponse response =
-                    wrapper.getClient().chatPostMessage(request);
+                    client.getClient().chatPostMessage(request);
             handleError(response, userEmail, initiatorSlackId);
         } catch (SlackApiException | IOException ex) {
             throw new SbExtractsException(String.format("Couldn't send message to: %s", userEmail), ex,
@@ -121,15 +122,14 @@ public class SlackResponderService implements ResponderService {
     @Override
     @SbExceptionHandler
     public ChatPostMessageResponse sendMessage(ChatPostMessageRequest request, String initiatorSlackId) {
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            ChatPostMessageResponse response = null;
-            try {
-                response = wrapper.getClient().chatPostMessage(request);
-            } catch (IOException | SlackApiException e) {
-                throw new IllegalStateException(e);
-            }
-            return handleError(response, initiatorSlackId);
+        ChatPostMessageResponse response;
+        try {
+            response = client.getClient().chatPostMessage(request);
+        } catch (IOException | SlackApiException e) {
+            throw new IllegalStateException(e);
         }
+        return handleError(response, initiatorSlackId);
+
     }
 
 
@@ -167,13 +167,13 @@ public class SlackResponderService implements ResponderService {
                                                 .build())
                                         .build()))
                         .build();
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            try {
-                handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                        .view(view).build()), slackInteractiveEvent.getUserId());
-            } catch (IOException | SlackApiException e) {
-                throw new IllegalStateException(e);
-            }
+
+        try {
+            handleError(client.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                    .view(view).build()), slackInteractiveEvent.getUserId());
+        } catch (IOException | SlackApiException e) {
+            throw new IllegalStateException(e);
+
         }
     }
 
@@ -234,10 +234,10 @@ public class SlackResponderService implements ResponderService {
                                                 .build())
                                         .build()))
                         .build();
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                    .view(view).build()), slackInteractiveEvent.getTriggerId());
-        }
+
+        handleError(client.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                .view(view).build()), slackInteractiveEvent.getTriggerId());
+
     }
 
     @SneakyThrows
@@ -270,10 +270,10 @@ public class SlackResponderService implements ResponderService {
                                                 .build())
                                         .build()))
                         .build();
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                    .view(view).build()), slackInteractiveEvent.getTriggerId());
-        }
+
+        handleError(client.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                .view(view).build()), slackInteractiveEvent.getTriggerId());
+
     }
 
     @SneakyThrows
@@ -305,10 +305,10 @@ public class SlackResponderService implements ResponderService {
                                                 .build())
                                         .build()))
                         .build();
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                    .view(view).build()), slackInteractiveEvent.getTriggerId());
-        }
+
+        handleError(client.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                .view(view).build()), slackInteractiveEvent.getTriggerId());
+
     }
 
     @SneakyThrows
@@ -341,10 +341,10 @@ public class SlackResponderService implements ResponderService {
                                                         .build())
                                                 .build()))
                         .build();
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            handleError(wrapper.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                    .view(view).build()), slackInteractiveEvent.getTriggerId());
-        }
+
+        handleError(client.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+                .view(view).build()), slackInteractiveEvent.getTriggerId());
+
     }
 
 
@@ -355,8 +355,8 @@ public class SlackResponderService implements ResponderService {
             throw new SbExtractsException("userEmail could not be null", initiatorSlackId);
         }
         UsersLookupByEmailResponse usersInfoResponse;
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            usersInfoResponse = wrapper.getClient().usersLookupByEmail(UsersLookupByEmailRequest.builder()
+        try {
+            usersInfoResponse = client.getClient().usersLookupByEmail(UsersLookupByEmailRequest.builder()
                     .email(userEmail)
                     .build());
             if (usersInfoResponse.getError() != null) {
@@ -414,32 +414,31 @@ public class SlackResponderService implements ResponderService {
 
 
     public void updateMessage(com.slack.api.methods.response.chat.ChatPostMessageResponse initialMessage, String text, String initiatorSlackId) {
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            try {
-                handleError(wrapper.getClient().chatUpdate(ChatUpdateRequest.builder()
-                        .channel(initialMessage.getChannel())
-                        .blocks(List.of(SectionBlock.builder()
-                                .text(MarkdownTextObject.builder()
-                                        .text(text).build()).build()))
-                        .text("Updates...")
-                        .ts(initialMessage.getTs())
-                        .build()), initiatorSlackId);
-            } catch (IOException | SlackApiException e) {
-                throw new RuntimeException(e);
-            }
+
+        try {
+            handleError(client.getClient().chatUpdate(ChatUpdateRequest.builder()
+                    .channel(initialMessage.getChannel())
+                    .blocks(List.of(SectionBlock.builder()
+                            .text(MarkdownTextObject.builder()
+                                    .text(text).build()).build()))
+                    .text("Updates...")
+                    .ts(initialMessage.getTs())
+                    .build()), initiatorSlackId);
+        } catch (IOException | SlackApiException e) {
+            throw new RuntimeException(e);
         }
     }
 
 
     public void updateMessage(ChatUpdateRequest.ChatUpdateRequestBuilder builder, String initiatorSlackId) {
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            try {
-                handleError(wrapper.getClient().chatUpdate(builder
-                        .build()), initiatorSlackId);
-            } catch (IOException | SlackApiException e) {
-                throw new IllegalStateException(e);
-            }
+
+        try {
+            handleError(client.getClient().chatUpdate(builder
+                    .build()), initiatorSlackId);
+        } catch (IOException | SlackApiException e) {
+            throw new IllegalStateException(e);
         }
+
     }
 
     @Override
@@ -465,8 +464,8 @@ public class SlackResponderService implements ResponderService {
         }
         log.info("Getting conversation ID for {}", userId);
 
-        try (SlackClientWrapper wrapper = new SlackClientWrapper(slackClientPool)) {
-            ConversationsOpenResponse conversation = wrapper.getClient().conversationsOpen(
+        try {
+            ConversationsOpenResponse conversation = client.getClient().conversationsOpen(
                     ConversationsOpenRequest.builder()
                             .users(List.of(userId)).returnIm(true).build());
             if (conversation.getError() != null) {
@@ -528,7 +527,7 @@ public class SlackResponderService implements ResponderService {
 
     @Override
     public com.slack.api.model.File getFile(FileMetaInfo fileMetaInfo) throws Exception {
-        FilesInfoResponse fileInfo = new SlackClientWrapper(slackClientPool).getClient().filesInfo(FilesInfoRequest.builder().file(fileMetaInfo.getId()).build());
+        FilesInfoResponse fileInfo = client.getClient().filesInfo(FilesInfoRequest.builder().file(fileMetaInfo.getId()).build());
         if (fileInfo.getError() != null) {
             throw new SbExtractsException("Could not get fileInfo", fileMetaInfo.getAuthor());
         }

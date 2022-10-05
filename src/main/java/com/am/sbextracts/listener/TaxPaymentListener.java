@@ -14,7 +14,7 @@ import com.slack.api.model.block.composition.MarkdownTextObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.mail.MessagingException;
@@ -31,7 +31,7 @@ import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
+public class TaxPaymentListener {
 
     @Value("${app.fromMail}")
     String from;
@@ -39,7 +39,7 @@ public class TaxPaymentListener implements ApplicationListener<TaxPayment> {
     private final ResponderService slackResponderService;
     private final GmailService gmailService;
 
-    @Override
+    @EventListener
     @SbExceptionHandler
     public void onApplicationEvent(TaxPayment taxPayment) {
         try {
