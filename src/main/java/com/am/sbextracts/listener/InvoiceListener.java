@@ -15,7 +15,7 @@ import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.FileOutputStream;
@@ -30,7 +30,7 @@ import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 
 @Slf4j
 @Component
-public class InvoiceListener implements ApplicationListener<Invoice> {
+public class InvoiceListener {
 
     private static final DateTimeFormatter formatterOutputEng = DateTimeFormatter.ofPattern("MM/dd/yyyy");
     private static final DateTimeFormatter formatterOutputUkr = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -48,7 +48,7 @@ public class InvoiceListener implements ApplicationListener<Invoice> {
         this.slackResponderService = slackResponderService;
     }
 
-    @Override
+    @EventListener
     public void onApplicationEvent(Invoice invoice) {
         try {
             TimeUnit.SECONDS.sleep(DEFAULT_DELAY);

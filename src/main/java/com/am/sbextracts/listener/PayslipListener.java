@@ -10,7 +10,7 @@ import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
@@ -24,11 +24,11 @@ import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PayslipListener implements ApplicationListener<Payslip> {
+public class PayslipListener {
 
     private final ResponderService slackResponderService;
 
-    @Override
+    @EventListener
     public void onApplicationEvent(Payslip payslip) {
         try {
             TimeUnit.SECONDS.sleep(DEFAULT_DELAY);

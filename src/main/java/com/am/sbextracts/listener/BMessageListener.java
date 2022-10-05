@@ -10,7 +10,7 @@ import com.slack.api.model.block.composition.MarkdownTextObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.mail.MessagingException;
@@ -26,14 +26,14 @@ import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class BMessageListener implements ApplicationListener<BMessage> {
+public class BMessageListener {
 
     private final ResponderService slackResponderService;
     private final GmailService gmailService;
     @Value("${app.fromMail}")
     String from;
 
-    @Override
+    @EventListener
     public void onApplicationEvent(BMessage message) {
         try {
             TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
