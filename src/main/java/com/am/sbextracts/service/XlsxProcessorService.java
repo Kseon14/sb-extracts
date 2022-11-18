@@ -24,6 +24,8 @@ public class XlsxProcessorService implements ProcessorService {
         log.info("File start processing");
         try (inputStream; XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
             publisherFactory.getProducer(fileMetaInfo).produce(workbook, fileMetaInfo);
+        } catch (final Exception ex) {
+            log.error("Failed to process", ex);
         }
     }
 

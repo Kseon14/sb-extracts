@@ -18,14 +18,20 @@ public class ProcessingFactory {
     private final ProcessorConfiguration processors;
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
 
-    public void startProcessing(SlackInteractiveEvent slackInteractiveEvent){
+    public void startProcessing(SlackInteractiveEvent slackInteractiveEvent) {
         View.ModalActionType type = slackInteractiveEvent.getView().getType();
         Process process = processors.processorsMap().get(type);
         log.info("Start execution with {}", type);
 
         if (process != null) {
-            executorService.execute(() ->
-                    process.process(InternalSlackEventResponse.convert(slackInteractiveEvent)));
+            executorService.execute(() -> {
+                        try {
+                            process.process(InternalSlackEventResponse.convert(slackInteractiveEvent));
+                        } catch (Exception ex) {
+                            log.error("Failed to process", ex);
+                        }
+                    }
+            );
         }
     }
 
