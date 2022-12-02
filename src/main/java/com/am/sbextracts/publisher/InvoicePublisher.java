@@ -49,6 +49,7 @@ public class InvoicePublisher implements Publisher {
                     invoice.setBankAddress(XlsxUtil.getCell(row, "N", evaluator));
                     invoice.setSwiftNumber(XlsxUtil.getCell(row, "O", evaluator));
                     invoice.setUserEmail(XlsxUtil.getCell(row, "P", evaluator));
+                    invoice.setOptionalDate(XlsxUtil.getDateFromCell(row, "Q"));
                     invoice.setAuthorSlackId(fileMetaInfo.getAuthor());
                     log.info("Invoice: {}", invoice);
                     applicationEventPublisher.publishEvent(invoice);

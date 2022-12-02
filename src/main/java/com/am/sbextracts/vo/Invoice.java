@@ -31,6 +31,7 @@ public class Invoice extends ApplicationEvent {
     private String swiftNumber;
     private String userEmail;
     private String authorSlackId;
+    private Date optionalDate;
 
     public Invoice(Object source) {
         super(source);

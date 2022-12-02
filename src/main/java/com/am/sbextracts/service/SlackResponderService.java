@@ -2,11 +2,14 @@ package com.am.sbextracts.service;
 
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
+import com.am.sbextracts.model.SlackResponse;
 import com.am.sbextracts.pool.HttpClientPool;
 import com.am.sbextracts.pool.SlackClient;
 import com.am.sbextracts.vo.FileMetaInfo;
 import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.am.sbextracts.vo.View;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.slack.api.methods.SlackApiException;
 import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.methods.request.chat.ChatUpdateRequest;
@@ -82,7 +85,7 @@ public class SlackResponderService implements ResponderService {
     public static final String DATE_PATTERN = "yyyy-MM-dd";
 
     private final HttpClientPool httpClientPool;
-    //private final SlackClientPool slackClientPool;
+    private final ObjectMapper objectMapper;
 
     private final SlackClient client;
 
@@ -511,6 +514,15 @@ public class SlackResponderService implements ResponderService {
             throw new IllegalStateException(e);
         }
         log.info("file {} deleted", file.getName());
+        try {
+            SlackResponse slackResponse = objectMapper.readValue(response.getResponseBody(), SlackResponse.class);
+            if (!slackResponse.getOk()) {
+                throw new SbExtractsException(String.format("Error during file posting: %s for %s", slackResponse.getError(), userEmail),
+                        userEmail, initiatorSlackId);
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Error during deserialization of {}", response.getResponseBody());
+        }
     }
 
     private Response makeRequest(Request request) throws Exception {

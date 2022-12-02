@@ -21,7 +21,7 @@ public class XlsxProcessorService implements ProcessorService {
 
     @Override
     public void process(InputStream inputStream, FileMetaInfo fileMetaInfo) throws IOException {
-        log.info("File start processing");
+        log.info("File start processing {}", fileMetaInfo.getName());
         try (inputStream; XSSFWorkbook workbook = new XSSFWorkbook(inputStream)) {
             publisherFactory.getProducer(fileMetaInfo).produce(workbook, fileMetaInfo);
         } catch (final Exception ex) {
