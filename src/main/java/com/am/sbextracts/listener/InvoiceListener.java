@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -58,9 +59,13 @@ public class InvoiceListener {
         }
         Document document = null;
         PdfWriter writer = null;
+
+        LocalDate date = invoice.getOptionalDate() == null ? LocalDate.now() :
+                invoice.getOptionalDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
         String fileName = String.format("ML-%s_%s.pdf",
                 invoice.getFullNameEng().replace(" ", "").trim(),
-                LocalDate.now().format(formatterMonthFullYear));
+                date.format(formatterMonthFullYear));
         try {
             document = new Document();
             try {
@@ -73,11 +78,11 @@ public class InvoiceListener {
 
             Paragraph preface = new Paragraph();
             Paragraph head1 = getParagraphBold(String.format("Invoice/ offer # %s  for Services Agreement No. %s of %s",
-                    LocalDate.now().format(formatterMonthYear), invoice.getAgreementNumber(),
+                    date.format(formatterMonthYear), invoice.getAgreementNumber(),
                     new SimpleDateFormat("MM/dd/yyyy").format(invoice.getAgreementIssueDate())));
             head1.setAlignment(Element.ALIGN_CENTER);
             Paragraph head2 = getParagraphBold(String.format("Рахунок - оферта № %s згідно договору № %s від %s",
-                    LocalDate.now().format(formatterMonthYear), invoice.getAgreementNumber(),
+                    date.format(formatterMonthYear), invoice.getAgreementNumber(),
                     new SimpleDateFormat("dd.MM.yyyy").format(invoice.getAgreementIssueDate())));
             head2.setAlignment(Element.ALIGN_CENTER);
             preface.add(head1);
@@ -88,9 +93,9 @@ public class InvoiceListener {
             table1.setHorizontalAlignment(Element.ALIGN_JUSTIFIED_ALL);
             table1.setWidthPercentage(100);
             table1.addCell(getParagraphWithBoldAndRegularText("Date and Place: ", String.format("%s, Kyiv",
-                    LocalDate.now().withDayOfMonth(15).format(formatterOutputEng))));
+                    date.withDayOfMonth(15).format(formatterOutputEng))));
             table1.addCell(getParagraphWithBoldAndRegularText("Дата та місце: ", String.format("%s, м.Київ",
-                    LocalDate.now().withDayOfMonth(15).format(formatterOutputUkr))));
+                    date.withDayOfMonth(15).format(formatterOutputUkr))));
 
             table1.addCell(getParagraphWithBoldAndRegularText("Supplier: ", String.format("Private Entrepreneur %s",
                     invoice.getFullNameEng())));
@@ -113,9 +118,9 @@ public class InvoiceListener {
             table1.addCell(getParagraphWithBoldAndRegularText("Предмет: ", invoice.getServiceUkr()));
 
             table1.addCell(getParagraphWithBoldAndRegularText("Period of providing services: ",
-                    LocalDate.now().format(formatterMonthFullYearEng)));
+                    date.format(formatterMonthFullYearEng)));
             table1.addCell(getParagraphWithBoldAndRegularText("Період надання послуги: ",
-                    LocalDate.now().format(formatterMonthFullYearUkr)));
+                    date.format(formatterMonthFullYearUkr)));
 
             table1.addCell(getParagraphWithBoldAndRegularText("Currency: ", "USD"));
             table1.addCell(getParagraphWithBoldAndRegularText("Валюта: ", "Долар США"));
