@@ -7,4 +7,5 @@ public class DocumentInfo {
     String inn;
     int fileId;
     int templateFileId;
+    boolean isReconciliation;
 }

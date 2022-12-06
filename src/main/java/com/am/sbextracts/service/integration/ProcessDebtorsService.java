@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNode;
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.isAkt;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isAktOrReconciliation;
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequiredTag;
 
 @Slf4j
@@ -104,7 +104,7 @@ public class ProcessDebtorsService implements Process {
             TagNode tagNodeFolderWithActs = new HtmlCleaner().clean(folder.getHtml());
             notSentFiles.addAll(tagNodeFolderWithActs.getElementListByName("button", true).stream()
                     .filter(isRequiredTag)
-                    .filter(isAkt)
+                    .filter(isAktOrReconciliation)
                     .filter(b -> employees.get(ParsingUtils.getInn(b)) != null)
                     .map(ParsingUtils::getFileTitle)
                     .filter(name -> !CollectionUtils.containsAny(filesSentForSignature, name))

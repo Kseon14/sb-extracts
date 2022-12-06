@@ -4,5 +4,5 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public final class GlobalVariables {
-    public static final int DEFAULT_DELAY = 1;
+    public static final int DEFAULT_DELAY = 5;
 }

@@ -99,10 +99,10 @@ public final class XlsxUtil {
 
 
     public static void validateFile(PublisherFactory.Type type, XSSFWorkbook workbook) {
-        try (InputStream inputStream = XlsxUtil.class.getClassLoader().getResourceAsStream("column-config/"
+        try (InputStream config = XlsxUtil.class.getClassLoader().getResourceAsStream("column-config/"
                 + getFileName(type) + ".yaml")) {
             FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
-            ColumnConfig columnConfig = new Yaml().loadAs(inputStream,
+            ColumnConfig columnConfig = new Yaml().loadAs(config,
                     ColumnConfig.class);
 
             List<String> configCell = columnConfig.getCell();

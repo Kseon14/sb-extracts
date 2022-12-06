@@ -4,27 +4,35 @@ import com.am.sbextracts.client.BambooHrSignClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.DocumentInfo;
+import com.am.sbextracts.model.FieldWrapper;
 import com.am.sbextracts.model.Folder;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.model.Response;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.pdfbox.text.TextPosition;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -35,7 +43,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.isAkt;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isAktOrReconciliation;
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequiredTag;
 
 @Slf4j
@@ -99,9 +107,10 @@ public class ProcessMarkupService implements Process {
                 List<DocumentInfo> infos = tagNode.getElementListByName("button", true)
                         .stream()
                         .filter(isRequiredTag)
-                        .filter(isAkt)
+                        .filter(isAktOrReconciliation)
                         .map(b -> DocumentInfo.of(ParsingUtils.getInn(b),
-                                ParsingUtils.getFileId(b), ParsingUtils.getTemplateFileId(b)))
+                                ParsingUtils.getFileId(b), ParsingUtils.getTemplateFileId(b),
+                                ParsingUtils.isReconciliation(b)))
                         .filter(info -> !CollectionUtils.containsAny(processedIds, info.getFileId() + ""))
                         .filter(info -> employees.get(info.getInn()) != null)
                         .collect(Collectors.toList());
@@ -184,23 +193,8 @@ public class ProcessMarkupService implements Process {
                         log.error("sleep was interrupted", e);
                         Thread.currentThread().interrupt();
                     }
-                    int pagesCount = getPdfPagesCount(info.getTemplateFileId(), bchHeaders, initiatorUserId);
-                    if (pagesCount == 0) {
-                        log.error("File download problem for inn {}", info.getInn());
-                        slackResponderService.log(initiatorUserId,
-                                String.format("File download problem for inn %s", info.getInn()));
-                        return;
-                    }
-                    String markUp;
-                    try {
-                        markUp = getMarkUp(pagesCount);
-                    } catch (IOException e) {
-                        throw new SbExtractsException("Error during prop retrieving", e, initiatorUserId);
-                    }
-                    if (StringUtils.isBlank(markUp)) {
-                        log.error("markup source file read problem");
-                        slackResponderService.log(initiatorUserId,
-                                String.format("markup source file read problem for inn %s", info.getInn()));
+                    String markUp = getMarkUp(info, bchHeaders, initiatorUserId);
+                    if (markUp == null) {
                         return;
                     }
                     try {
@@ -246,6 +240,60 @@ public class ProcessMarkupService implements Process {
         }
     }
 
+    @Nullable
+    private String getMarkUp(DocumentInfo info, Map<String, String> bchHeaders, String initiatorUserId) {
+        byte[] pdf = bambooHrSignClient.getPdf(bchHeaders, info.getTemplateFileId());
+        if (pdf.length == 0) {
+            return null;
+        }
+        if (info.isReconciliation()) {
+            try {
+                return getMarkUpForReconciliation(pdf);
+            } catch (Exception ex) {
+                log.error("Error during determination of coordinates", ex);
+                slackResponderService.log(initiatorUserId,
+                        String.format("Error during determination of coordinates for file with inn: %s", info.getInn()));
+                return null;
+            }
+        }
+
+        int pagesCount = getPdfPagesCount(pdf, initiatorUserId);
+        if (pagesCount == 0) {
+            log.error("File download problem for inn {}", info.getInn());
+            slackResponderService.log(initiatorUserId,
+                    String.format("File download problem for inn %s", info.getInn()));
+            return null;
+        }
+        String markUp;
+        try {
+            markUp = getMarkUp(pagesCount);
+        } catch (IOException ex) {
+            throw new SbExtractsException("Error during prop retrieving", ex, initiatorUserId);
+        }
+        if (StringUtils.isBlank(markUp)) {
+            log.error("markup source file read problem");
+            slackResponderService.log(initiatorUserId,
+                    String.format("markup source file read problem for inn %s", info.getInn()));
+            return null;
+        }
+        return markUp;
+    }
+
+    private String getMarkUpForReconciliation(final byte[] pdf) throws IOException {
+        try (PDDocument doc = PDDocument.load(pdf)) {
+            final GetCharLocationAndSize stripper = new GetCharLocationAndSize();
+            stripper.setSortByPosition(true);
+            stripper.setStartPage(0);
+            stripper.setEndPage(doc.getNumberOfPages());
+            final Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
+            stripper.writeText(doc, dummy);
+            if (stripper.getFieldWrapper() == null) {
+                throw new IllegalStateException("pdf file do not contain anchor symbols");
+            }
+            return mapper.writeValueAsString(stripper.getFieldWrapper());
+        }
+    }
+
 
     private Response convert(feign.Response response) {
         try {
@@ -255,11 +303,7 @@ public class ProcessMarkupService implements Process {
         }
     }
 
-    private int getPdfPagesCount(int templateFileId, Map<String, String> bchHeaders, String initiatorSlackId) {
-        byte[] pdf = bambooHrSignClient.getPdf(bchHeaders, templateFileId);
-        if (pdf.length == 0) {
-            return 0;
-        }
+    private int getPdfPagesCount(byte[] pdf, String initiatorSlackId) {
         try (PDDocument doc = PDDocument.load(pdf)) {
             doc.getPage(0);
             return doc.getNumberOfPages();
@@ -278,5 +322,43 @@ public class ProcessMarkupService implements Process {
             }
         }
         return prop.getProperty(pagesCount + "");
+    }
+
+    @Getter
+    public static class GetCharLocationAndSize extends PDFTextStripper {
+
+        private FieldWrapper fieldWrapper;
+
+        public GetCharLocationAndSize() throws IOException {
+        }
+
+        @Override
+        protected void writeString(String input, List<TextPosition> textPositions) {
+            if (StringUtils.equalsIgnoreCase(StringUtils.trim(input), "%$@!")) {
+                TextPosition text = textPositions.get(3);
+                double top = ((text.getPageHeight() - text.getEndY() - (((text.getPageHeight() * 3.5) / 100))) * 100) / text.getPageHeight();
+                double left = (text.getEndX() * 100) / text.getPageWidth();
+                fieldWrapper = new FieldWrapper(FieldWrapper.FieldForSignature.builder()
+                        .page(FieldWrapper.Page.builder()
+                                .num(getCurrentPageNo())
+                                .rect(FieldWrapper.Rect.builder()
+                                        .x(123.1)
+                                        .y(123.1)
+                                        .width(123.1)
+                                        .height(123.1)
+                                        .top(123.1)
+                                        .right(123.1)
+                                        .bottom(123.1)
+                                        .left(123.1)
+                                        .build())
+                                .build())
+                        .percentages(FieldWrapper.Percentages.builder()
+                                .top(top + "%")
+                                .left(left + "%")
+                                .build())
+                        .signer(new FieldWrapper.Signer())
+                        .build());
+            }
+        }
     }
 }

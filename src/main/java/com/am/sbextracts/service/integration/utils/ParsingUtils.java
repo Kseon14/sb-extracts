@@ -40,6 +40,10 @@ public final class ParsingUtils {
         return getItem(tag, 1);
     }
 
+    public static boolean isReconciliation(TagNode tag) {
+        return StringUtils.contains(((ContentNode) tag.getAllChildren().get(0)).getContent(), "звірка");
+    }
+
     public static int getItem(TagNode tag, int index) {
         final Pattern pattern = Pattern.compile("'(.*?)'");
         final Matcher matcher = pattern.matcher(tag.getAttributes().get(ONCLICK));
@@ -88,11 +92,10 @@ public final class ParsingUtils {
     public static final Predicate<TagNode> isRequiredTag = tagNode -> tagNode.getAttributes().containsKey(ONCLICK)
             && tagNode.getAttributeByName(ONCLICK).startsWith("previewFile");
 
-    // documents with sverka word in name, that indicate different structure
-    public static final Predicate<TagNode> isAkt = tagNode -> {
+    public static final Predicate<TagNode> isAktOrReconciliation = tagNode -> {
         String contentNodeContent = StringUtils.strip(((ContentNode) tagNode.getAllChildren().get(0)).getContent());
         String[] splitContent = contentNodeContent.split("\\.");
-        return CollectionUtils.containsAny(Arrays.asList(splitContent), "akt");
+        return CollectionUtils.containsAny(Arrays.asList(splitContent), "akt", "звірка");
     };
 
     public static String getName(TagNode tagNode) {
