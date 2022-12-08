@@ -17,8 +17,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.mail.MessagingException;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -110,7 +108,7 @@ public class TaxPaymentListener {
                             taxPayment.getPurposeOfPayment()
                     ),
                     authorSlackId);
-        } catch (IOException | MessagingException e) {
+        } catch (Exception e) {
             throw new SbExtractsException("Email could not be sent", e, authorSlackId);
         }
     }

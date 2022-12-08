@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import javax.mail.MessagingException;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.List;
@@ -83,7 +81,7 @@ public class BMessageListener {
                             from,
                             new SimpleDateFormat("dd MMM").format(message.getDueDate())),
                     authorSlackId);
-        } catch (IOException | MessagingException e) {
+        } catch (Exception e) {
             throw new SbExtractsException("Email could not be sent", e, authorSlackId);
         }
     }
