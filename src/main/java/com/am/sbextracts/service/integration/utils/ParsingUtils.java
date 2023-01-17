@@ -41,7 +41,7 @@ public final class ParsingUtils {
     }
 
     public static boolean isReconciliation(TagNode tag) {
-        return StringUtils.contains(((ContentNode) tag.getAllChildren().get(0)).getContent(), "звірка");
+        return StringUtils.contains(((ContentNode) tag.getAllChildren().get(0)).getContent(), "sverka");
     }
 
     public static int getItem(TagNode tag, int index) {
