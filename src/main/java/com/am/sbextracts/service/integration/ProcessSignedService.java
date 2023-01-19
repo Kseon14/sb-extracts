@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNode;
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.isAktAndDate;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isActorReconciliationAndDate;
 
 @Slf4j
 @Service
@@ -80,7 +80,7 @@ public class ProcessSignedService implements Process {
             // find and filter out documents ids with specific date and "akt" in name
             List<String> ids = Arrays
                     .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName", true, false))
-                    .filter(td -> isAktAndDate(td, slackEventResponse.getDate())).filter(ParsingUtils::isSigned)
+                    .filter(td -> isActorReconciliationAndDate(td, slackEventResponse.getDate())).filter(ParsingUtils::isSigned)
                     .map(ProcessSignedService::getId).filter(id -> !CollectionUtils.containsAny(processedIds, id))
                     .collect(Collectors.toList());
 

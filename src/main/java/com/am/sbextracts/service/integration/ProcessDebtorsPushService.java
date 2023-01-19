@@ -67,7 +67,7 @@ public class ProcessDebtorsPushService implements Process {
         Set<String> notSignedFilesInn = Arrays
                 .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
                         true, false))
-                .filter(td -> ParsingUtils.isAktAndDate(td, slackEventResponse.getDate()))
+                .filter(td -> ParsingUtils.isActorReconciliationAndDate(td, slackEventResponse.getDate()))
                 .filter(rec -> !ParsingUtils.isSigned(rec))
                 .map(ParsingUtils::getName)
                 .map(ParsingUtils::getInn)
