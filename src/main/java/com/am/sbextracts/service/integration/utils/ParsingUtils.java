@@ -20,8 +20,10 @@ import java.util.regex.Pattern;
 @UtilityClass
 public final class ParsingUtils {
 
-    public static final String ONCLICK = "onclick";
-    public static final String CLASS = "class";
+    private static final String ONCLICK = "onclick";
+    private static final String CLASS = "class";
+    private static final String SVERKA = "sverka";
+    private static final String AKT = "akt";
 
     public static String getInn(TagNode tag) {
         return StringUtils.strip(((ContentNode) tag.getAllChildren().get(0)).getContent()).split("\\.")[1];
@@ -41,7 +43,7 @@ public final class ParsingUtils {
     }
 
     public static boolean isReconciliation(TagNode tag) {
-        return StringUtils.contains(((ContentNode) tag.getAllChildren().get(0)).getContent(), "sverka");
+        return StringUtils.contains(((ContentNode) tag.getAllChildren().get(0)).getContent(), SVERKA);
     }
 
     public static int getItem(TagNode tag, int index) {
@@ -78,14 +80,15 @@ public final class ParsingUtils {
 
     public static boolean isAktAndDate(TagNode tagNode, String date) {
         Optional<String> title = Arrays
-                .stream(tagNode.getElementsByAttValue(CLASS, "ReportsTable__reportNameText", true, false)).findFirst()
+                .stream(tagNode.getElementsByAttValue(CLASS, "ReportsTable__reportNameText",
+                        true, false)).findFirst()
                 .map(at -> at.getAttributeByName("title"));
         String[] splitResult = title.map(t -> t.split("\\."))
                 .orElseThrow(() -> new IllegalArgumentException("can not filter by akt and date"));
         if (splitResult.length < 6) {
             return false;
         }
-        return splitResult[5].equals("akt")
+        return StringUtils.equalsAny(splitResult[5], AKT, SVERKA)
                 && String.join(".", splitResult[2], splitResult[3], splitResult[4]).equals(date);
     }
 
@@ -95,12 +98,13 @@ public final class ParsingUtils {
     public static final Predicate<TagNode> isAktOrReconciliation = tagNode -> {
         String contentNodeContent = StringUtils.strip(((ContentNode) tagNode.getAllChildren().get(0)).getContent());
         String[] splitContent = contentNodeContent.split("\\.");
-        return CollectionUtils.containsAny(Arrays.asList(splitContent), "akt", "звірка");
+        return CollectionUtils.containsAny(Arrays.asList(splitContent), AKT, SVERKA);
     };
 
     public static String getName(TagNode tagNode) {
         return Arrays
-                .stream(tagNode.getElementsByAttValue(CLASS, "ReportsTable__reportNameText", true, false)).findFirst()
+                .stream(tagNode.getElementsByAttValue(CLASS, "ReportsTable__reportNameText",
+                        true, false)).findFirst()
                 .map(at -> at.getAttributeByName("title"))
                 .orElseThrow(() -> new IllegalArgumentException("can not find title"));
     }
