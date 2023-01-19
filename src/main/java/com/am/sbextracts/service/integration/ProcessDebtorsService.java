@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE;
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNode;
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.isAktOrReconciliation;
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequiredTag;
 
 @Slf4j
@@ -79,7 +79,7 @@ public class ProcessDebtorsService implements Process {
         Set<String> notSignedFiles = Arrays
                 .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
                         true, false))
-                .filter(td -> ParsingUtils.isAktAndDate(td, slackEventResponse.getDate()))
+                .filter(td -> ParsingUtils.isActorReconciliationAndDate(td, slackEventResponse.getDate()))
                 .filter(rec -> !ParsingUtils.isSigned(rec))
                 .map(ParsingUtils::getName)
                 .collect(Collectors.toSet());
@@ -87,7 +87,7 @@ public class ProcessDebtorsService implements Process {
         Set<String> filesSentForSignature = Arrays
                 .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
                         true, false))
-                .filter(td -> ParsingUtils.isAktAndDate(td, slackEventResponse.getDate()))
+                .filter(td -> ParsingUtils.isActorReconciliationAndDate(td, slackEventResponse.getDate()))
                 .map(ParsingUtils::getName)
                 .collect(Collectors.toSet());
 
@@ -104,7 +104,7 @@ public class ProcessDebtorsService implements Process {
             TagNode tagNodeFolderWithActs = new HtmlCleaner().clean(folder.getHtml());
             notSentFiles.addAll(tagNodeFolderWithActs.getElementListByName("button", true).stream()
                     .filter(isRequiredTag)
-                    .filter(isAktOrReconciliation)
+                    .filter(tag -> IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE.test(tag, slackEventResponse.getDate()))
                     .filter(b -> employees.get(ParsingUtils.getInn(b)) != null)
                     .map(ParsingUtils::getFileTitle)
                     .filter(name -> !CollectionUtils.containsAny(filesSentForSignature, name))

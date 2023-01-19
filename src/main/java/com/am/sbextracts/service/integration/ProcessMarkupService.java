@@ -43,7 +43,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.isAktOrReconciliation;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE;
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequiredTag;
 
 @Slf4j
@@ -107,7 +107,7 @@ public class ProcessMarkupService implements Process {
                 List<DocumentInfo> infos = tagNode.getElementListByName("button", true)
                         .stream()
                         .filter(isRequiredTag)
-                        .filter(isAktOrReconciliation)
+                        .filter(tag -> IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE.test(tag, slackEventResponse.getDate()))
                         .map(b -> DocumentInfo.of(ParsingUtils.getInn(b),
                                 ParsingUtils.getFileId(b), ParsingUtils.getTemplateFileId(b),
                                 ParsingUtils.isReconciliation(b)))

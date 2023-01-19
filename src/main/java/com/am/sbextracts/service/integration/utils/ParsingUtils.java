@@ -2,7 +2,6 @@ package com.am.sbextracts.service.integration.utils;
 
 import feign.Response;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
@@ -13,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -78,7 +78,7 @@ public final class ParsingUtils {
         return Integer.parseInt(node.getContent()) > 0;
     }
 
-    public static boolean isAktAndDate(TagNode tagNode, String date) {
+    public static boolean isActorReconciliationAndDate(TagNode tagNode, String date) {
         Optional<String> title = Arrays
                 .stream(tagNode.getElementsByAttValue(CLASS, "ReportsTable__reportNameText",
                         true, false)).findFirst()
@@ -95,10 +95,11 @@ public final class ParsingUtils {
     public static final Predicate<TagNode> isRequiredTag = tagNode -> tagNode.getAttributes().containsKey(ONCLICK)
             && tagNode.getAttributeByName(ONCLICK).startsWith("previewFile");
 
-    public static final Predicate<TagNode> isAktOrReconciliation = tagNode -> {
+    public static final BiPredicate<TagNode, String> IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE = (tagNode, date) -> {
         String contentNodeContent = StringUtils.strip(((ContentNode) tagNode.getAllChildren().get(0)).getContent());
         String[] splitContent = contentNodeContent.split("\\.");
-        return CollectionUtils.containsAny(Arrays.asList(splitContent), AKT, SVERKA);
+        return StringUtils.equalsAny(splitContent[5], AKT, SVERKA)
+                && String.join(".", splitContent[2], splitContent[3], splitContent[4]).equals(date);
     };
 
     public static String getName(TagNode tagNode) {
