@@ -81,12 +81,6 @@ public class TaxPaymentListener {
         slackResponderService.sendMessageToInitiator(authorSlackId, taxPayment.getFullName(),
                 taxPayment.getUserEmail());
         sendMail(taxPayment, authorSlackId);
-        slackResponderService.sendMessageToInitiator(authorSlackId,
-                ChatPostMessageRequest.builder()
-                        .text("The mail was sent")
-                        .blocks(List.of(SectionBlock.builder()
-                                .text(MarkdownTextObject.builder()
-                                        .text(String.format("The mail was sent to %s", taxPayment.getUserEmail())).build()).build())));
     }
 
     private void sendMail(TaxPayment taxPayment, String authorSlackId) {
@@ -114,6 +108,12 @@ public class TaxPaymentListener {
                             taxPayment.getPurposeOfPayment()
                     ),
                     authorSlackId);
+            slackResponderService.sendMessageToInitiator(authorSlackId,
+                    ChatPostMessageRequest.builder()
+                            .text("The mail was sent")
+                            .blocks(List.of(SectionBlock.builder()
+                                    .text(MarkdownTextObject.builder()
+                                            .text(String.format("The mail was sent to %s", taxPayment.getUserEmail())).build()).build())));
         } catch (Exception e) {
             throw new SbExtractsException("Email could not be sent", e, authorSlackId);
         }
