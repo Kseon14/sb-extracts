@@ -72,7 +72,7 @@ public class ProcessSignedService implements Process {
         File file = null;
         long dateOfModification = -1;
         try {
-            file = gDriveService.getFile(logFileName, slackEventResponse.getInitiatorUserId());
+            file = gDriveService.getFileOrCreateNew(logFileName, slackEventResponse.getInitiatorUserId());
             if (file.exists()) {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
@@ -84,8 +84,16 @@ public class ProcessSignedService implements Process {
                     .map(ProcessSignedService::getId).filter(id -> !CollectionUtils.containsAny(processedIds, id))
                     .collect(Collectors.toList());
 
-            log.info("Documents for download: {}", ids.size());
-            slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Documents for download: " + ids.size());
+            if (ids.size() == 0) {
+                log.info("No files to download");
+                slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                        "No files to download");
+                log.info("Local report deleted: {}", file.delete());
+            } else {
+                log.info("Documents for download: {}", ids.size());
+                slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Documents for download: " + ids.size());
+            }
+
             for (int i = 0; i < Math.min(perRequestProcessingFilesCount, ids.size()); i++) {
                 String id = ids.get(i);
                 feign.Response report = bambooHrSignedFile

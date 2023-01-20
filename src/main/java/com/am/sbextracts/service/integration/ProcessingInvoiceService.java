@@ -79,7 +79,7 @@ public class ProcessingInvoiceService implements Process {
         final Map<String, String> processedIds = new HashMap<>();
         try {
 
-            file = gDriveService.getFile(logFileName, initiatorUserId);
+            file = gDriveService.getFileOrCreateNew(logFileName, initiatorUserId);
 
             if (file.exists()) {
                 processedIds.putAll(parseLogFile(Files.readAllLines(Paths.get(file.getPath()))));
