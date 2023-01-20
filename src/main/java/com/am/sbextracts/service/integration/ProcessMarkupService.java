@@ -87,7 +87,7 @@ public class ProcessMarkupService implements Process {
                 PROCESSED_ID_FILE_NAME);
         long dateOfModification = -1;
         try {
-            file = gDriveService.getFile(logFileName, slackEventResponse.getInitiatorUserId());
+            file = gDriveService.getFileOrCreateNew(logFileName, slackEventResponse.getInitiatorUserId());
             if (file.exists()) {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
@@ -114,9 +114,16 @@ public class ProcessMarkupService implements Process {
                         .filter(info -> !CollectionUtils.containsAny(processedIds, info.getFileId() + ""))
                         .filter(info -> employees.get(info.getInn()) != null)
                         .collect(Collectors.toList());
-                log.info("Following Documents count {} will be processed", infos.size());
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(),
-                        String.format("Following Documents count %s will be processed", infos.size()));
+                if (infos.size() == 0) {
+                    log.info("Found {} file(s), but no files to process", folder.getSectionFileCount());
+                    slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                            String.format("Found %s file(s), but no files to process", folder.getSectionFileCount()));
+                    log.info("Local report deleted: {}", file.delete());
+                } else {
+                    log.info("Following Documents count {} will be processed", infos.size());
+                    slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                            String.format("Following Documents count %s will be processed", infos.size()));
+                }
 
                 for (int i = 0; i < infos.size(); i++) {
                     var info = infos.get(i);

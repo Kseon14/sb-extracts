@@ -78,9 +78,15 @@ public class TaxPaymentListener {
                                         .fields(fieldList).color("#36a64f").build()))
                         .build(), taxPayment.getUserEmail(), authorSlackId);
 
-        sendMail(taxPayment, authorSlackId);
         slackResponderService.sendMessageToInitiator(authorSlackId, taxPayment.getFullName(),
                 taxPayment.getUserEmail());
+        sendMail(taxPayment, authorSlackId);
+        slackResponderService.sendMessageToInitiator(authorSlackId,
+                ChatPostMessageRequest.builder()
+                        .text("The mail was sent")
+                        .blocks(List.of(SectionBlock.builder()
+                                .text(MarkdownTextObject.builder()
+                                        .text(String.format("The mail was sent to %s", taxPayment.getUserEmail())).build()).build())));
     }
 
     private void sendMail(TaxPayment taxPayment, String authorSlackId) {

@@ -95,7 +95,7 @@ public class GDriveService {
         }
     }
 
-    public java.io.File getFile(String fileName, String initiatorSlackId) {
+    public java.io.File getFileOrCreateNew(String fileName, String initiatorSlackId) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         Drive service = getService(initiatorSlackId);
         List<File> result;
@@ -113,6 +113,7 @@ public class GDriveService {
         }
 
         if (CollectionUtils.isEmpty(result)) {
+            log.info("file not found in gDrive, new file locally will be created with name {}", fileName);
             return new java.io.File(fileName);
         }
         if (result.size() > 1) {
@@ -120,11 +121,13 @@ public class GDriveService {
         }
 
         String intName = result.get(0).getId();
+        log.info("gFile exists and downloaded, content will be saved locally with name {}", intName);
         java.io.File file = new java.io.File(intName);
         try (OutputStream outputStream = new FileOutputStream(file)) {
             service.files().get(intName)
                     .executeMediaAndDownloadTo(byteArrayOutputStream);
             byteArrayOutputStream.writeTo(outputStream);
+            log.info("gFile content saved in local file");
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
