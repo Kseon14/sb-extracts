@@ -1,6 +1,7 @@
 package com.am.sbextracts.service.integration;
 
 import com.am.sbextracts.service.ResponderService;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,12 @@ public class GmailService {
         log.info("Starting to send emails...");
         for (String to : toEmails) {
             Message message = createMessageWithEmail(createEmail(to, from, subject, text));
-            service.users().messages().send("me", message).execute();
+            try {
+                service.users().messages().send("me", message).execute();
+            } catch (final GoogleJsonResponseException ex) {
+                log.error(ex.getDetails().getMessage());
+                throw new IllegalStateException(String.format("%s Code: %s", ex.getDetails().getMessage(), ex.getDetails().getCode()));
+            }
             log.info("Message sent to: {}", to);
             slackResponderService.log(initiatorSlackId, "*Message sent to*: " + to);
         }

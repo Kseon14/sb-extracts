@@ -53,15 +53,16 @@ public class ProcessSignedService implements Process {
     @Override
     @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
-        slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Start processing ....");
-        gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
+        final String initiatorUserId = slackEventResponse.getInitiatorUserId();
+        slackResponderService.log(initiatorUserId, "Start processing ....");
+        gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), initiatorUserId);
         feign.Response response;
         Map<String, String> bchHeaders;
         try {
-            bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(), slackEventResponse.getInitiatorUserId());
+            bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(), initiatorUserId);
             response = bambooHrSignedFile.getSignedDocumentList(bchHeaders);
         } catch (RetryableException | IllegalArgumentException ex) {
-            throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
+            throw new SbExtractsException(ex.getMessage(), ex, initiatorUserId);
         }
         TagNode tagNode = getTagNode(response.body());
 
@@ -72,7 +73,7 @@ public class ProcessSignedService implements Process {
         File file = null;
         long dateOfModification = -1;
         try {
-            file = gDriveService.getFileOrCreateNew(logFileName, slackEventResponse.getInitiatorUserId());
+            file = gDriveService.getFileOrCreateNew(logFileName, slackEventResponse.getGFolderId(), initiatorUserId);
             if (file.exists()) {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
@@ -86,12 +87,12 @@ public class ProcessSignedService implements Process {
 
             if (ids.size() == 0) {
                 log.info("No files to download");
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                slackResponderService.log(initiatorUserId,
                         "No files to download");
                 log.info("Local report deleted: {}", file.delete());
             } else {
                 log.info("Documents for download: {}", ids.size());
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Documents for download: " + ids.size());
+                slackResponderService.log(initiatorUserId, "Documents for download: " + ids.size());
             }
 
             for (int i = 0; i < Math.min(perRequestProcessingFilesCount, ids.size()); i++) {
@@ -119,10 +120,10 @@ public class ProcessSignedService implements Process {
                 pdfFile.setName(fileName);
                 pdfFile.setParents(Collections.singletonList(slackEventResponse.getGFolderId()));
                 gDriveService.uploadFile(pdfFile, pdf, MediaType.APPLICATION_PDF_VALUE,
-                        slackEventResponse.getInitiatorUserId());
+                        initiatorUserId);
                 log.info("Document uploaded [{}/{}]: {}", i + 1, Math.min(perRequestProcessingFilesCount, ids.size()),
                         fileName);
-                slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                slackResponderService.log(initiatorUserId,
                         String.format("Document uploaded [%s/%s]: %s", i + 1, Math.min(perRequestProcessingFilesCount,
                                 ids.size()), fileName));
 
@@ -130,7 +131,7 @@ public class ProcessSignedService implements Process {
             }
         } catch (Throwable ex) {
             log.error("Error during download of acts", ex);
-            throw new SbExtractsException("Error during download of acts:", ex, slackEventResponse.getInitiatorUserId());
+            throw new SbExtractsException("Error during download of acts:", ex, initiatorUserId);
         } finally {
             gDriveService.saveFile(file, dateOfModification, logFileName, slackEventResponse);
         }

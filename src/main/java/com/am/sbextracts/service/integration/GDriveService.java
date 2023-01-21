@@ -95,7 +95,7 @@ public class GDriveService {
         }
     }
 
-    public java.io.File getFileOrCreateNew(String fileName, String initiatorSlackId) {
+    public java.io.File getFileOrCreateNew(final String fileName, final String folderId, final String initiatorSlackId) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         Drive service = getService(initiatorSlackId);
         List<File> result;
@@ -105,7 +105,7 @@ public class GDriveService {
                     .list()
                     .setSpaces("drive")
                     .setPageSize(20)
-                    .setQ("name = '" + fileName + "' and trashed = false")
+                    .setQ(String.format("name = '%s' and trashed = false and parents='%s'", fileName, folderId))
                     .setFields("files(id, name)")
                     .execute().getFiles();
         } catch (IOException e) {
@@ -134,8 +134,10 @@ public class GDriveService {
         return file;
     }
 
-    public void saveFile(java.io.File file, long dateOfModification, String logFileName, InternalSlackEventResponse slackEventResponse) {
-        saveFile(file, dateOfModification, logFileName, slackEventResponse.getInitiatorUserId(), slackEventResponse.getGFolderId());
+    public void saveFile(java.io.File file, long dateOfModification, String logFileName,
+                         InternalSlackEventResponse slackEventResponse) {
+        saveFile(file, dateOfModification, logFileName, slackEventResponse.getInitiatorUserId(),
+                slackEventResponse.getGFolderId());
     }
 
     @SbExceptionHandler

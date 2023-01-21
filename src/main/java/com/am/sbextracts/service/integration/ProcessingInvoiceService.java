@@ -79,7 +79,7 @@ public class ProcessingInvoiceService implements Process {
         final Map<String, String> processedIds = new HashMap<>();
         try {
 
-            file = gDriveService.getFileOrCreateNew(logFileName, initiatorUserId);
+            file = gDriveService.getFileOrCreateNew(logFileName, slackEventResponse.getGFolderId(), initiatorUserId);
 
             if (file.exists()) {
                 processedIds.putAll(parseLogFile(Files.readAllLines(Paths.get(file.getPath()))));

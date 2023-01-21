@@ -74,9 +74,10 @@ public class ProcessMarkupService implements Process {
     @SbExceptionHandler
     @Override
     public void process(InternalSlackEventResponse slackEventResponse) {
-        slackResponderService.log(slackEventResponse.getInitiatorUserId(), "Starting....");
-        gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), slackEventResponse.getInitiatorUserId());
-        Map<String, String> employees = reportService.getEmployees(slackEventResponse.getInitiatorUserId());
+        final String initiatorUserId = slackEventResponse.getInitiatorUserId();
+        slackResponderService.log(initiatorUserId, "Starting....");
+        gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), initiatorUserId);
+        Map<String, String> employees = reportService.getEmployees(initiatorUserId);
         int fileCount;
         var offset = 0;
         var globalCounter = 0;
@@ -87,18 +88,18 @@ public class ProcessMarkupService implements Process {
                 PROCESSED_ID_FILE_NAME);
         long dateOfModification = -1;
         try {
-            file = gDriveService.getFileOrCreateNew(logFileName, slackEventResponse.getInitiatorUserId());
+            file = gDriveService.getFileOrCreateNew(logFileName, slackEventResponse.getGFolderId(), initiatorUserId);
             if (file.exists()) {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
             dateOfModification = file.lastModified();
             Map<String, String> bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(),
-                    slackEventResponse.getInitiatorUserId());
+                    initiatorUserId);
             do {
                 Folder folder = signClientCommon.getFolderContent(offset, slackEventResponse.getFolderId(), bchHeaders);
                 if (folder == null) {
                     throw new SbExtractsException("folder content is null, possible you are not logged in, please refresh your bamboo session",
-                            slackEventResponse.getInitiatorUserId());
+                            initiatorUserId);
                 }
                 log.info("start processing folder: {}, filesCount: {}, offset: {}", folder.getSectionName(),
                         folder.getSectionFileCount(), offset);
@@ -116,12 +117,12 @@ public class ProcessMarkupService implements Process {
                         .collect(Collectors.toList());
                 if (infos.size() == 0) {
                     log.info("Found {} file(s), but no files to process", folder.getSectionFileCount());
-                    slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                    slackResponderService.log(initiatorUserId,
                             String.format("Found %s file(s), but no files to process", folder.getSectionFileCount()));
                     log.info("Local report deleted: {}", file.delete());
                 } else {
                     log.info("Following Documents count {} will be processed", infos.size());
-                    slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                    slackResponderService.log(initiatorUserId,
                             String.format("Following Documents count %s will be processed", infos.size()));
                 }
 
@@ -133,7 +134,7 @@ public class ProcessMarkupService implements Process {
                             infos.size(),
                             globalCounter,
                             info.getInn());
-                    slackResponderService.log(slackEventResponse.getInitiatorUserId(),
+                    slackResponderService.log(initiatorUserId,
                             String.format("Start processing [%s/%s] already processed: [%s]: %s...",
                                     i + 1,
                                     infos.size(),
@@ -149,7 +150,7 @@ public class ProcessMarkupService implements Process {
                 fileCount = folder.getSectionFileCount();
             } while (offset < fileCount);
         } catch (Throwable ex) {
-            throw new SbExtractsException("Error during markup of acts", ex, slackEventResponse.getInitiatorUserId());
+            throw new SbExtractsException("Error during markup of acts", ex, initiatorUserId);
         } finally {
             //file not exist in gdrive and not updated -> dateOfModification = 0 and last mod file = false (0)   -> false
             //file not exist in gdrive and not updated -> dateOfModification = 0 and last mod file = true (124)   -> true
