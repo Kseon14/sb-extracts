@@ -214,6 +214,7 @@ public class GAuthService {
                 DriveScopes.DRIVE,
                 withMail ? " " + GmailScopes.GMAIL_SEND : "");
 
+        log.info(redirectUrl);
         slackResponderService.log(initiatorSlackId,
                 String.format("<%s|Please approve access to Google Drive %s>",
                         redirectUrl, withMail ? "and Google Mail" : ""));
