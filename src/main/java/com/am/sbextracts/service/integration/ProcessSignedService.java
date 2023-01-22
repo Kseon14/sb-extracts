@@ -87,8 +87,7 @@ public class ProcessSignedService implements Process {
 
             if (ids.size() == 0) {
                 log.info("No files to download");
-                slackResponderService.log(initiatorUserId,
-                        "No files to download");
+                slackResponderService.log(initiatorUserId, "No files to download");
                 log.info("Local report deleted: {}", file.delete());
             } else {
                 log.info("Documents for download: {}", ids.size());
@@ -102,15 +101,6 @@ public class ProcessSignedService implements Process {
                 String jsonData = Util.toString(report.body().asReader(StandardCharsets.UTF_8));
                 String fileId = ((JSONArray) JsonPath.parse(jsonData).read("$..['most_recent_employee_file_data_id']"))
                         .get(0).toString();
-//                TagNode reportTag = getTagNode(report.body());
-//                Optional<? extends TagNode> tagNodeOptional = Arrays
-//                        .stream(reportTag.getElementsByAttValue("id", "js-signatureReportData", true, false)).findFirst();
-//
-//                String jsonData = tagNodeOptional.map(t -> ((ContentNode) t.getAllChildren().get(0)).getContent())
-//                        .orElseThrow(() -> new IllegalArgumentException("not found content for js-signatureReportData"));
-//
-//                String fileId = ((JSONArray) JsonPath.parse(jsonData).read("$..['most_recent_employee_file_data_id']"))
-//                        .get(0).toString();
 
                 byte[] pdf = bambooHrSignedFile.getPdf(bchHeaders, fileId);
                 String fileName = ((JSONArray) JsonPath.parse(jsonData).read("$..['original_file_name']")).get(0)

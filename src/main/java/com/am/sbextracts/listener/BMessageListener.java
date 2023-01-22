@@ -29,7 +29,7 @@ public class BMessageListener {
     private final ResponderService slackResponderService;
     private final GmailService gmailService;
     @Value("${app.fromMail}")
-    String from;
+    private final String from;
 
     @EventListener
     public void onApplicationEvent(BMessage message) {

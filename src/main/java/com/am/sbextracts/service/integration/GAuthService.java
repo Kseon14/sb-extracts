@@ -3,6 +3,7 @@ package com.am.sbextracts.service.integration;
 import com.am.sbextracts.client.GoogleAuthClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
+import com.am.sbextracts.model.SlackSlashCommandRequest;
 import com.am.sbextracts.service.ResponderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -23,6 +24,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -75,6 +77,19 @@ public class GAuthService {
     CompletableFuture<GoogleTokenResponse> tokenFuture;
 
     private final ResponderService slackResponderService;
+
+    public void reAuth(SlackSlashCommandRequest slackSlashCommandRequest) {
+        String initiatorSlackId = slackSlashCommandRequest.getUser_id();
+        final String fileName = String.format(PATTERN, TOKENS_DIRECTORY_PATH,
+                initiatorSlackId, GoogleCredential.class.getSimpleName());
+
+        log.info("Token removed: {}", new java.io.File(fileName).delete());
+        slackResponderService.log(initiatorSlackId, "Token Removed");
+        slackResponderService.log(initiatorSlackId, "New Token creation initiated...");
+        getCredentials(initiatorSlackId, StringUtils.equals(slackSlashCommandRequest.getText(), "with email"));
+        log.info("New Token created");
+        slackResponderService.log(initiatorSlackId, "New Token created");
+    }
 
     private String getCodeChallenge(final String initiatorSlackId) {
         log.debug("Generate code challenge...");
