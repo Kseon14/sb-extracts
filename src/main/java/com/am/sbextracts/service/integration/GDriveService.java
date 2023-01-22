@@ -96,7 +96,6 @@ public class GDriveService {
     }
 
     public java.io.File getFileOrCreateNew(final String fileName, final String folderId, final String initiatorSlackId) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         Drive service = getService(initiatorSlackId);
         List<File> result;
         try {
@@ -114,16 +113,27 @@ public class GDriveService {
 
         if (CollectionUtils.isEmpty(result)) {
             log.info("file not found in gDrive, new file locally will be created with name {}", fileName);
+            if (new java.io.File(fileName).exists()) {
+                String logMessage = "File already exists, maybe previous run was interrupted, content of existed file will be added to this";
+                log.info(logMessage);
+                slackResponderService.log(initiatorSlackId, logMessage);
+            }
             return new java.io.File(fileName);
         }
         if (result.size() > 1) {
-            throw new IllegalArgumentException("too many " + fileName + " files with the same name in gDrive");
+            throw new IllegalArgumentException("too many " + fileName + " files with the same name in folder");
         }
 
         String intName = result.get(0).getId();
         log.info("gFile exists and downloaded, content will be saved locally with name {}", intName);
         java.io.File file = new java.io.File(intName);
-        try (OutputStream outputStream = new FileOutputStream(file)) {
+        if (file.exists()) {
+            String logMessage = "File already exists, maybe previous run was interrupted, content of existed file will be added to this";
+            log.info(logMessage);
+            slackResponderService.log(initiatorSlackId, logMessage);
+        }
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try (OutputStream outputStream = new FileOutputStream(file, true)) {
             service.files().get(intName)
                     .executeMediaAndDownloadTo(byteArrayOutputStream);
             byteArrayOutputStream.writeTo(outputStream);
