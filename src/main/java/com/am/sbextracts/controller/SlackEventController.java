@@ -1,7 +1,9 @@
 package com.am.sbextracts.controller;
 
+import com.am.sbextracts.model.SlackSlashCommandRequest;
 import com.am.sbextracts.publisher.PublisherFactory;
 import com.am.sbextracts.service.FileDownloader;
+import com.am.sbextracts.service.integration.GAuthService;
 import com.am.sbextracts.vo.FileMetaInfo;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackResponse;
@@ -16,8 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -40,8 +44,13 @@ public class SlackEventController {
     private static final Set<String> processedFiles = ConcurrentHashMap.newKeySet();
 
     private final FileDownloader downloader;
+
+    private final GAuthService gAuthService;
     @Value("${slack.verification.token}")
     private String verificationToken;
+
+    @Value("#{${slack.allowedUsers}}")
+    private final List<String> allowedUsers;
 
     private final Predicate<String> isTokenValid = token -> !token.equals(verificationToken);
 
@@ -81,6 +90,19 @@ public class SlackEventController {
     @PostMapping("file_types")
     public SlackResponse getFileTypeInfo() {
         return new SlackResponse(Arrays.toString(PublisherFactory.Type.values()));
+    }
+
+    @PostMapping("reauth")
+    public ResponseEntity<Object> reAuth(SlackSlashCommandRequest slackSlashCommandRequest) {
+        if (isNotAllowedUser(slackSlashCommandRequest)) {
+            return ResponseEntity.ok().build();
+        }
+        Executors.newSingleThreadExecutor().execute(() -> gAuthService.reAuth(slackSlashCommandRequest));
+        return ResponseEntity.ok().build();
+    }
+
+    private boolean isNotAllowedUser(SlackSlashCommandRequest slackSlashCommandRequest) {
+        return !allowedUsers.contains(slackSlashCommandRequest.getUser_id());
     }
 
 }

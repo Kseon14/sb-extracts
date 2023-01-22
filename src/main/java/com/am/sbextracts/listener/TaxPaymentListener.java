@@ -32,7 +32,7 @@ import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 public class TaxPaymentListener {
 
     @Value("${app.fromMail}")
-    String from;
+    private final String from;
 
     private final ResponderService slackResponderService;
     private final GmailService gmailService;

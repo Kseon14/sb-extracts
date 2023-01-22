@@ -29,7 +29,7 @@ import static com.am.sbextracts.service.integration.GAuthService.getNetHttpTrans
 public class GmailService {
 
     @Value("${app.fromMail}")
-    String from;
+    private final String from;
 
     private final GAuthService gAuthService;
     private final ResponderService slackResponderService;
@@ -43,8 +43,9 @@ public class GmailService {
             try {
                 service.users().messages().send("me", message).execute();
             } catch (final GoogleJsonResponseException ex) {
-                log.error(ex.getDetails().getMessage());
-                throw new IllegalStateException(String.format("%s Code: %s", ex.getDetails().getMessage(), ex.getDetails().getCode()));
+                String errorMessage = String.format("%s Code: %s", ex.getDetails().getMessage(), ex.getDetails().getCode());
+                log.error(errorMessage);
+                throw new IllegalStateException(errorMessage);
             }
             log.info("Message sent to: {}", to);
             slackResponderService.log(initiatorSlackId, "*Message sent to*: " + to);
