@@ -8,8 +8,11 @@ import com.am.sbextracts.vo.FileMetaInfo;
 import com.am.sbextracts.vo.SlackEvent;
 import com.am.sbextracts.vo.SlackResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +20,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -83,8 +89,12 @@ public class SlackEventController {
     }
 
     @PostMapping("ping")
+    @SneakyThrows
     public SlackResponse ping() {
-        return new SlackResponse("I'm here");
+        File versionFile = new File("version");
+        final String version = FileUtils.readFileToString(versionFile, "UTF-8");
+        return new SlackResponse(String.format("I'm here, v%s from %s", StringUtils.trim(version),
+                new SimpleDateFormat(" dd MMM yyyy HH:mm:ss").format(new Date(versionFile.lastModified()))));
     }
 
     @PostMapping("file_types")
