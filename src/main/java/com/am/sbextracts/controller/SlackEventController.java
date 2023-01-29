@@ -92,9 +92,12 @@ public class SlackEventController {
     @SneakyThrows
     public SlackResponse ping() {
         File versionFile = new File("version");
-        final String version = FileUtils.readFileToString(versionFile, "UTF-8");
-        return new SlackResponse(String.format("I'm here, v%s from %s", StringUtils.trim(version),
-                new SimpleDateFormat(" dd MMM yyyy HH:mm:ss").format(new Date(versionFile.lastModified()))));
+        if (versionFile.exists()) {
+            final String version = FileUtils.readFileToString(versionFile, "UTF-8");
+            return new SlackResponse(String.format("I'm here, v%s from %s", StringUtils.trim(version),
+                    new SimpleDateFormat(" dd MMM yyyy HH:mm:ss").format(new Date(versionFile.lastModified()))));
+        }
+        return new SlackResponse("I'm here");
     }
 
     @PostMapping("file_types")
