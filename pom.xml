@@ -22,7 +22,7 @@
 		<poi.version>5.2.0</poi.version>
 		<pdfbox.version>2.0.25</pdfbox.version>
 		<async-http-client.version>2.12.3</async-http-client.version>
-		<itextpdf.version>5.5.13.2</itextpdf.version>
+		<itextpdf.version>5.5.13.3</itextpdf.version>
 		<google.outh.version>1.3.0</google.outh.version>
 		<!--This version depends on drive lib version-->
 		<com.google.api-client.version>1.35.2</com.google.api-client.version>
