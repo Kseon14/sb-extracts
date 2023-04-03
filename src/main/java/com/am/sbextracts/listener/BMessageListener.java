@@ -1,5 +1,6 @@
 package com.am.sbextracts.listener;
 
+import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.GmailService;
@@ -32,6 +33,7 @@ public class BMessageListener {
     private final String from;
 
     @EventListener
+    @SbExceptionHandler
     public void onApplicationEvent(BMessage message) {
         try {
             TimeUnit.SECONDS.sleep(DEFAULT_DELAY);
@@ -59,8 +61,8 @@ public class BMessageListener {
                                                 new SimpleDateFormat("dd MMM").format(message.getDueDate()))).build()).build())
                         ).build(), message.getUserEmail(), authorSlackId);
 
-        sendMail(message, authorSlackId);
         slackResponderService.sendMessageToInitiator(authorSlackId, message.getFullName(), message.getUserEmail());
+        sendMail(message, authorSlackId);
     }
 
     private void sendMail(BMessage message, String authorSlackId) {
