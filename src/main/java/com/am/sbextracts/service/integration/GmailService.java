@@ -47,8 +47,8 @@ public class GmailService {
                 log.error(errorMessage);
                 throw new IllegalStateException(errorMessage);
             }
-            log.info("Message sent to: {}", to);
-            slackResponderService.log(initiatorSlackId, "*Message sent to*: " + to);
+            log.info("Email sent to: {}", to);
+            slackResponderService.log(initiatorSlackId, "*Email sent to*: " + to);
         }
     }
 
