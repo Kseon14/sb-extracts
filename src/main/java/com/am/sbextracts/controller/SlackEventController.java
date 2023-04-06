@@ -52,10 +52,10 @@ public class SlackEventController {
     private final FileDownloader downloader;
 
     private final GAuthService gAuthService;
-    @Value("${slack.verification.token}")
+    @Value("${VERIFICATION_TOKEN}")
     private String verificationToken;
 
-    @Value("#{${slack.allowedUsers}}")
+    @Value("#{${ALLOWED_USER}}")
     private final List<String> allowedUsers;
 
     private final Predicate<String> isTokenValid = token -> !token.equals(verificationToken);

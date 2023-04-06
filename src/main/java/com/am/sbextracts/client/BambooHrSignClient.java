@@ -20,7 +20,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_PDF_VALUE;
 
 @FeignClient(value = "bambooSignHr", configuration = FeignClientFormPostConfig.class,
-        url = "https://${app.company.name}.bamboohr.com/ajax")
+        url = "https://${COMPANY_NAME}.bamboohr.com/ajax")
 public interface BambooHrSignClient {
 
     @PostMapping(value = "files/send_signature_request.php?route=sendSignatureRequest&workflowId={workflowId}",

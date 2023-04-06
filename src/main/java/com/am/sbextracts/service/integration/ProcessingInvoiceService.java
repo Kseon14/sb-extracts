@@ -49,7 +49,7 @@ public class ProcessingInvoiceService implements Process {
     private static final String PROCESSED_ID_FILE_NAME_PREFIX = "invoice";
     private static final String PROCESSED_ID_FILE_NAME = "processedId.log";
 
-    @Value("${app.reportGFolderId}")
+    @Value("${G_REPORT_FOLDER_ID}")
     private final String reportGFolderId;
 
     private static final String SEPARATOR = ",";

@@ -14,7 +14,7 @@ import java.util.Map;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 
-@FeignClient(value = "bambooApiHr", configuration = FeignClientFormPostConfig.class, url = "https://api.bamboohr.com/api/gateway.php/${app.company.name}/v1")
+@FeignClient(value = "bambooApiHr", configuration = FeignClientFormPostConfig.class, url = "https://api.bamboohr.com/api/gateway.php/${COMPANY_NAME}/v1")
 public interface BambooHrApiClient {
 
     @GetMapping(value = "reports/{reportId}?format=JSON",

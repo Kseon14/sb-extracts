@@ -13,7 +13,7 @@ public class EventConfig {
 
     @Bean(name = "applicationEventMulticaster")
     public ApplicationEventMulticaster applicationEventMulticaster(
-            @Value("${event.concurrent.threads}") Integer threadsCount) {
+            @Value("${THREAD_COUNT}") Integer threadsCount) {
         SimpleApplicationEventMulticaster eventMulticaster = new SimpleApplicationEventMulticaster();
         ConcurrentTaskExecutor concurrentTaskExecutor = new ConcurrentTaskExecutor();
 //        concurrentTaskExecutor.setConcurrentExecutor(Executors.newFixedThreadPool(threadsCount));

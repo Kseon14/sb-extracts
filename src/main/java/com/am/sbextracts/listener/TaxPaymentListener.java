@@ -31,7 +31,7 @@ import static com.am.sbextracts.listener.GlobalVariables.DEFAULT_DELAY;
 @RequiredArgsConstructor
 public class TaxPaymentListener {
 
-    @Value("${app.fromMail}")
+    @Value("${FROM_MAIL}")
     private final String from;
 
     private final ResponderService slackResponderService;

@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SlackClientFactory extends BasePooledObjectFactory<MethodsClient> {
 
-    @Value("${slack.token}")
+    @Value("${TOKEN}")
     private String token;
 
     @Override

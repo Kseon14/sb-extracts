@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SlackClient {
 
-    @Value("${slack.token}")
+    @Value("${TOKEN}")
     private String token;
 
     private final Slack slack = Slack.getInstance();

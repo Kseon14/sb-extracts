@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import java.util.Map;
 
 @FeignClient(value = "nsInvoiceDownload", configuration = FeignClientFormPostConfig.class,
-        url = "${app.company.nsUrl}")
+        url = "${NS_URL}")
 public interface NetSuiteFileClient {
 
     @GetMapping(

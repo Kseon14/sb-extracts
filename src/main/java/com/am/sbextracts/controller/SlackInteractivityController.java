@@ -37,11 +37,11 @@ public class SlackInteractivityController {
     private final ProcessingFactory processingFactory;
     private final ObjectMapper objectMapper;
 
-    @Value("${slack.verification.token}")
+    @Value("${VERIFICATION_TOKEN}")
     private String verificationToken;
     private final Predicate<String> isTokenValid = token -> !token.equals(verificationToken);
 
-    @Value("#{${slack.allowedUsers}}")
+    @Value("#{${ALLOWED_USER}}")
     private final List<String> allowedUsers;
 
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
