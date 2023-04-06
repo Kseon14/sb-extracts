@@ -1,11 +1,9 @@
-FROM maven:3.6-jdk-11
+FROM openjdk:11.0.11-jre-slim
 
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
+RUN mkdir -p /usr/app
+WORKDIR /usr/app
 
-COPY . /usr/src/app
-RUN mvn install -DskipTests
+COPY target/sb-extracts-1.2.jar /usr/app
+COPY .envVariable /usr/app
 
-EXPOSE 9020
-
-CMD ["java", "-jar", "/usr/src/app/target/sb-extracts-1.2.jar"]
+CMD ["bash", "-c", "source /usr/app/.envVariable && java -jar /usr/app/sb-extracts-1.2.jar"]

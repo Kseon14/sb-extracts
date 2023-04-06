@@ -1,6 +1,3 @@
-event:
-  concurrent:
-    threads: ${THREAD_COUNT}
 logging:
   file:
     name: logs/sb-extracts.log
@@ -16,11 +13,6 @@ pool:
   max-total: 6
 server:
   port: 9020
-slack:
-  token: ${TOKEN}
-  verification:
-    token: ${VERIFICATION_TOKEN}
-  allowedUsers: ${ALLOWED_USER}
 spring:
   cache:
     cache-names: conversationIds
@@ -28,18 +20,9 @@ spring:
       spec: expireAfterAccess=600s
 
 bamboo:
-  apiKeys: ${API_KEY}
   reportId: 1207
-google:
-  authJsons: ${G_AUTH_JSON}
 app:
-  reportGFolderId: ${G_REPORT_FOLDER_ID}
   perRequestProcessingFilesCount: 700
-  url: ${APP_URL}
-  fromMail: ${FROM_MAIL}
-  company:
-    name: ${COMPANY_NAME}
-    nsUrl: ${NS_URL}
 
 feign:
   client:

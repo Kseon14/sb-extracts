@@ -29,7 +29,7 @@ public class HeaderService {
     private final BambooHrAuthClient bambooHrAuthClient;
     private final NetSuiteFileClient netSuiteFileClient;
 
-    @Value("${bamboo.apiKeys}")
+    @Value("${API_KEY}")
     private final String apiKeys;
     private final ObjectMapper objectMapper;
 

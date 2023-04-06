@@ -64,9 +64,9 @@ public class GAuthService {
     private static final String PATTERN = "%s/%s-%s";
     private final ObjectMapper objectMapper;
 
-    @Value("${google.authJsons}")
+    @Value("${G_AUTH_JSON}")
     private final String authJsons;
-    @Value("${app.url}")
+    @Value("${APP_URL}")
     private final String url;
 
     public static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();

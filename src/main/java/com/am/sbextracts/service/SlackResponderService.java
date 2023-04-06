@@ -92,7 +92,7 @@ public class SlackResponderService implements ResponderService {
     @Lazy
     private final SlackResponderService slackService;
 
-    @Value("${slack.token}")
+    @Value("${TOKEN}")
     private final String token;
 
     private AsyncHttpClient getHttpClient() throws Exception {

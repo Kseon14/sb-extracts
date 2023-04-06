@@ -28,7 +28,7 @@ import static com.am.sbextracts.service.integration.GAuthService.getNetHttpTrans
 @Slf4j
 public class GmailService {
 
-    @Value("${app.fromMail}")
+    @Value("${FROM_MAIL}")
     private final String from;
 
     private final GAuthService gAuthService;

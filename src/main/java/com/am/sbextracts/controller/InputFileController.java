@@ -20,7 +20,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class InputFileController {
 
-    @Value("${slack.verification.token}")
+    @Value("${VERIFICATION_TOKEN}")
     private final String verificationToken;
 
     private final ProcessorService processorService;
