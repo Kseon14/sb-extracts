@@ -2,6 +2,7 @@ package com.am.sbextracts.service.integration.utils;
 
 import feign.Response;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
@@ -18,6 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @UtilityClass
+@Slf4j
 public final class ParsingUtils {
 
     private static final String ONCLICK = "onclick";
@@ -97,7 +99,11 @@ public final class ParsingUtils {
 
     public static final BiPredicate<TagNode, String> IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE = (tagNode, date) -> {
         String contentNodeContent = StringUtils.strip(((ContentNode) tagNode.getAllChildren().get(0)).getContent());
+        log.info("file name for parsing is: {}", contentNodeContent);
         String[] splitContent = contentNodeContent.split("\\.");
+        if(splitContent.length > 6) {
+            log.error("file name doesn't met name format {}", contentNodeContent);
+        }
         return StringUtils.equalsAny(splitContent[5], AKT, SVERKA)
                 && String.join(".", splitContent[2], splitContent[3], splitContent[4]).equals(date);
     };
