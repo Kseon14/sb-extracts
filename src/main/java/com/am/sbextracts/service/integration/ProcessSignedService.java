@@ -6,6 +6,7 @@ import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
+import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import feign.RetryableException;
 import feign.Util;
@@ -44,6 +45,9 @@ public class ProcessSignedService implements Process {
 
     @Value("${app.perRequestProcessingFilesCount}")
     private final int perRequestProcessingFilesCount;
+
+    @Value("${app.company.name}")
+    private final String company;
 
     private final BambooHrSignedFileClient bambooHrSignedFile;
     private final HeaderService headerService;
@@ -96,16 +100,21 @@ public class ProcessSignedService implements Process {
 
             for (int i = 0; i < Math.min(perRequestProcessingFilesCount, ids.size()); i++) {
                 String id = ids.get(i);
-                feign.Response report = bambooHrSignedFile
-                        .getSignatureReport(bchHeaders, id);
+                feign.Response report = bambooHrSignedFile.getSignatureReport(bchHeaders, id);
+
                 String jsonData = Util.toString(report.body().asReader(StandardCharsets.UTF_8));
-                String fileId = ((JSONArray) JsonPath.parse(jsonData).read("$..['most_recent_employee_file_data_id']"))
-                        .get(0).toString();
+                DocumentContext parseResult = JsonPath.parse(jsonData);
+                String fileId = getField(parseResult, "$..['most_recent_employee_file_data_id']", id,
+                        initiatorUserId);
+                if (fileId == null) {
+                    continue;
+                }
 
                 byte[] pdf = bambooHrSignedFile.getPdf(bchHeaders, fileId);
-                String fileName = ((JSONArray) JsonPath.parse(jsonData).read("$..['original_file_name']")).get(0)
-                        .toString();
-
+                String fileName = getField(parseResult, "$..['original_file_name']", id, initiatorUserId);
+                if (fileName == null){
+                    continue;
+                }
                 com.google.api.services.drive.model.File pdfFile = new com.google.api.services.drive.model.File();
                 pdfFile.setName(fileName);
                 pdfFile.setParents(Collections.singletonList(slackEventResponse.getGFolderId()));
@@ -125,6 +134,21 @@ public class ProcessSignedService implements Process {
         } finally {
             gDriveService.saveFile(file, dateOfModification, logFileName, slackEventResponse);
         }
+    }
+
+    private String getField(final DocumentContext parseResult,
+                            final String fieldToFind,
+                            final String id,
+                            final String initiatorUserId) {
+        final JSONArray jsonArray = parseResult.read(fieldToFind);
+        if (jsonArray.isEmpty()){
+            final String errorMessage = String.format("Sign report is not valid https://%s.bamboohr.com/reports/esignatures/?id=%s",
+                    company, id);
+            log.error(errorMessage);
+            slackResponderService.sendErrorMessageToInitiator(initiatorUserId, "error", errorMessage);
+            return null;
+        }
+        return jsonArray.get(0).toString();
     }
 
     private static String getId(TagNode tagNode) {
