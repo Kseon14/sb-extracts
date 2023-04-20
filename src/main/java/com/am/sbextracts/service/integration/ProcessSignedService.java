@@ -46,7 +46,7 @@ public class ProcessSignedService implements Process {
     @Value("${app.perRequestProcessingFilesCount}")
     private final int perRequestProcessingFilesCount;
 
-    @Value("${app.company.name}")
+    @Value("${COMPANY_NAME}")
     private final String company;
 
     private final BambooHrSignedFileClient bambooHrSignedFile;
@@ -107,14 +107,19 @@ public class ProcessSignedService implements Process {
                 String fileId = getField(parseResult, "$..['most_recent_employee_file_data_id']", id,
                         initiatorUserId);
                 if (fileId == null) {
+                    log.info("skipping file...");
+                    slackResponderService.sendErrorMessageToInitiator(initiatorUserId, "error", "skipping file...");
+                    continue;
+                }
+
+                String fileName = getField(parseResult, "$..['original_file_name']", id, initiatorUserId);
+                if (fileName == null){
+                    log.info("skipping file...");
+                    slackResponderService.sendErrorMessageToInitiator(initiatorUserId, "error", "skipping file...");
                     continue;
                 }
 
                 byte[] pdf = bambooHrSignedFile.getPdf(bchHeaders, fileId);
-                String fileName = getField(parseResult, "$..['original_file_name']", id, initiatorUserId);
-                if (fileName == null){
-                    continue;
-                }
                 com.google.api.services.drive.model.File pdfFile = new com.google.api.services.drive.model.File();
                 pdfFile.setName(fileName);
                 pdfFile.setParents(Collections.singletonList(slackEventResponse.getGFolderId()));

@@ -101,8 +101,8 @@ public final class ParsingUtils {
         String contentNodeContent = StringUtils.strip(((ContentNode) tagNode.getAllChildren().get(0)).getContent());
         log.info("file name for parsing is: {}", contentNodeContent);
         String[] splitContent = contentNodeContent.split("\\.");
-        if(splitContent.length > 6) {
-            log.error("file name doesn't met name format {}", contentNodeContent);
+        if(splitContent.length < 6) {
+            log.error("the filename does not match the filename format {}", contentNodeContent);
         }
         return StringUtils.equalsAny(splitContent[5], AKT, SVERKA)
                 && String.join(".", splitContent[2], splitContent[3], splitContent[4]).equals(date);
