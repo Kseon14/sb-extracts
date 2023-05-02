@@ -58,8 +58,8 @@ public class ProcessSignedService implements Process {
     @SbExceptionHandler
     public void process(InternalSlackEventResponse slackEventResponse) {
         final String initiatorUserId = slackEventResponse.getInitiatorUserId();
-        slackResponderService.log(initiatorUserId, "Start processing ....");
         gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), initiatorUserId);
+        slackResponderService.log(initiatorUserId, "Start processing ....");
         feign.Response response;
         Map<String, String> bchHeaders;
         try {
@@ -75,13 +75,11 @@ public class ProcessSignedService implements Process {
         String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,
                 PROCESSED_ID_FILE_NAME);
         File file = null;
-        long dateOfModification = -1;
         try {
             file = gDriveService.getFileOrCreateNew(logFileName, slackEventResponse.getGFolderId(), initiatorUserId);
             if (file.exists()) {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
-            dateOfModification = file.lastModified();
             // find and filter out documents ids with specific date and "akt" in name
             List<String> ids = Arrays
                     .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName", true, false))
@@ -92,6 +90,7 @@ public class ProcessSignedService implements Process {
             if (ids.size() == 0) {
                 log.info("No files to download");
                 slackResponderService.log(initiatorUserId, "No files to download");
+                gDriveService.saveFile(file, logFileName, slackEventResponse);
                 log.info("Local report deleted: {}", file.delete());
             } else {
                 log.info("Documents for download: {}", ids.size());
@@ -137,7 +136,7 @@ public class ProcessSignedService implements Process {
             log.error("Error during download of acts", ex);
             throw new SbExtractsException("Error during download of acts:", ex, initiatorUserId);
         } finally {
-            gDriveService.saveFile(file, dateOfModification, logFileName, slackEventResponse);
+            gDriveService.saveFile(file, logFileName, slackEventResponse);
         }
     }
 

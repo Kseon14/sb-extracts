@@ -95,6 +95,10 @@ public class GDriveService {
         }
     }
 
+    // Case1: First run GD: no Local : no  : Local file 2023.05.06-markup.log
+    // Case2: Second run GD: yes Local : no : Local file 234523456345234523452345
+    // Case2: First run interrupted GD: no Local : yes Local file 2023.05.06-markup.log
+    // Case2: Second run interrupted GD: yes Local : yes Local file 234523456345234523452345
     public java.io.File getFileOrCreateNew(final String fileName, final String folderId, final String initiatorSlackId) {
         Drive service = getService(initiatorSlackId);
         List<File> result;
@@ -107,10 +111,9 @@ public class GDriveService {
                     .setQ(String.format("name = '%s' and trashed = false and parents='%s'", fileName, folderId))
                     .setFields("files(id, name)")
                     .execute().getFiles();
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
+        } catch (IOException ex) {
+            throw new IllegalArgumentException(ex);
         }
-
         if (CollectionUtils.isEmpty(result)) {
             log.info("file not found in gDrive, new file locally will be created with name {}", fileName);
             if (new java.io.File(fileName).exists()) {
@@ -123,7 +126,6 @@ public class GDriveService {
         if (result.size() > 1) {
             throw new IllegalArgumentException("too many " + fileName + " files with the same name in folder");
         }
-
         String intName = result.get(0).getId();
         log.info("gFile exists and downloaded, content will be saved locally with name {}", intName);
         java.io.File file = new java.io.File(intName);
@@ -144,38 +146,39 @@ public class GDriveService {
         return file;
     }
 
-    public void saveFile(java.io.File file, long dateOfModification, String logFileName,
+    public void saveFile(java.io.File file,String logFileName,
                          InternalSlackEventResponse slackEventResponse) {
-        saveFile(file, dateOfModification, logFileName, slackEventResponse.getInitiatorUserId(),
+        saveFile(file, logFileName, slackEventResponse.getInitiatorUserId(),
                 slackEventResponse.getGFolderId());
     }
 
     @SbExceptionHandler
-    public void saveFile(java.io.File file, long dateOfModification, String logFileName, String initiatorUserId, String gFolderId) {
-        if (dateOfModification >= 0 && file.lastModified() > 0 && dateOfModification < file.lastModified()) {
-            try {
-                if (file != null && file.exists()) {
-                    com.google.api.services.drive.model.File logFile = new com.google.api.services.drive.model.File();
-                    logFile.setName(logFileName);
-                    logFile.setMimeType(MediaType.TEXT_PLAIN_VALUE);
+    public void saveFile(java.io.File file, String logFileName, String initiatorUserId, String gFolderId) {
+        try {
+            if (file != null && file.exists()) {
+                com.google.api.services.drive.model.File logFile = new com.google.api.services.drive.model.File();
+                logFile.setName(logFileName);
+                logFile.setMimeType(MediaType.TEXT_PLAIN_VALUE);
 
-                    if (StringUtils.equals(file.getName(), logFileName)) {
-                        logFile.setParents(Collections.singletonList(gFolderId));
-                        uploadFile(logFile, FileUtils.readFileToByteArray(file), MediaType.TEXT_PLAIN_VALUE, initiatorUserId);
-                    } else {
-                        updateFile(file.getName(), logFile, new FileContent(MediaType.TEXT_PLAIN_VALUE, file), initiatorUserId);
-                    }
-
-                    slackResponderService.log(initiatorUserId, "Google report updated");
-
-                    log.info("Local report deleted: {}", file.delete());
-                    log.info("Report updated: {}", file.getName());
-                    log.info("DONE");
-                    slackResponderService.log(initiatorUserId, "Done");
+                if (StringUtils.equals(file.getName(), logFileName)) {
+                    logFile.setParents(Collections.singletonList(gFolderId));
+                    uploadFile(logFile, FileUtils.readFileToByteArray(file), MediaType.TEXT_PLAIN_VALUE, initiatorUserId);
+                } else {
+                    updateFile(file.getName(), logFile, new FileContent(MediaType.TEXT_PLAIN_VALUE, file), initiatorUserId);
                 }
-            } catch (Exception ex) {
-                throw new SbExtractsException("Error during upload to google-drive:", ex, initiatorUserId);
+
+                slackResponderService.log(initiatorUserId, "Google report updated");
+
+                log.info("Local report deleted: {}", file.delete());
+                log.info("Report updated: {}", file.getName());
+                log.info("DONE");
+                slackResponderService.log(initiatorUserId, "Done");
+            }  else {
+                log.error("Local report not exist");
+                throw new SbExtractsException("Local report not exist", initiatorUserId);
             }
+        } catch (Exception ex) {
+            throw new SbExtractsException("Error during upload to google-drive:", ex, initiatorUserId);
         }
     }
 

@@ -73,7 +73,6 @@ public class ProcessingInvoiceService implements Process {
         gDriveService.validateFolderExistence(reportGFolderId, initiatorUserId);
         Map<String, String> employees = reportService.getEmployees(initiatorUserId);
         File file = null;
-        long dateOfModification = -1;
         String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,
                 PROCESSED_ID_FILE_NAME);
         final Map<String, String> processedIds = new HashMap<>();
@@ -84,7 +83,6 @@ public class ProcessingInvoiceService implements Process {
             if (file.exists()) {
                 processedIds.putAll(parseLogFile(Files.readAllLines(Paths.get(file.getPath()))));
             }
-            dateOfModification = file.lastModified();
             feign.Response response = netSuiteFileClient.getInvoices(
                     headerService.getNsHeaders(slackEventResponse.getSessionId(), initiatorUserId),
                     NetSuiteFileClient.FolderParams.of(slackEventResponse.getFolderId()));
@@ -127,7 +125,7 @@ public class ProcessingInvoiceService implements Process {
             log.error("Error during download of invoices", ex);
             throw new SbExtractsException("Error during download of invoices", ex, initiatorUserId);
         } finally {
-            gDriveService.saveFile(file, dateOfModification, logFileName, initiatorUserId, reportGFolderId);
+            gDriveService.saveFile(file, logFileName, initiatorUserId, reportGFolderId);
         }
 
     }

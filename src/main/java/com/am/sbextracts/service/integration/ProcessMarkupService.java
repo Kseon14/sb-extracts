@@ -86,13 +86,11 @@ public class ProcessMarkupService implements Process {
         File file = null;
         String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,
                 PROCESSED_ID_FILE_NAME);
-        long dateOfModification = -1;
         try {
             file = gDriveService.getFileOrCreateNew(logFileName, slackEventResponse.getGFolderId(), initiatorUserId);
             if (file.exists()) {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
-            dateOfModification = file.lastModified();
             Map<String, String> bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(),
                     initiatorUserId);
             do {
@@ -119,6 +117,7 @@ public class ProcessMarkupService implements Process {
                     log.info("Found {} file(s), but no files to process", folder.getSectionFileCount());
                     slackResponderService.log(initiatorUserId,
                             String.format("Found %s file(s), but no files to process", folder.getSectionFileCount()));
+                    gDriveService.saveFile(file, logFileName, slackEventResponse);
                     log.info("Local report deleted: {}", file.delete());
                 } else {
                     log.info("Following Documents count {} will be processed", infos.size());
@@ -156,7 +155,7 @@ public class ProcessMarkupService implements Process {
             //file not exist in gdrive and not updated -> dateOfModification = 0 and last mod file = true (124)   -> true
             //file exist in gdrive and not updated -> dateOfModification = 1234 and last mod file = false (1234)  -> false
             //file exist on gdrive and updated -> dateOfModification = 1234 and last mod file = true (5678)  -> true
-            gDriveService.saveFile(file, dateOfModification, logFileName, slackEventResponse);
+            gDriveService.saveFile(file, logFileName, slackEventResponse);
         }
     }
 
