@@ -1,5 +1,20 @@
 package com.am.sbextracts.service.integration;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.BiConsumer;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
@@ -9,22 +24,9 @@ import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.FileContent;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
-
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.BiConsumer;
 
 import static com.am.sbextracts.service.integration.GAuthService.APPLICATION_NAME;
 import static com.am.sbextracts.service.integration.GAuthService.JSON_FACTORY;
@@ -175,7 +177,6 @@ public class GDriveService {
                 slackResponderService.log(initiatorUserId, "Done");
             }  else {
                 log.error("Local report not exist");
-                throw new SbExtractsException("Local report not exist", initiatorUserId);
             }
         } catch (Exception ex) {
             throw new SbExtractsException("Error during upload to google-drive:", ex, initiatorUserId);
