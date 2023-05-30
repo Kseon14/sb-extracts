@@ -1,13 +1,5 @@
 package com.am.sbextracts.service.integration.utils;
 
-import feign.Response;
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.htmlcleaner.ContentNode;
-import org.htmlcleaner.HtmlCleaner;
-import org.htmlcleaner.TagNode;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,6 +9,17 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.lang3.StringUtils;
+import org.htmlcleaner.ContentNode;
+import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.TagNode;
+
+import com.am.sbextracts.client.BambooHrSignedFileClient;
+
+import feign.Response;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 @UtilityClass
 @Slf4j
@@ -80,6 +83,10 @@ public final class ParsingUtils {
         return Integer.parseInt(node.getContent()) > 0;
     }
 
+    public static boolean isSigned(BambooHrSignedFileClient.Document document) {
+        return document.getCompleted() > 0;
+    }
+
     public static boolean isActorReconciliationAndDate(TagNode tagNode, String date) {
         Optional<String> title = Arrays
                 .stream(tagNode.getElementsByAttValue(CLASS, "ReportsTable__reportNameText",
@@ -92,6 +99,16 @@ public final class ParsingUtils {
         }
         return StringUtils.equalsAny(splitResult[5], AKT, SVERKA)
                 && String.join(".", splitResult[2], splitResult[3], splitResult[4]).equals(date);
+    }
+
+    public static boolean isActorReconciliationAndDate(BambooHrSignedFileClient.Document document, String date) {
+        String[] splitResult = Optional.ofNullable(document.getName()).map(t -> t.split("\\."))
+            .orElseThrow(() -> new IllegalArgumentException("can not filter by akt and date"));
+        if (splitResult.length < 6) {
+            return false;
+        }
+        return StringUtils.equalsAny(splitResult[5], AKT, SVERKA)
+            && String.join(".", splitResult[2], splitResult[3], splitResult[4]).equals(date);
     }
 
     public static final Predicate<TagNode> isRequiredTag = tagNode -> tagNode.getAttributes().containsKey(ONCLICK)

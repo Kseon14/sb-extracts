@@ -1,25 +1,5 @@
 package com.am.sbextracts.service.integration;
 
-import com.am.sbextracts.client.BambooHrSignedFileClient;
-import com.am.sbextracts.exception.SbExceptionHandler;
-import com.am.sbextracts.exception.SbExtractsException;
-import com.am.sbextracts.model.InternalSlackEventResponse;
-import com.am.sbextracts.service.ResponderService;
-import com.am.sbextracts.service.integration.utils.ParsingUtils;
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
-import feign.RetryableException;
-import feign.Util;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import net.minidev.json.JSONArray;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.io.FileUtils;
-import org.htmlcleaner.TagNode;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
-
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -29,10 +9,32 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNode;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.htmlcleaner.TagNode;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+
+import com.am.sbextracts.client.BambooHrSignedFileClient;
+import com.am.sbextracts.exception.SbExceptionHandler;
+import com.am.sbextracts.exception.SbExtractsException;
+import com.am.sbextracts.model.InternalSlackEventResponse;
+import com.am.sbextracts.service.ResponderService;
+import com.am.sbextracts.service.integration.utils.ParsingUtils;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+
+import feign.RetryableException;
+import feign.Util;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.minidev.json.JSONArray;
+
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.isActorReconciliationAndDate;
 
 @Slf4j
@@ -60,15 +62,15 @@ public class ProcessSignedService implements Process {
         final String initiatorUserId = slackEventResponse.getInitiatorUserId();
         gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), initiatorUserId);
         slackResponderService.log(initiatorUserId, "Start processing ....");
-        feign.Response response;
+        BambooHrSignedFileClient.SignedDocument rootDocument;
         Map<String, String> bchHeaders;
         try {
             bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(), initiatorUserId);
-            response = bambooHrSignedFile.getSignedDocumentList(bchHeaders);
+            rootDocument = bambooHrSignedFile.getSignedDocuments(bchHeaders);
         } catch (RetryableException | IllegalArgumentException ex) {
             throw new SbExtractsException(ex.getMessage(), ex, initiatorUserId);
         }
-        TagNode tagNode = getTagNode(response.body());
+        //TagNode tagNode = getTagNode(response.body());
 
         final List<String> processedIds = new ArrayList<>();
 
@@ -81,11 +83,20 @@ public class ProcessSignedService implements Process {
                 processedIds.addAll(Files.readAllLines(Paths.get(file.getPath())));
             }
             // find and filter out documents ids with specific date and "akt" in name
-            List<String> ids = Arrays
-                    .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName", true, false))
-                    .filter(td -> isActorReconciliationAndDate(td, slackEventResponse.getDate())).filter(ParsingUtils::isSigned)
-                    .map(ProcessSignedService::getId).filter(id -> !CollectionUtils.containsAny(processedIds, id))
-                    .collect(Collectors.toList());
+//            List<String> ids = Arrays
+//                    .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName", true, false))
+//                    .filter(td -> isActorReconciliationAndDate(td, slackEventResponse.getDate())).filter(ParsingUtils::isSigned)
+//                    .map(ProcessSignedService::getId).filter(id -> !CollectionUtils.containsAny(processedIds, id))
+//                    .collect(Collectors.toList());
+
+            List<String> ids = rootDocument.getDocuments().stream()
+                .filter(Objects::nonNull)
+                .filter(doc -> isActorReconciliationAndDate(doc, slackEventResponse.getDate()))
+                .filter(ParsingUtils::isSigned)
+                .map(BambooHrSignedFileClient.Document::getId)
+                .map(String::valueOf)
+                .filter(id -> !CollectionUtils.containsAny(processedIds, id))
+                .collect(Collectors.toList());
 
             if (ids.size() == 0) {
                 log.info("No files to download");

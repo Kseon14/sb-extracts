@@ -1,5 +1,19 @@
 package com.am.sbextracts.service.integration;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.htmlcleaner.HtmlCleaner;
+import org.htmlcleaner.TagNode;
+import org.springframework.stereotype.Service;
+
 import com.am.sbextracts.client.BambooHrSignedFileClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
@@ -12,24 +26,13 @@ import com.slack.api.methods.request.chat.ChatUpdateRequest;
 import com.slack.api.methods.response.chat.ChatPostMessageResponse;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
+
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.htmlcleaner.HtmlCleaner;
-import org.htmlcleaner.TagNode;
-import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE;
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNode;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isActorReconciliationAndDate;
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequiredTag;
 
 @Slf4j
@@ -53,7 +56,7 @@ public class ProcessDebtorsService implements Process {
                 slackEventResponse.getInitiatorUserId(),
                 getPostMessage("Starting....", "Starting..."));
         log.debug("Starting...");
-        feign.Response response;
+        BambooHrSignedFileClient.SignedDocument rootDocument;
         Map<String, String> bchHeaders;
         try {
             bchHeaders = headerService.getBchHeaders(slackEventResponse.getSessionId(),
@@ -62,7 +65,7 @@ public class ProcessDebtorsService implements Process {
             throw new SbExtractsException(ex.getMessage(), slackEventResponse.getInitiatorUserId());
         }
         try {
-            response = bambooHrSignedFile.getSignedDocumentList(bchHeaders);
+            rootDocument = bambooHrSignedFile.getSignedDocuments(bchHeaders);
         } catch (RetryableException ex) {
             throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
         }
@@ -75,21 +78,27 @@ public class ProcessDebtorsService implements Process {
         slackResponderService.updateMessage(
                 initialMessage, text, slackEventResponse.getInitiatorUserId());
         log.debug("Start parsing documents");
-        TagNode tagNode = getTagNode(response.body());
-        Set<String> notSignedFiles = Arrays
-                .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
-                        true, false))
-                .filter(td -> ParsingUtils.isActorReconciliationAndDate(td, slackEventResponse.getDate()))
-                .filter(rec -> !ParsingUtils.isSigned(rec))
-                .map(ParsingUtils::getName)
-                .collect(Collectors.toSet());
+       // TagNode tagNode = getTagNode(response.body());
+//        Set<String> notSignedFiles = Arrays
+//            .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
+//                true, false))
+//            .filter(td -> ParsingUtils.isActorReconciliationAndDate(td, slackEventResponse.getDate()))
+//            .filter(rec -> !ParsingUtils.isSigned(rec))
+//            .map(ParsingUtils::getName)
+//            .collect(Collectors.toSet());
 
-        Set<String> filesSentForSignature = Arrays
-                .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
-                        true, false))
-                .filter(td -> ParsingUtils.isActorReconciliationAndDate(td, slackEventResponse.getDate()))
-                .map(ParsingUtils::getName)
-                .collect(Collectors.toSet());
+        Set<String> notSignedFiles = rootDocument.getDocuments().stream()
+            .filter(Objects::nonNull)
+            .filter(doc -> isActorReconciliationAndDate(doc, slackEventResponse.getDate()))
+            .filter(Predicate.not(ParsingUtils::isSigned))
+            .map(BambooHrSignedFileClient.Document::getName)
+            .collect(Collectors.toSet());
+
+        Set<String> filesSentForSignature = rootDocument.getDocuments().stream()
+            .filter(Objects::nonNull)
+            .filter(doc -> isActorReconciliationAndDate(doc, slackEventResponse.getDate()))
+            .map(BambooHrSignedFileClient.Document::getName)
+            .collect(Collectors.toSet());
 
         var offset = 0;
         int fileCount;
