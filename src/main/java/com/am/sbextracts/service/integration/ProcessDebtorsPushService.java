@@ -1,5 +1,15 @@
 package com.am.sbextracts.service.integration;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.am.sbextracts.client.BambooHrSignedFileClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
@@ -10,20 +20,12 @@ import com.slack.api.methods.request.chat.ChatPostMessageRequest;
 import com.slack.api.model.block.LayoutBlock;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
+
 import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.htmlcleaner.TagNode;
-import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.getTagNode;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isActorReconciliationAndDate;
 
 @Slf4j
 @Service
@@ -45,15 +47,14 @@ public class ProcessDebtorsPushService implements Process {
                         getPostMessage("Starting....", List.of(SectionBlock.builder()
                                 .text(MarkdownTextObject.builder()
                                         .text("Starting...").build()).build())));
-        feign.Response response;
+        BambooHrSignedFileClient.SignedDocument rootDocument;
         try {
-            response = bambooHrSignedFile
-                    .getSignedDocumentList(headerService.getBchHeaders(slackEventResponse.getSessionId(),
+            rootDocument = bambooHrSignedFile.getSignedDocuments(headerService.getBchHeaders(slackEventResponse.getSessionId(),
                             slackEventResponse.getInitiatorUserId()));
         } catch (RetryableException | IllegalArgumentException ex) {
             throw new SbExtractsException(ex.getMessage(), ex, slackEventResponse.getInitiatorUserId());
         }
-        TagNode tagNode = getTagNode(response.body());
+       // TagNode tagNode = getTagNode(response.body());
 
         String text = "Processing..";
         slackResponderService.updateMessage(
@@ -64,14 +65,22 @@ public class ProcessDebtorsPushService implements Process {
         slackResponderService.updateMessage(
                 initialMessage, text, slackEventResponse.getInitiatorUserId());
 
-        Set<String> notSignedFilesInn = Arrays
-                .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
-                        true, false))
-                .filter(td -> ParsingUtils.isActorReconciliationAndDate(td, slackEventResponse.getDate()))
-                .filter(rec -> !ParsingUtils.isSigned(rec))
-                .map(ParsingUtils::getName)
-                .map(ParsingUtils::getInn)
-                .collect(Collectors.toSet());
+//        Set<String> notSignedFilesInn = Arrays
+//                .stream(tagNode.getElementsByAttValue("class", "fab-Table__cell ReportsTable__reportName",
+//                        true, false))
+//                .filter(td -> ParsingUtils.isActorReconciliationAndDate(td, slackEventResponse.getDate()))
+//                .filter(rec -> !ParsingUtils.isSigned(rec))
+//                .map(ParsingUtils::getName)
+//                .map(ParsingUtils::getInn)
+//                .collect(Collectors.toSet());
+
+        Set<String> notSignedFilesInn = rootDocument.getDocuments().stream()
+            .filter(Objects::nonNull)
+            .filter(doc -> isActorReconciliationAndDate(doc, slackEventResponse.getDate()))
+            .filter(Predicate.not(ParsingUtils::isSigned))
+            .map(BambooHrSignedFileClient.Document::getName)
+            .map(ParsingUtils::getInn)
+            .collect(Collectors.toSet());
 
         log.info("Count of user for notification {}", notSignedFilesInn.size());
         slackResponderService.log(slackEventResponse.getInitiatorUserId(),
