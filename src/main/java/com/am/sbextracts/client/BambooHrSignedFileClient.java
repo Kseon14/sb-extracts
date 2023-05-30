@@ -17,7 +17,7 @@ import lombok.Value;
         url = "https://${COMPANY_NAME}.bamboohr.com")
 public interface BambooHrSignedFileClient {
 
-    @GetMapping(value = "app/reports/signed-documents")
+    @GetMapping(value = "reports/?view=signedDocuments")
     feign.Response getSignedDocumentList(@RequestHeader Map<String, String> headerMap);
 
     @GetMapping(value = "reports/esignatures/{id}")
