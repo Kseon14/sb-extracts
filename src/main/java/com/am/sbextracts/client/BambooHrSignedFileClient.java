@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
 import com.am.sbextracts.FeignClientFormPostConfig;
+import com.am.sbextracts.model.ReportData;
 
 import lombok.Value;
 
@@ -17,11 +18,8 @@ import lombok.Value;
         url = "https://${COMPANY_NAME}.bamboohr.com")
 public interface BambooHrSignedFileClient {
 
-    @GetMapping(value = "reports/?view=signedDocuments")
-    feign.Response getSignedDocumentList(@RequestHeader Map<String, String> headerMap);
-
-    @GetMapping(value = "reports/esignatures/{id}")
-    feign.Response getSignatureReport(@RequestHeader Map<String, String> headerMap, @PathVariable String id);
+    @GetMapping(value = "reports/esignatures/{id}?pageNumber=1&orderBy=status&orderDirection=desc")
+    ReportData getSignatureReport(@RequestHeader Map<String, String> headerMap, @PathVariable String id);
 
     @GetMapping(value = "ajax/fetcher.php?doc={docId}&format=pdf&employee=true",
             consumes = MediaType.APPLICATION_PDF_VALUE)
