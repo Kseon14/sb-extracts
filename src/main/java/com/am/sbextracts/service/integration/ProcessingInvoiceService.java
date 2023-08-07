@@ -1,30 +1,5 @@
 package com.am.sbextracts.service.integration;
 
-import com.am.sbextracts.client.BambooHrApiClient;
-import com.am.sbextracts.client.NetSuiteFileClient;
-import com.am.sbextracts.exception.SbExceptionHandler;
-import com.am.sbextracts.exception.SbExtractsException;
-import com.am.sbextracts.model.FileInfo;
-import com.am.sbextracts.model.InternalSlackEventResponse;
-import com.am.sbextracts.service.ResponderService;
-import com.am.sbextracts.service.integration.utils.ParsingUtils;
-import feign.FeignException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.htmlcleaner.ContentNode;
-import org.htmlcleaner.TagNode;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.commons.CommonsMultipartFile;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -39,6 +14,33 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.htmlcleaner.ContentNode;
+import org.htmlcleaner.TagNode;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+
+import com.am.sbextracts.client.BambooHrApiClient;
+import com.am.sbextracts.client.NetSuiteFileClient;
+import com.am.sbextracts.exception.SbExceptionHandler;
+import com.am.sbextracts.exception.SbExtractsException;
+import com.am.sbextracts.model.FileInfo;
+import com.am.sbextracts.model.InternalSlackEventResponse;
+import com.am.sbextracts.service.ResponderService;
+import com.am.sbextracts.service.integration.utils.ParsingUtils;
+
+import feign.FeignException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import static com.am.sbextracts.service.integration.ProcessDebtorsService.getPostMessage;
 
@@ -125,7 +127,7 @@ public class ProcessingInvoiceService implements Process {
             log.error("Error during download of invoices", ex);
             throw new SbExtractsException("Error during download of invoices", ex, initiatorUserId);
         } finally {
-            gDriveService.saveFile(file, logFileName, initiatorUserId, reportGFolderId);
+            gDriveService.saveFile(file, logFileName, initiatorUserId, reportGFolderId, true);
         }
 
     }

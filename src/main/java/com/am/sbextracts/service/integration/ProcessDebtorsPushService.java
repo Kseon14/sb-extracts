@@ -30,6 +30,7 @@ import static com.am.sbextracts.service.integration.utils.ParsingUtils.isActorRe
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Deprecated
 public class ProcessDebtorsPushService implements Process {
 
     private static final int DEFAULT_DELAY = 2;
