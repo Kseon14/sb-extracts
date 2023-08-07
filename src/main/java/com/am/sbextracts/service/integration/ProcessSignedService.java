@@ -64,7 +64,6 @@ public class ProcessSignedService implements Process {
     } catch (RetryableException | IllegalArgumentException ex) {
       throw new SbExtractsException(ex.getMessage(), ex, initiatorUserId);
     }
-    //TagNode tagNode = getTagNode(response.body());
 
     final List<String> processedIds = new ArrayList<>();
 
@@ -86,15 +85,8 @@ public class ProcessSignedService implements Process {
           .filter(id -> !CollectionUtils.containsAny(processedIds, id))
           .collect(Collectors.toList());
 
-      if (ids.size() == 0) {
-        log.info("No files to download");
-        slackResponderService.log(initiatorUserId, "No files to download");
-        gDriveService.saveFile(file, logFileName, slackEventResponse);
-        log.info("Local report deleted: {}", file.delete());
-      } else {
-        log.info("Documents for download: {}", ids.size());
-        slackResponderService.log(initiatorUserId, "Documents for download: " + ids.size());
-      }
+      log.info("Documents for download: {}", ids.size());
+      slackResponderService.log(initiatorUserId, "Documents for download: " + ids.size());
 
       for (int i = 0; i < Math.min(perRequestProcessingFilesCount, ids.size()); i++) {
         String id = ids.get(i);
