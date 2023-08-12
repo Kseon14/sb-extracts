@@ -31,13 +31,13 @@ public interface ResponderService {
 
     void sendMarkupView(SlackInteractiveEvent slackInteractiveEvent);
 
-    void sendDebtors(SlackInteractiveEvent slackInteractiveEvent);
+//    void sendDebtors(SlackInteractiveEvent slackInteractiveEvent);
 
     void sendDownloadSigned(SlackInteractiveEvent slackInteractiveEvent);
 
     void sendDownloadInvoice(SlackInteractiveEvent slackInteractiveEvent);
 
-    void pushDebtors(SlackInteractiveEvent slackInteractiveEvent);
+//    void pushDebtors(SlackInteractiveEvent slackInteractiveEvent);
 
     void updateMessage(ChatPostMessageResponse initialMessage, String text, String initiatorSlackId);
 

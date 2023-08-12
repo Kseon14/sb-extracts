@@ -28,9 +28,11 @@ import com.slack.api.model.Field;
 import com.slack.api.model.block.InputBlock;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
+import com.slack.api.model.block.composition.OptionObject;
 import com.slack.api.model.block.composition.PlainTextObject;
 import com.slack.api.model.block.element.DatePickerElement;
 import com.slack.api.model.block.element.PlainTextInputElement;
+import com.slack.api.model.block.element.StaticSelectElement;
 import com.slack.api.model.view.ViewSubmit;
 import com.slack.api.model.view.ViewTitle;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +64,10 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.AKT;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.SVERKA;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.TH_CONTRACT;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -83,6 +89,7 @@ public class SlackResponderService implements ResponderService {
     public static final String PICK_A_DATE_FOR_ACTS = "Pick a date for Acts";
     public static final String SELECT_A_DATE = "Select a date";
     public static final String DATE_PATTERN = "yyyy-MM-dd";
+    public static final String DOCUMENT_SUFFIX = "documentSuffix";
 
     private final HttpClientPool httpClientPool;
     private final ObjectMapper objectMapper;
@@ -139,6 +146,8 @@ public class SlackResponderService implements ResponderService {
     @Override
     @SbExceptionHandler
     public void sendMarkupView(SlackInteractiveEvent slackInteractiveEvent) {
+        OptionObject optionActSverka = OptionObject.builder().text(PlainTextObject.builder()
+            .text("*.acts.* and *.sverka.*").build()).value(String.format("%s,%s", AKT, SVERKA)).build();
         com.slack.api.model.view.View view =
                 com.slack.api.model.view.View.builder()
                         .type(MODAL)
@@ -147,7 +156,7 @@ public class SlackResponderService implements ResponderService {
                         .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
                         .blocks(List.of(InputBlock.builder()
                                         .blockId(SESSION_ID)
-                                        .label(PlainTextObject.builder().text("SessionID").build())
+                                        .label(PlainTextObject.builder().text("SessionID") .build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
                                 InputBlock.builder()
@@ -168,7 +177,18 @@ public class SlackResponderService implements ResponderService {
                                                 .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
                                                 .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
                                                 .build())
-                                        .build()))
+                                        .build(),
+                                SectionBlock.builder()
+                                    .blockId(DOCUMENT_SUFFIX)
+                                    .text(MarkdownTextObject.builder().text("Select type of documents").build())
+                                    .accessory(StaticSelectElement.builder()
+                                        .actionId(FIELD)
+                                        .initialOption(optionActSverka)
+                                        .options(List.of(optionActSverka,
+                                                OptionObject.builder().text(PlainTextObject.builder()
+                                                        .text("*.THcontract.*").build()).value(TH_CONTRACT).build()))
+                                        .build())
+                                    .build()))
                         .build();
 
         try {
@@ -209,103 +229,116 @@ public class SlackResponderService implements ResponderService {
         }
     }
 
-    @SneakyThrows
-    @Override
-    @SbExceptionHandler
-    public void sendDebtors(SlackInteractiveEvent slackInteractiveEvent) {
-        com.slack.api.model.view.View view =
-                com.slack.api.model.view.View.builder()
-                        .type(MODAL)
-                        .callbackId(View.ModalActionType.DEBTORS.name())
-                        .title(ViewTitle.builder().type(PLAIN_TEXT).text("Get Debtor List").build())
-                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
-                        .blocks(List.of(InputBlock.builder().blockId(SESSION_ID)
-                                        .label(PlainTextObject.builder().text("SessionID").build())
-                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
-                                        .build(),
-                                InputBlock.builder().blockId(SECTION_ID)
-                                        .label(PlainTextObject.builder().text(BAMBOO_FOLDER_ID).build())
-                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
-                                        .build(),
-                                SectionBlock.builder()
-                                        .blockId("date")
-                                        .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
-                                        .accessory(DatePickerElement.builder()
-                                                .actionId(FIELD)
-                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
-                                                .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
-                                                .build())
-                                        .build()))
-                        .build();
+//    @SneakyThrows
+//    @Override
+//    @SbExceptionHandler
+//    public void sendDebtors(SlackInteractiveEvent slackInteractiveEvent) {
+//        com.slack.api.model.view.View view =
+//                com.slack.api.model.view.View.builder()
+//                        .type(MODAL)
+//                        .callbackId(View.ModalActionType.DEBTORS.name())
+//                        .title(ViewTitle.builder().type(PLAIN_TEXT).text("Get Debtor List").build())
+//                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
+//                        .blocks(List.of(InputBlock.builder().blockId(SESSION_ID)
+//                                        .label(PlainTextObject.builder().text("SessionID").build())
+//                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
+//                                        .build(),
+//                                InputBlock.builder().blockId(SECTION_ID)
+//                                        .label(PlainTextObject.builder().text(BAMBOO_FOLDER_ID).build())
+//                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
+//                                        .build(),
+//                                SectionBlock.builder()
+//                                        .blockId("date")
+//                                        .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
+//                                        .accessory(DatePickerElement.builder()
+//                                                .actionId(FIELD)
+//                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
+//                                                .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
+//                                                .build())
+//                                        .build()))
+//                        .build();
+//
+//        handleError(client.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+//                .view(view).build()), slackInteractiveEvent.getTriggerId());
+//
+//    }`
 
-        handleError(client.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                .view(view).build()), slackInteractiveEvent.getTriggerId());
-
-    }
-
-    @SneakyThrows
-    @Override
-    @SbExceptionHandler
-    public void pushDebtors(SlackInteractiveEvent slackInteractiveEvent) {
-        com.slack.api.model.view.View view =
-                com.slack.api.model.view.View.builder()
-                        .type(MODAL)
-                        .callbackId(View.ModalActionType.PUSH_DEBTORS.name())
-                        .title(ViewTitle.builder().type(PLAIN_TEXT).text("Push debtors").build())
-                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
-                        .blocks(List.of(InputBlock.builder()
-                                        .blockId(SESSION_ID)
-                                        .label(PlainTextObject.builder().text("SessionID").build())
-                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
-                                        .build(),
-                                InputBlock.builder()
-                                        .blockId(SECTION_ID)
-                                        .label(PlainTextObject.builder().text(BAMBOO_FOLDER_ID).build())
-                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
-                                        .build(),
-                                SectionBlock.builder()
-                                        .blockId("date")
-                                        .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
-                                        .accessory(DatePickerElement.builder()
-                                                .actionId(FIELD)
-                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
-                                                .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
-                                                .build())
-                                        .build()))
-                        .build();
-
-        handleError(client.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
-                .view(view).build()), slackInteractiveEvent.getTriggerId());
-
-    }
+//    @SneakyThrows
+//    @Override
+//    @SbExceptionHandler
+//    public void pushDebtors(SlackInteractiveEvent slackInteractiveEvent) {
+//        com.slack.api.model.view.View view =
+//                com.slack.api.model.view.View.builder()
+//                        .type(MODAL)
+//                        .callbackId(View.ModalActionType.PUSH_DEBTORS.name())
+//                        .title(ViewTitle.builder().type(PLAIN_TEXT).text("Push debtors").build())
+//                        .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
+//                        .blocks(List.of(InputBlock.builder()
+//                                        .blockId(SESSION_ID)
+//                                        .label(PlainTextObject.builder().text("SessionID").build())
+//                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
+//                                        .build(),
+//                                InputBlock.builder()
+//                                        .blockId(SECTION_ID)
+//                                        .label(PlainTextObject.builder().text(BAMBOO_FOLDER_ID).build())
+//                                        .element(PlainTextInputElement.builder().actionId(FIELD).build())
+//                                        .build(),
+//                                SectionBlock.builder()
+//                                        .blockId("date")
+//                                        .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
+//                                        .accessory(DatePickerElement.builder()
+//                                                .actionId(FIELD)
+//                                                .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
+//                                                .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
+//                                                .build())
+//                                        .build()))
+//                        .build();
+//
+//        handleError(client.getClient().viewsOpen(ViewsOpenRequest.builder().triggerId(slackInteractiveEvent.getTriggerId())
+//                .view(view).build()), slackInteractiveEvent.getTriggerId());
+//
+//    }
 
     @SneakyThrows
     @Override
     @SbExceptionHandler
     public void sendDownloadSigned(SlackInteractiveEvent slackInteractiveEvent) {
+        OptionObject optionActSverka = OptionObject.builder().text(PlainTextObject.builder()
+            .text("*.acts.* and *.sverka.*").build()).value(String.format("%s,%s", AKT, SVERKA)).build();
         com.slack.api.model.view.View view =
                 com.slack.api.model.view.View.builder()
                         .type(MODAL)
                         .callbackId(View.ModalActionType.SIGNED.name())
                         .title(ViewTitle.builder().type(PLAIN_TEXT).text("Download Signed files").build())
                         .submit(ViewSubmit.builder().type(PLAIN_TEXT).text(START).build())
-                        .blocks(List.of(InputBlock.builder().blockId(SESSION_ID)
+                        .blocks(List.of(
+                            InputBlock.builder().blockId(SESSION_ID)
                                         .label(PlainTextObject.builder().text("SessionID").build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
-                                InputBlock.builder()
+                            InputBlock.builder()
                                         .blockId("gFolderId")
                                         .label(PlainTextObject.builder().text("Google folder ID").build())
                                         .element(PlainTextInputElement.builder().actionId(FIELD).build())
                                         .build(),
-                                SectionBlock.builder()
+                            SectionBlock.builder()
                                         .blockId("date")
                                         .text(MarkdownTextObject.builder().text(PICK_A_DATE_FOR_ACTS).build())
                                         .accessory(DatePickerElement.builder()
                                                 .actionId(FIELD)
                                                 .initialDate(LocalDate.now().format(DateTimeFormatter.ofPattern(DATE_PATTERN)))
                                                 .placeholder(PlainTextObject.builder().text(SELECT_A_DATE).build())
-                                                .build())
+                                                .build()).build(),
+                            SectionBlock.builder()
+                                .blockId(DOCUMENT_SUFFIX)
+                                .text(MarkdownTextObject.builder().text("Select type of documents").build())
+                                .accessory(StaticSelectElement.builder()
+                                    .actionId(FIELD)
+                                    .initialOption(optionActSverka)
+                                    .options(List.of(optionActSverka,
+                                        OptionObject.builder().text(PlainTextObject.builder()
+                                            .text("*.THcontract.*").build()).value(TH_CONTRACT).build()))
+                                    .build())
                                         .build()))
                         .build();
 

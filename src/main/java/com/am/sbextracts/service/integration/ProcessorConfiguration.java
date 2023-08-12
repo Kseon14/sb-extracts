@@ -12,17 +12,19 @@ import java.util.Map;
 public class ProcessorConfiguration {
 
     private final ProcessSignedService processSignedService;
-    private final ProcessDebtorsService processDebtorsService;
+    //private final ProcessDebtorsService processDebtorsService;
     private final ProcessMarkupService processMarkupService;
     private final ProcessingInvoiceService processingInvoiceService;
-    private final ProcessDebtorsPushService processDebtorsPushService;
+    //private final ProcessDebtorsPushService processDebtorsPushService;
 
     @Bean
     public Map<View.ModalActionType, Process> processorsMap() {
         return Map.of(View.ModalActionType.SIGNED, processSignedService,
-                View.ModalActionType.DEBTORS, processDebtorsService,
+               // View.ModalActionType.DEBTORS, processDebtorsService,
                 View.ModalActionType.MARKUP, processMarkupService,
-                View.ModalActionType.INVOICE_DOWNLOAD, processingInvoiceService,
-                View.ModalActionType.PUSH_DEBTORS, processDebtorsPushService);
+                View.ModalActionType.INVOICE_DOWNLOAD, processingInvoiceService
+            //,
+                //View.ModalActionType.PUSH_DEBTORS, processDebtorsPushService
+        );
     }
 }

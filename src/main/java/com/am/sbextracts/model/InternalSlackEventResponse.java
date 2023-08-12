@@ -10,6 +10,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jetbrains.annotations.Nullable;
+
+import static com.am.sbextracts.service.SlackResponderService.DOCUMENT_SUFFIX;
+import static com.am.sbextracts.service.SlackResponderService.SECTION_ID;
+import static com.am.sbextracts.service.SlackResponderService.SESSION_ID;
+
 @Data
 @Builder
 public class InternalSlackEventResponse {
@@ -18,6 +24,7 @@ public class InternalSlackEventResponse {
     private final String gFolderId;
     private final String date;
     private final String initiatorUserId;
+    private final String[] typeOfDocuments;
 
 
     public static InternalSlackEventResponse convert(SlackInteractiveEvent slackInteractiveEvent) {
@@ -26,11 +33,17 @@ public class InternalSlackEventResponse {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
         Optional<LocalDate> date = Optional.ofNullable(values.get("date").getField().getSelected_date());
         return InternalSlackEventResponse.builder()
-                .sessionId(Optional.ofNullable(values.get("sessionId")).map(f -> f.getField().getValue()).orElse(null))
-                .folderId(Optional.ofNullable(values.get("sectionId")).map(f -> Integer.parseInt(f.getField().getValue())).orElse(null))
+                .sessionId(getFieldValue(values, SESSION_ID))
+                .folderId(Optional.ofNullable(values.get(SECTION_ID)).map(f -> Integer.parseInt(f.getField().getValue())).orElse(null))
                 .date(date.map(d -> d.format(formatter)).orElse(null))
-                .gFolderId(Optional.ofNullable(values.get("gFolderId")).map(f -> f.getField().getValue()).orElse(null))
+                .gFolderId(getFieldValue(values, "gFolderId"))
                 .initiatorUserId(slackInteractiveEvent.getUser().getId())
+                .typeOfDocuments(Optional.ofNullable(values.get(DOCUMENT_SUFFIX)).map(f -> f.getField().getSelected_option().getValue()).orElse(null).split(","))
                 .build();
+    }
+
+    @Nullable
+    private static String getFieldValue(Map<String, View.Item> values, String fieldName) {
+        return Optional.ofNullable(values.get(fieldName)).map(f -> f.getField().getValue()).orElse(null);
     }
 }

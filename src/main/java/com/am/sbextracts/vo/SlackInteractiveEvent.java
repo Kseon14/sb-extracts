@@ -3,35 +3,18 @@ package com.am.sbextracts.vo;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
+
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+@Data
 public class SlackInteractiveEvent {
-    @Getter
-    @Setter
     private Type type;
-    @Getter
-    @Setter
     private String triggerId;
-    @Getter
-    @Setter
     private String userId;
-
-    @Getter
-    @Setter
     private Action action;
-
-    @Getter
-    @Setter
     private String token;
-    @Getter
-    @Setter
     private View view;
-
-    @Getter
-    @Setter
     private User user;
-
 
     @Data
     public static class User {

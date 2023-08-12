@@ -25,7 +25,7 @@ import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.isActorReconciliationAndDate;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isSpecificDateAndDocumentType;
 
 @Slf4j
 @Service
@@ -77,7 +77,7 @@ public class ProcessDebtorsPushService implements Process {
 
         Set<String> notSignedFilesInn = rootDocument.getDocuments().stream()
             .filter(Objects::nonNull)
-            .filter(doc -> isActorReconciliationAndDate(doc, slackEventResponse.getDate()))
+            .filter(doc -> isSpecificDateAndDocumentType(doc, slackEventResponse))
             .filter(Predicate.not(ParsingUtils::isSigned))
             .map(BambooHrSignedFileClient.Document::getName)
             .map(ParsingUtils::getInn)

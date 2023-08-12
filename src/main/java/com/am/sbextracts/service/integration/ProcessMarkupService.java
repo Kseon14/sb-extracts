@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -45,7 +46,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.FILTER_BY_DATE_AND_DOCUMENT_TYPE;
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequiredTag;
 
 @Slf4j
@@ -109,17 +110,18 @@ public class ProcessMarkupService implements Process {
         List<DocumentInfo> infos = tagNode.getElementListByName("button", true)
             .stream()
             .filter(isRequiredTag)
-            .filter(tag -> IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE.test(tag, slackEventResponse.getDate()))
+            .filter(tag -> FILTER_BY_DATE_AND_DOCUMENT_TYPE.test(tag, slackEventResponse))
             .map(b -> DocumentInfo.of(ParsingUtils.getInn(b),
                 ParsingUtils.getFileId(b), ParsingUtils.getTemplateFileId(b),
-                ParsingUtils.isReconciliation(b)))
+                ParsingUtils.isMarkedBySpecialSymbols(b)))
             .filter(info -> !CollectionUtils.containsAny(processedIds, info.getFileId() + ""))
             .filter(info -> employees.get(info.getInn()) != null)
             .collect(Collectors.toList());
 
-        log.info("Following Documents count {} will be processed", infos.size());
+        log.info("Following Documents {} count {} will be processed", slackEventResponse.getTypeOfDocuments(), infos.size());
         slackResponderService.log(initiatorUserId,
-            String.format("Following Documents count %s will be processed", infos.size()));
+            String.format("Following Documents %s count %s will be processed",
+                Arrays.toString(slackEventResponse.getTypeOfDocuments()), infos.size()));
 
         for (int i = 0; i < infos.size(); i++) {
           var info = infos.get(i);
@@ -249,7 +251,7 @@ public class ProcessMarkupService implements Process {
     if (pdf.length == 0) {
       return null;
     }
-    if (info.isReconciliation()) {
+    if (info.isMarkedBySpecialSymbols()) {
       try {
         return getMarkUpForReconciliation(pdf);
       } catch (Exception ex) {
@@ -339,7 +341,7 @@ public class ProcessMarkupService implements Process {
       if (StringUtils.equalsIgnoreCase(StringUtils.trim(input), "%$@!")) {
         TextPosition text = textPositions.get(3);
         double top = ((text.getPageHeight() - text.getEndY() - (((text.getPageHeight() * 3.5) / 100))) * 100)
-            / text.getPageHeight();
+            /text.getPageHeight();
         double left = (text.getEndX() * 100) / text.getPageWidth();
         fieldWrapper = new FieldWrapper(FieldWrapper.FieldForSignature.builder()
             .page(FieldWrapper.Page.builder()

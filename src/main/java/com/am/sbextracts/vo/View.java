@@ -25,6 +25,12 @@ public class View {
         String value;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         LocalDate selected_date;
+        SectionOption selected_option;
+    }
+
+    @Data
+    public static class SectionOption {
+        String value;
     }
 
     @Data

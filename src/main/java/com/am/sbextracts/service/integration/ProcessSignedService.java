@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,7 @@ import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.isActorReconciliationAndDate;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isSpecificDateAndDocumentType;
 
 @Slf4j
 @Service
@@ -78,15 +79,16 @@ public class ProcessSignedService implements Process {
 
       List<String> ids = rootDocument.getDocuments().stream()
           .filter(Objects::nonNull)
-          .filter(doc -> isActorReconciliationAndDate(doc, slackEventResponse.getDate()))
+          .filter(doc -> isSpecificDateAndDocumentType(doc, slackEventResponse))
           .filter(ParsingUtils::isSigned)
           .map(BambooHrSignedFileClient.Document::getId)
           .map(String::valueOf)
           .filter(id -> !CollectionUtils.containsAny(processedIds, id))
           .collect(Collectors.toList());
 
-      log.info("Documents for download: {}", ids.size());
-      slackResponderService.log(initiatorUserId, "Documents for download: " + ids.size());
+      log.info("Documents {} for download: {}", slackEventResponse.getTypeOfDocuments(), ids.size());
+      slackResponderService.log(initiatorUserId, String.format("Documents %s for download: %s",
+          Arrays.toString(slackEventResponse.getTypeOfDocuments()), ids.size()));
 
       for (int i = 0; i < Math.min(perRequestProcessingFilesCount, ids.size()); i++) {
         String id = ids.get(i);
