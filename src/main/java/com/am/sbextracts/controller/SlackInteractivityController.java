@@ -79,14 +79,14 @@ public class SlackInteractivityController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = "debtors", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> getDebtors(@SIE SlackInteractiveEvent request) {
-        if (isNotAllowedUser(request)) {
-            return ResponseEntity.ok().build();
-        }
-        slackResponderService.sendDebtors(request);
-        return ResponseEntity.ok().build();
-    }
+//    @PostMapping(value = "debtors", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+//    public ResponseEntity<Void> getDebtors(@SIE SlackInteractiveEvent request) {
+//        if (isNotAllowedUser(request)) {
+//            return ResponseEntity.ok().build();
+//        }
+//        slackResponderService.sendDebtors(request);
+//        return ResponseEntity.ok().build();
+//    }
 
     @PostMapping(value = "process/signed", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Void> downloadSigned(@SIE SlackInteractiveEvent request) {
@@ -106,14 +106,14 @@ public class SlackInteractivityController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = "debtors/push", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> pushDebtors(@SIE SlackInteractiveEvent request) {
-        if (isNotAllowedUser(request)) {
-            return ResponseEntity.ok().build();
-        }
-        slackResponderService.pushDebtors(request);
-        return ResponseEntity.ok().build();
-    }
+//    @PostMapping(value = "debtors/push", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+//    public ResponseEntity<Void> pushDebtors(@SIE SlackInteractiveEvent request) {
+//        if (isNotAllowedUser(request)) {
+//            return ResponseEntity.ok().build();
+//        }
+//        slackResponderService.pushDebtors(request);
+//        return ResponseEntity.ok().build();
+//    }
 
     @PostMapping("file_types")
     public SlackResponse getFileTypeInfo() {

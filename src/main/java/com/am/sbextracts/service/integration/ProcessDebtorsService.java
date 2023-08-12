@@ -31,8 +31,8 @@ import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE;
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.isActorReconciliationAndDate;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.FILTER_BY_DATE_AND_DOCUMENT_TYPE;
+import static com.am.sbextracts.service.integration.utils.ParsingUtils.isSpecificDateAndDocumentType;
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequiredTag;
 
 @Slf4j
@@ -90,14 +90,14 @@ public class ProcessDebtorsService implements Process {
 
         Set<String> notSignedFiles = rootDocument.getDocuments().stream()
             .filter(Objects::nonNull)
-            .filter(doc -> isActorReconciliationAndDate(doc, slackEventResponse.getDate()))
+            .filter(doc -> isSpecificDateAndDocumentType(doc, slackEventResponse))
             .filter(Predicate.not(ParsingUtils::isSigned))
             .map(BambooHrSignedFileClient.Document::getName)
             .collect(Collectors.toSet());
 
         Set<String> filesSentForSignature = rootDocument.getDocuments().stream()
             .filter(Objects::nonNull)
-            .filter(doc -> isActorReconciliationAndDate(doc, slackEventResponse.getDate()))
+            .filter(doc -> isSpecificDateAndDocumentType(doc, slackEventResponse))
             .map(BambooHrSignedFileClient.Document::getName)
             .collect(Collectors.toSet());
 
@@ -114,7 +114,7 @@ public class ProcessDebtorsService implements Process {
             TagNode tagNodeFolderWithActs = new HtmlCleaner().clean(folder.getHtml());
             notSentFiles.addAll(tagNodeFolderWithActs.getElementListByName("button", true).stream()
                     .filter(isRequiredTag)
-                    .filter(tag -> IS_AKT_OR_RECONCILIATION_FILTER_BY_DATE.test(tag, slackEventResponse.getDate()))
+                    .filter(tag -> FILTER_BY_DATE_AND_DOCUMENT_TYPE.test(tag, slackEventResponse))
                     .filter(b -> employees.get(ParsingUtils.getInn(b)) != null)
                     .map(ParsingUtils::getFileTitle)
                     .filter(name -> !CollectionUtils.containsAny(filesSentForSignature, name))
