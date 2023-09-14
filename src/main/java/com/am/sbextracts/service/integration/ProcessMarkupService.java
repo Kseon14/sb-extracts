@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -34,7 +36,7 @@ import com.am.sbextracts.client.BambooHrSignClient;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.DocumentInfo;
-import com.am.sbextracts.model.FieldWrapper;
+import com.am.sbextracts.model.FieldForSignature;
 import com.am.sbextracts.model.Folder;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.model.Response;
@@ -292,10 +294,10 @@ public class ProcessMarkupService implements Process {
       stripper.setEndPage(doc.getNumberOfPages());
       final Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
       stripper.writeText(doc, dummy);
-      if (stripper.getFieldWrapper() == null) {
+      if (MapUtils.isEmpty(stripper.getFieldWrappers())) {
         throw new IllegalStateException("pdf file do not contain anchor symbols");
       }
-      return mapper.writeValueAsString(stripper.getFieldWrapper());
+      return mapper.writeValueAsString(stripper.getFieldWrappers());
     }
   }
 
@@ -331,22 +333,24 @@ public class ProcessMarkupService implements Process {
   @Getter
   public static class GetCharLocationAndSize extends PDFTextStripper {
 
-    private FieldWrapper fieldWrapper;
+    private final Map<String, FieldForSignature> fieldWrappers = new HashMap<>();
 
     public GetCharLocationAndSize() throws IOException {
     }
 
     @Override
     protected void writeString(String input, List<TextPosition> textPositions) {
-      if (StringUtils.equalsIgnoreCase(StringUtils.trim(input), "%$@!")) {
+      if (StringUtils.contains(StringUtils.trim(input), "%$@!")) {
         TextPosition text = textPositions.get(3);
         double top = ((text.getPageHeight() - text.getEndY() - (((text.getPageHeight() * 3.5) / 100))) * 100)
             /text.getPageHeight();
         double left = (text.getEndX() * 100) / text.getPageWidth();
-        fieldWrapper = new FieldWrapper(FieldWrapper.FieldForSignature.builder()
-            .page(FieldWrapper.Page.builder()
+        String key = "field_" + (fieldWrappers.size() + 1);
+        fieldWrappers.put(key, FieldForSignature.builder()
+                        .id(key)
+            .page(FieldForSignature.Page.builder()
                 .num(getCurrentPageNo())
-                .rect(FieldWrapper.Rect.builder()
+                .rect(FieldForSignature.Rect.builder()
                     .x(123.1)
                     .y(123.1)
                     .width(123.1)
@@ -357,11 +361,11 @@ public class ProcessMarkupService implements Process {
                     .left(123.1)
                     .build())
                 .build())
-            .percentages(FieldWrapper.Percentages.builder()
+            .percentages(FieldForSignature.Percentages.builder()
                 .top(top + "%")
                 .left(left + "%")
                 .build())
-            .signer(new FieldWrapper.Signer())
+            .signer(new FieldForSignature.Signer())
             .build());
       }
     }
