@@ -34,11 +34,14 @@ public class InternalSlackEventResponse {
         Optional<LocalDate> date = Optional.ofNullable(values.get("date").getField().getSelected_date());
         return InternalSlackEventResponse.builder()
                 .sessionId(getFieldValue(values, SESSION_ID))
-                .folderId(Optional.ofNullable(values.get(SECTION_ID)).map(f -> Integer.parseInt(f.getField().getValue())).orElse(null))
+                .folderId(Optional.ofNullable(values.get(SECTION_ID)).map(f -> Integer.parseInt(f.getField()
+                        .getValue())).orElse(null))
                 .date(date.map(d -> d.format(formatter)).orElse(null))
                 .gFolderId(getFieldValue(values, "gFolderId"))
                 .initiatorUserId(slackInteractiveEvent.getUser().getId())
-                .typeOfDocuments(Optional.ofNullable(values.get(DOCUMENT_SUFFIX)).map(f -> f.getField().getSelected_option().getValue()).orElse(null).split(","))
+                .typeOfDocuments(Optional.ofNullable(values.get(DOCUMENT_SUFFIX))
+                        .map(f -> f.getField().getSelected_option().getValue())
+                        .map(f -> f.split(",")).orElse(null))
                 .build();
     }
 
