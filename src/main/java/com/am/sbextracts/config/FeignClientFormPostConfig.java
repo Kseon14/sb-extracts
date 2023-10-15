@@ -1,4 +1,4 @@
-package com.am.sbextracts;
+package com.am.sbextracts.config;
 
 import feign.codec.Encoder;
 import feign.form.spring.SpringFormEncoder;

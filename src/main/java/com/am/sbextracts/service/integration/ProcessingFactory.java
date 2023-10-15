@@ -1,5 +1,6 @@
 package com.am.sbextracts.service.integration;
 
+import com.am.sbextracts.config.UserContext;
 import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.am.sbextracts.vo.View;
@@ -21,18 +22,17 @@ public class ProcessingFactory {
     public void startProcessing(SlackInteractiveEvent slackInteractiveEvent) {
         View.ModalActionType type = slackInteractiveEvent.getView().getType();
         Process process = processors.processorsMap().get(type);
+        if (process == null) return;
         log.info("Start execution with {}", type);
-
-        if (process != null) {
-            executorService.execute(() -> {
+        executorService.execute(() -> {
                         try {
+                            UserContext.setUserId(slackInteractiveEvent.getUser().getId());
                             process.process(InternalSlackEventResponse.convert(slackInteractiveEvent));
                         } catch (Exception ex) {
                             log.error("Failed to process", ex);
                         }
                     }
             );
-        }
     }
 
 }

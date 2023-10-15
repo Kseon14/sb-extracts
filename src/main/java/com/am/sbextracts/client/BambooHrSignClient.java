@@ -1,6 +1,6 @@
 package com.am.sbextracts.client;
 
-import com.am.sbextracts.FeignClientFormPostConfig;
+import com.am.sbextracts.config.FeignClientFormPostConfig;
 import com.am.sbextracts.model.Folder;
 import com.am.sbextracts.model.Response;
 import lombok.AllArgsConstructor;

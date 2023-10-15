@@ -31,6 +31,7 @@ import org.springframework.web.multipart.commons.CommonsMultipartFile;
 
 import com.am.sbextracts.client.BambooHrApiClient;
 import com.am.sbextracts.client.NetSuiteFileClient;
+import com.am.sbextracts.config.UserContext;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.FileInfo;
@@ -66,14 +67,14 @@ public class ProcessingInvoiceService implements Process {
   @SbExceptionHandler
   @Override
   public void process(InternalSlackEventResponse slackEventResponse) {
-    String initiatorUserId = slackEventResponse.getInitiatorUserId();
+    String initiatorUserId = UserContext.getUserId();
 
     slackResponderService.sendMessageToInitiator(
         slackEventResponse.getInitiatorUserId(),
         getPostMessage("Starting....", "Starting..."));
 
     gDriveService.validateFolderExistence(reportGFolderId, initiatorUserId);
-    Map<String, String> employees = reportService.getEmployees(initiatorUserId);
+    Map<String, String> employees = reportService.getEmployees();
     File file = null;
     String logFileName = String.format("%s-%s-%s", slackEventResponse.getDate(), PROCESSED_ID_FILE_NAME_PREFIX,
         PROCESSED_ID_FILE_NAME);
@@ -107,7 +108,7 @@ public class ProcessingInvoiceService implements Process {
             getAttributes(fileInfo.getHref()));
 
         try {
-          bambooHrApiClient.uploadFile(headerService.getHeaderForBchApi(initiatorUserId),
+          bambooHrApiClient.uploadFile(headerService.getHeaderForBchApi(),
               getEmployeeId(fileInfo, employees),
               Map.of("file", prepareFile(pdf, fileInfo.getFileName(), initiatorUserId),
                   "fileName", fileInfo.getFileName(),
@@ -129,6 +130,7 @@ public class ProcessingInvoiceService implements Process {
       throw new SbExtractsException("Error during download of invoices", ex, initiatorUserId);
     } finally {
       gDriveService.saveFile(file, logFileName, initiatorUserId, reportGFolderId, true);
+      UserContext.clear();
     }
 
   }

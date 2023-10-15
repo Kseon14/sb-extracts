@@ -24,9 +24,9 @@ public class ReportService {
     private final BambooHrApiClient bambooHrApiClient;
     private final HeaderService headerService;
 
-    public Map<String, String> getEmployees(String initiatorSlackId) {
+    public Map<String, String> getEmployees() {
         log.debug("Getting employees...");
-        Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(initiatorSlackId), reportId);
+        Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(), reportId);
         if (CollectionUtils.isEmpty(report.getEmployees()) || report.getEmployees().size() == 1) {
             throw new IllegalArgumentException("employee list is empty or not valid");
         }
@@ -34,9 +34,9 @@ public class ReportService {
         return report.getEmployees().stream().collect(Collectors.toMap(Employee::getInn, Employee::getId));
     }
 
-    public Map<String, String> getEmployeesEmails(String initiatorSlackId) {
+    public Map<String, String> getEmployeesEmails() {
         log.debug("Getting employs emails...");
-        Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(initiatorSlackId), reportId);
+        Report report = bambooHrApiClient.getEmployees(headerService.getHeaderForBchApi(), reportId);
         if (CollectionUtils.isEmpty(report.getEmployees())) {
             throw new IllegalArgumentException("employee list is empty");
         }

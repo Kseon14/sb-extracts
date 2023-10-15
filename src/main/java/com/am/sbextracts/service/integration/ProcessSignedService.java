@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import com.am.sbextracts.client.BambooHrSignedFileClient;
+import com.am.sbextracts.config.UserContext;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.InternalSlackEventResponse;
@@ -54,7 +55,7 @@ public class ProcessSignedService implements Process {
   @Override
   @SbExceptionHandler
   public void process(InternalSlackEventResponse slackEventResponse) {
-    final String initiatorUserId = slackEventResponse.getInitiatorUserId();
+    final String initiatorUserId = UserContext.getUserId();
     gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), initiatorUserId);
     slackResponderService.log(initiatorUserId, "Start processing ....");
     BambooHrSignedFileClient.SignedDocument rootDocument;
@@ -134,6 +135,7 @@ public class ProcessSignedService implements Process {
       throw new SbExtractsException("Error during download of acts:", ex, initiatorUserId);
     } finally {
       gDriveService.saveFile(file, logFileName, slackEventResponse);
+      UserContext.clear();
     }
   }
 }
