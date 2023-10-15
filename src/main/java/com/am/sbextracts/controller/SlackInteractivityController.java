@@ -71,7 +71,7 @@ public class SlackInteractivityController {
     }
 
     @PostMapping(value = "process/markup", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> markup(@SIE SlackInteractiveEvent request) {
+    public ResponseEntity<Void> markup(@MapPathParamToObject SlackInteractiveEvent request) {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }
@@ -89,7 +89,7 @@ public class SlackInteractivityController {
 //    }
 
     @PostMapping(value = "process/signed", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> downloadSigned(@SIE SlackInteractiveEvent request) {
+    public ResponseEntity<Void> downloadSigned(@MapPathParamToObject SlackInteractiveEvent request) {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }
@@ -98,7 +98,7 @@ public class SlackInteractivityController {
     }
 
     @PostMapping(value = "process/invoice", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Void> downloadInvoice(@SIE SlackInteractiveEvent request) {
+    public ResponseEntity<Void> downloadInvoice(@MapPathParamToObject SlackInteractiveEvent request) {
         if (isNotAllowedUser(request)) {
             return ResponseEntity.ok().build();
         }

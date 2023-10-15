@@ -1,6 +1,6 @@
 package com.am.sbextracts.client;
 
-import com.am.sbextracts.FeignClientFormPostConfig;
+import com.am.sbextracts.config.FeignClientFormPostConfig;
 import feign.Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

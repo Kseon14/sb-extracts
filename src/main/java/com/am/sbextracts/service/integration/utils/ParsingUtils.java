@@ -78,29 +78,9 @@ public final class ParsingUtils {
         }
     }
 
-//    public static boolean isSigned(TagNode tagNode) {
-//        ContentNode node = (ContentNode) tagNode.getParent().getElementsByAttValue(CLASS, "ReportsTable__statusIcon",
-//                true, false)[0].getParent().getAllChildren().get(2);
-//        return Integer.parseInt(node.getContent()) > 0;
-//    }
-
     public static boolean isSigned(BambooHrSignedFileClient.Document document) {
         return document.getCompleted() > 0;
     }
-
-//    public static boolean isActorReconciliationAndDate(TagNode tagNode, String date) {
-//        Optional<String> title = Arrays
-//                .stream(tagNode.getElementsByAttValue(CLASS, "ReportsTable__reportNameText",
-//                        true, false)).findFirst()
-//                .map(at -> at.getAttributeByName("title"));
-//        String[] splitResult = title.map(t -> t.split("\\."))
-//                .orElseThrow(() -> new IllegalArgumentException("can not filter by akt and date"));
-//        if (splitResult.length < 6) {
-//            return false;
-//        }
-//        return StringUtils.equalsAny(splitResult[5], AKT, SVERKA)
-//                && String.join(".", splitResult[2], splitResult[3], splitResult[4]).equals(date);
-//    }
 
     public static boolean isSpecificDateAndDocumentType(BambooHrSignedFileClient.Document document, InternalSlackEventResponse slackEventResponse) {
         String[] splitResult = Optional.ofNullable(document.getName()).map(t -> t.split("\\."))

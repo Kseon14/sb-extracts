@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -26,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
+import org.htmlcleaner.ContentNode;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 import org.jetbrains.annotations.Nullable;
@@ -33,6 +35,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.am.sbextracts.client.BambooHrSignClient;
+import com.am.sbextracts.config.UserContext;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.am.sbextracts.model.DocumentInfo;
@@ -42,13 +45,13 @@ import com.am.sbextracts.model.InternalSlackEventResponse;
 import com.am.sbextracts.model.Response;
 import com.am.sbextracts.service.ResponderService;
 import com.am.sbextracts.service.integration.utils.ParsingUtils;
+import com.am.sbextracts.vo.SlackInteractiveEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.am.sbextracts.service.integration.utils.ParsingUtils.FILTER_BY_DATE_AND_DOCUMENT_TYPE;
 import static com.am.sbextracts.service.integration.utils.ParsingUtils.isRequiredTag;
 
 @Slf4j
@@ -79,10 +82,11 @@ public class ProcessMarkupService implements Process {
   @SbExceptionHandler
   @Override
   public void process(InternalSlackEventResponse slackEventResponse) {
-    final String initiatorUserId = slackEventResponse.getInitiatorUserId();
+    final String initiatorUserId = UserContext.getUserId();
+    log.info("user id {} for thread {}", initiatorUserId, Thread.currentThread().getName());
     slackResponderService.log(initiatorUserId, "Starting....");
     gDriveService.validateFolderExistence(slackEventResponse.getGFolderId(), initiatorUserId);
-    Map<String, String> employees = reportService.getEmployees(initiatorUserId);
+    Map<String, String> employees = reportService.getEmployees();
     int fileCount;
     var offset = 0;
     var globalCounter = 0;
@@ -112,7 +116,7 @@ public class ProcessMarkupService implements Process {
         List<DocumentInfo> infos = tagNode.getElementListByName("button", true)
             .stream()
             .filter(isRequiredTag)
-            .filter(tag -> FILTER_BY_DATE_AND_DOCUMENT_TYPE.test(tag, slackEventResponse))
+            .filter(tag -> getFilter().test(tag, slackEventResponse))
             .map(b -> DocumentInfo.of(ParsingUtils.getInn(b),
                 ParsingUtils.getFileId(b), ParsingUtils.getTemplateFileId(b),
                 ParsingUtils.isMarkedBySpecialSymbols(b)))
@@ -153,6 +157,7 @@ public class ProcessMarkupService implements Process {
       throw new SbExtractsException("Error during markup of acts", ex, initiatorUserId);
     } finally {
       gDriveService.saveFile(file, logFileName, slackEventResponse);
+      UserContext.clear();
     }
   }
 
@@ -328,6 +333,23 @@ public class ProcessMarkupService implements Process {
       }
     }
     return prop.getProperty(pagesCount + "");
+  }
+
+  public final BiPredicate<TagNode, InternalSlackEventResponse> getFilter() {
+   return  (tagNode, slackInteractiveEvent) -> {
+      String contentNodeContent = StringUtils.strip(((ContentNode) tagNode.getAllChildren().get(0)).getContent());
+      log.info("file name for parsing is: {}", contentNodeContent);
+      String[] splitContent = contentNodeContent.split("\\.");
+      if (splitContent.length < 6) {
+        log.error("the filename does not match the filename format {}", contentNodeContent);
+        slackResponderService.sendErrorMessageToInitiator(UserContext.getUserId(), "Warning",
+                String.format("The file name does not match the criteria %s, skipping..", contentNodeContent));
+        return false;
+      }
+      return StringUtils.equalsAny(splitContent[5], slackInteractiveEvent.getTypeOfDocuments())
+              && String.join(".", splitContent[2], splitContent[3], splitContent[4])
+              .equals(slackInteractiveEvent.getDate());
+    };
   }
 
   @Getter

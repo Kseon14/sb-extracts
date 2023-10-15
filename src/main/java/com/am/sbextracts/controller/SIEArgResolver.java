@@ -13,7 +13,7 @@ public class SIEArgResolver implements HandlerMethodArgumentResolver {
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
-        return parameter.getParameterAnnotation(SIE.class) != null;
+        return parameter.getParameterAnnotation(MapPathParamToObject.class) != null;
     }
 
     @Override

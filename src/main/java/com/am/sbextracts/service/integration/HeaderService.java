@@ -2,6 +2,7 @@ package com.am.sbextracts.service.integration;
 
 import com.am.sbextracts.client.BambooHrAuthClient;
 import com.am.sbextracts.client.NetSuiteFileClient;
+import com.am.sbextracts.config.UserContext;
 import com.am.sbextracts.exception.SbExceptionHandler;
 import com.am.sbextracts.exception.SbExtractsException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -74,8 +75,8 @@ public class HeaderService {
         return cookie;
     }
 
-    public Map<String, String> getHeaderForBchApi(String initiatorSlackId) {
-        return Map.of(AUTHORIZATION, "Basic " + new String(Base64Utils.encode((getApiKey(initiatorSlackId) + ":").getBytes())));
+    public Map<String, String> getHeaderForBchApi() {
+        return Map.of(AUTHORIZATION, "Basic " + new String(Base64Utils.encode((getApiKey(UserContext.getUserId()) + ":").getBytes())));
     }
 
     @SbExceptionHandler

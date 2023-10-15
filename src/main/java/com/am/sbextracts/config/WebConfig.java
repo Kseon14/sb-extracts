@@ -1,4 +1,4 @@
-package com.am.sbextracts;
+package com.am.sbextracts.config;
 
 import com.am.sbextracts.controller.SIEArgResolver;
 import lombok.RequiredArgsConstructor;
