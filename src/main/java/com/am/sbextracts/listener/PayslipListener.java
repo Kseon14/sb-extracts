@@ -42,7 +42,7 @@ public class PayslipListener {
         List<Field> fieldList = new ArrayList<>();
         SlackResponderService.addIfNotNull(fieldList, "Contract Rate", payslip.getContractRate());
         SlackResponderService.addIfNotNull(fieldList, "Other Income", payslip.getOtherIncome());
-        SlackResponderService.addIfNotNull(fieldList, "Bonus", payslip.getBonus());
+        SlackResponderService.addIfNotNull(fieldList, "Reimbursement", payslip.getBonus());
         SlackResponderService.addIfNotNull(fieldList, "Social Tax", payslip.getSocialTax());
         SlackResponderService.addIfNotNull(fieldList, "Insurance", payslip.getInsurance());
         SlackResponderService.addIfNotNull(fieldList, "Currency Exchange Rate", payslip.getCurrencyRate());
