@@ -26,6 +26,7 @@ import com.slack.api.methods.response.views.ViewsOpenResponse;
 import com.slack.api.model.ErrorResponseMetadata;
 import com.slack.api.model.Field;
 import com.slack.api.model.block.InputBlock;
+import com.slack.api.model.block.LayoutBlock;
 import com.slack.api.model.block.SectionBlock;
 import com.slack.api.model.block.composition.MarkdownTextObject;
 import com.slack.api.model.block.composition.OptionObject;
@@ -521,6 +522,15 @@ public class SlackResponderService implements ResponderService {
                     .title(String.format("*%s*:", label))
                     .value(value)
                     .valueShortEnough(false)
+                    .build());
+        }
+    }
+
+    public static void addBlockIfNotNull(List<LayoutBlock> block, String label, String value) {
+        if (isNotEmptyOrZero.test(value)) {
+            block.add(SectionBlock.builder().fields(List.of(
+                            MarkdownTextObject.builder().text(String.format("*%s*:", label)).build(),
+                            MarkdownTextObject.builder().text(value).build()))
                     .build());
         }
     }
